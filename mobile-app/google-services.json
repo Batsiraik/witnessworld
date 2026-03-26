@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "883798523298",
+    "project_id": "witnessworld-1cb8f",
+    "storage_bucket": "witnessworld-1cb8f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:883798523298:android:dac930b1d3498bae7b86fb",
+        "android_client_info": {
+          "package_name": "com.witnessworldconnect.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeDub-l7gQgTwL1G97mXCUPDpwwGjD9io"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

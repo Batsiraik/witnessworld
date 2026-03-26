@@ -1,0 +1,7 @@
+# Admin — do not commit database credentials
+admin/includes/config.local.php
+
+# OS / editor
+Thumbs.db
+.DS_Store
+*.log

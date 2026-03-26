@@ -1,0 +1,11 @@
+{
+  "name": "witnessworld/app",
+  "description": "Witness World Connect — PHP API and admin",
+  "require": {
+    "php": ">=8.1",
+    "phpmailer/phpmailer": "^6.9"
+  },
+  "config": {
+    "optimize-autoloader": true
+  }
+}

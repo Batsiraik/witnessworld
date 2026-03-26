@@ -1,0 +1,6 @@
+# Pass Authorization to PHP (Apache often drops it; breaks Bearer tokens on XAMPP).
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
