@@ -1,0 +1,36 @@
+# Trim EAS upload — dependencies install on Expo’s builders.
+# See https://docs.expo.dev/build-reference/easignore/
+
+node_modules/
+.git/
+.expo/
+dist/
+web-build/
+android/
+ios/
+.kotlin/
+
+# Logs & OS noise
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+
+# Local / secrets (never send to EAS)
+.env
+.env.*
+!.env.example
+
+*.pem
+*.p12
+*.key
+*.jks
+*.mobileprovision
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Cursor / IDE
+.vscode/
+.idea/
