@@ -17,20 +17,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if ($user === '' || $pass === '') {
         $error = 'Enter username and password.';
     } else {
-        $pdo = witnessworld_pdo();
-        $st = $pdo->prepare('SELECT * FROM admins WHERE username = ? LIMIT 1');
-        $st->execute([$user]);
-        $row = $st->fetch(PDO::FETCH_ASSOC);
-        if ($row && password_verify($pass, (string) $row['password_hash'])) {
-            $_SESSION['admin_id'] = (int) $row['id'];
-            $_SESSION['admin_username'] = (string) $row['username'];
-            $_SESSION['admin_name'] = (string) $row['name'];
-            $_SESSION['admin_email'] = (string) $row['email'];
-            $_SESSION['admin_super'] = (bool) $row['is_super_admin'];
-            header('Location: index.php');
-            exit;
+        try {
+            $pdo = witnessworld_pdo();
+            $st = $pdo->prepare('SELECT * FROM admins WHERE username = ? LIMIT 1');
+            $st->execute([$user]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if ($row && password_verify($pass, (string) $row['password_hash'])) {
+                $_SESSION['admin_id'] = (int) $row['id'];
+                $_SESSION['admin_username'] = (string) $row['username'];
+                $_SESSION['admin_name'] = (string) $row['name'];
+                $_SESSION['admin_email'] = (string) $row['email'];
+                $_SESSION['admin_super'] = (bool) $row['is_super_admin'];
+                header('Location: index.php');
+                exit;
+            }
+            $error = 'Invalid username or password.';
+        } catch (Throwable) {
+            $error = 'Database error. On the server, add admin/includes/config.local.php with Hostinger MySQL host, name, user, and password (often host is "localhost"). Ensure the admins table exists.';
         }
-        $error = 'Invalid username or password.';
     }
 }
 $pageTitle = 'Admin sign in';
