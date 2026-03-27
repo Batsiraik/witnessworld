@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
 require_once __DIR__ . '/lib/message_file_rules.php';
+require_once __DIR__ . '/lib/support_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -19,10 +20,6 @@ $pdo = witnessworld_pdo();
 $user = ww_user_from_token($pdo, $tok);
 if (!$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
-if (($user['status'] ?? '') !== 'verified') {
-    ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
 }
 
 $userId = (int) $user['id'];
@@ -70,6 +67,9 @@ if ($hasFile && ($uploadSize <= 0 || $uploadSize > ww_message_attachment_max_byt
     ww_json(['ok' => false, 'error' => 'File must be between 1 byte and 15 MB'], 422);
 }
 
+$suid = ww_support_user_id($pdo);
+
+/** @var array{ext: string, mime: string}|null $resolved */
 $resolved = null;
 if ($hasFile) {
     if (!class_exists('finfo')) {
@@ -88,11 +88,29 @@ if ($hasFile) {
 
 try {
     $st = $pdo->prepare(
-        'SELECT id FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
+        'SELECT id, context_key FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
     );
     $st->execute([$conversationId, $userId, $userId]);
-    if (!$st->fetchColumn()) {
+    $convAccess = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$convAccess) {
         ww_json(['ok' => false, 'error' => 'Conversation not found'], 404);
+    }
+    $isSupportConv = ww_is_support_context($convAccess);
+    if (($user['status'] ?? '') !== 'verified' && !$isSupportConv) {
+        ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
+    }
+    if ($isSupportConv && $userId !== $suid) {
+        if (!$hasFile) {
+            ww_json(['ok' => false, 'error' => 'Tech support requires a photo with each message'], 422);
+        }
+        $img = ww_message_attachment_resolve_image_only($detected ?? '', $uploadOrigName);
+        if ($img === null) {
+            $img = ww_message_attachment_resolve_image_only($uploadClientMime, $uploadOrigName);
+        }
+        if ($img === null) {
+            ww_json(['ok' => false, 'error' => 'Only image attachments are allowed for tech support'], 422);
+        }
+        $resolved = $img;
     }
 } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Database error'], 500);
@@ -156,7 +174,7 @@ try {
 require_once __DIR__ . '/lib/push_notify.php';
 try {
     $stc = $pdo->prepare(
-        'SELECT user_low_id, user_high_id FROM conversations WHERE id = ? LIMIT 1'
+        'SELECT user_low_id, user_high_id, context_key FROM conversations WHERE id = ? LIMIT 1'
     );
     $stc->execute([$conversationId]);
     $crow = $stc->fetch(PDO::FETCH_ASSOC);
@@ -164,16 +182,20 @@ try {
         $low = (int) $crow['user_low_id'];
         $high = (int) $crow['user_high_id'];
         $peerId = $userId === $low ? $high : $low;
-        $preview = $text !== ''
-            ? (mb_strlen($text) > 140 ? mb_substr($text, 0, 137) . '…' : $text)
-            : ($hasFile ? 'Sent a file' : 'New message');
-        ww_push_to_user(
-            $pdo,
-            $peerId,
-            'New message',
-            $preview,
-            ['type' => 'new_message', 'conversation_id' => (string) $conversationId]
-        );
+        if ($peerId === $suid) {
+            /* Member → support: do not notify the system support account. */
+        } else {
+            $preview = $text !== ''
+                ? (mb_strlen($text) > 140 ? mb_substr($text, 0, 137) . '…' : $text)
+                : ($hasFile ? 'Sent a file' : 'New message');
+            ww_push_to_user(
+                $pdo,
+                $peerId,
+                'New message',
+                $preview,
+                ['type' => 'new_message', 'conversation_id' => (string) $conversationId]
+            );
+        }
     }
 } catch (Throwable) {
     /* non-fatal */

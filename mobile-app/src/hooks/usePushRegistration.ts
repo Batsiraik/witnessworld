@@ -1,9 +1,40 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { apiPost } from '../api/client';
+import { navigateToSupportChat } from '../navigation/navigationRef';
+
+type NotificationsModule = typeof import('expo-notifications');
+
+/** Remote push is disabled in Expo Go (SDK 53+ on Android). Use a dev build / APK to test pushes. */
+function isExpoGo(): boolean {
+  return Constants.appOwnership === 'expo';
+}
+
+function loadNotificationsModule(): NotificationsModule | null {
+  if (isExpoGo()) {
+    return null;
+  }
+  try {
+    return require('expo-notifications') as NotificationsModule;
+  } catch {
+    return null;
+  }
+}
+
+const notifications = loadNotificationsModule();
+if (notifications) {
+  notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 function parseAdminPushLogId(data: Record<string, unknown> | undefined): number {
   const raw = data?.admin_push_log_id;
@@ -31,27 +62,32 @@ function reportAdminPushOpen(data: Record<string, unknown> | undefined): void {
   });
 }
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+function maybeNavigateSupportReply(data: Record<string, unknown> | undefined): void {
+  const type = String(data?.type ?? '');
+  if (type !== 'support_reply') {
+    return;
+  }
+  const raw = data?.conversation_id;
+  const cid =
+    typeof raw === 'number' && Number.isFinite(raw)
+      ? Math.floor(raw)
+      : parseInt(String(raw ?? ''), 10);
+  if (Number.isFinite(cid) && cid > 0) {
+    navigateToSupportChat(cid);
+  }
+}
 
 /**
- * Registers for Expo push (uses FCM on Android when Firebase + EAS credentials are set).
- * Call only when the user is signed in and verified.
+ * Registers for Expo push (FCM on Android when Firebase + EAS credentials are set).
+ * No-op in Expo Go — push APIs are not available there (use a development build).
  */
-export function usePushRegistration(active: boolean, userStatus: string | undefined): void {
+export function usePushRegistration(active: boolean): void {
   const done = useRef(false);
   const coldStartOpenDone = useRef(false);
 
-  /** Tracks taps on admin pushes (broadcast or targeted) for dashboard stats. */
   useEffect(() => {
-    if (!active || userStatus !== 'verified') {
+    const Notifications = loadNotificationsModule();
+    if (!Notifications || !active) {
       coldStartOpenDone.current = false;
       return;
     }
@@ -59,6 +95,7 @@ export function usePushRegistration(active: boolean, userStatus: string | undefi
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as Record<string, unknown> | undefined;
       reportAdminPushOpen(data);
+      maybeNavigateSupportReply(data);
     });
 
     if (!coldStartOpenDone.current) {
@@ -69,14 +106,16 @@ export function usePushRegistration(active: boolean, userStatus: string | undefi
         }
         const data = response.notification.request.content.data as Record<string, unknown> | undefined;
         reportAdminPushOpen(data);
+        maybeNavigateSupportReply(data);
       });
     }
 
     return () => sub.remove();
-  }, [active, userStatus]);
+  }, [active]);
 
   useEffect(() => {
-    if (!active || userStatus !== 'verified') {
+    const Notifications = loadNotificationsModule();
+    if (!Notifications || !active) {
       done.current = false;
       return;
     }
@@ -136,5 +175,5 @@ export function usePushRegistration(active: boolean, userStatus: string | undefi
     return () => {
       cancelled = true;
     };
-  }, [active, userStatus]);
+  }, [active]);
 }

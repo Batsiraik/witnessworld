@@ -4,6 +4,7 @@ import {
   BackHandler,
   Modal,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -16,11 +17,21 @@ type Props = {
   visible: boolean;
   variant: 'pending' | 'declined';
   supportEmail: string;
+  /** When set with onMessageSupport, shows in-app tech support entry above the email line. */
+  supportAvailable?: boolean;
+  onMessageSupport?: () => void;
   /** Re-fetches account status from the server (e.g. after admin approval). */
   onRecheckStatus?: () => Promise<void>;
 };
 
-export function VerificationLockOverlay({ visible, variant, supportEmail, onRecheckStatus }: Props) {
+export function VerificationLockOverlay({
+  visible,
+  variant,
+  supportEmail,
+  supportAvailable,
+  onMessageSupport,
+  onRecheckStatus,
+}: Props) {
   const [recheckBusy, setRecheckBusy] = useState(false);
   useEffect(() => {
     if (!visible) return undefined;
@@ -68,6 +79,15 @@ export function VerificationLockOverlay({ visible, variant, supportEmail, onRech
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.body}>{body}</Text>
             <Text style={emailStyle}>{supportEmail}</Text>
+            {supportAvailable && onMessageSupport ? (
+              <Pressable
+                onPress={onMessageSupport}
+                style={({ pressed }) => [styles.supportChatBtn, pressed && styles.supportChatBtnPressed]}
+                accessibilityLabel="Open tech support chat"
+              >
+                <Text style={styles.supportChatBtnText}>Message tech support (photos)</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.hint}>This message will clear once an admin has verified your account.</Text>
             {onRecheckStatus ? (
               <PrimaryButton
@@ -143,4 +163,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   recheckBtn: { marginTop: 20 },
+  supportChatBtn: {
+    marginTop: 16,
+    alignSelf: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: colors.primaryDark,
+  },
+  supportChatBtnPressed: { opacity: 0.9 },
+  supportChatBtnText: { fontSize: 15, fontWeight: '800', color: colors.white, textAlign: 'center' },
 });

@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, type AppStateStatus, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { VerificationLockOverlay } from '../components/VerificationLockOverlay';
 import { DashboardProvider, type DashboardUser } from '../context/DashboardContext';
 import { usePushRegistration } from '../hooks/usePushRegistration';
+import { SupportFab } from '../components/SupportFab';
 import { MainDrawerNavigator } from '../navigation/MainDrawerNavigator';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -15,9 +16,11 @@ import { colors } from '../theme/colors';
 type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 
 export function DashboardScreen({ navigation }: Props) {
+  const isDashboardFocused = useIsFocused();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [supportEmail, setSupportEmail] = useState('info@witnessworldconnect.com');
+  const [supportAvailable, setSupportAvailable] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -28,6 +31,7 @@ export function DashboardScreen({ navigation }: Props) {
       if (typeof data.support_email === 'string' && data.support_email) {
         setSupportEmail(data.support_email);
       }
+      setSupportAvailable(data.support_available === true);
       if (u?.status === 'pending_questions') {
         navigation.reset({ index: 0, routes: [{ name: 'Questionnaire' }] });
         return;
@@ -47,6 +51,7 @@ export function DashboardScreen({ navigation }: Props) {
       if (typeof data.support_email === 'string' && data.support_email) {
         setSupportEmail(data.support_email);
       }
+      setSupportAvailable(data.support_available === true);
     } catch {
       /* keep existing user on transient errors */
     }
@@ -62,7 +67,7 @@ export function DashboardScreen({ navigation }: Props) {
   const lockUnverified = status === 'pending_verification' || status === 'declined';
   const overlayVariant = status === 'declined' ? 'declined' : 'pending';
 
-  usePushRegistration(!loading && !!user, user?.status);
+  usePushRegistration(!loading && !!user);
 
   useEffect(() => {
     if (!lockUnverified) return undefined;
@@ -88,15 +93,19 @@ export function DashboardScreen({ navigation }: Props) {
         <DashboardProvider
           user={user}
           supportEmail={supportEmail}
+          supportAvailable={supportAvailable}
           refreshProfile={refreshProfile}
           stackNavigation={navigation}
         >
           <View style={styles.fill}>
             <MainDrawerNavigator parentNavigation={navigation} />
+            <SupportFab />
             <VerificationLockOverlay
-              visible={lockUnverified}
+              visible={lockUnverified && isDashboardFocused}
               variant={overlayVariant}
               supportEmail={supportEmail}
+              supportAvailable={supportAvailable}
+              onMessageSupport={() => navigation.navigate('SupportChat', {})}
               onRecheckStatus={refreshProfile}
             />
           </View>

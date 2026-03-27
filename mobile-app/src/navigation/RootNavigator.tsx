@@ -13,15 +13,25 @@ import { RegisterOtpScreen } from '../screens/RegisterOtpScreen';
 import { QuestionnaireScreen } from '../screens/QuestionnaireScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { SupportChatScreen } from '../screens/SupportChatScreen';
 import { colors } from '../theme/colors';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/** Never leave bootstrap spinning forever (Expo Go "100%" stuck). */
+const BOOTSTRAP_FALLBACK_MS = 22_000;
 
 export function RootNavigator() {
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const fallbackTimer = setTimeout(() => {
+      if (!cancelled) {
+        setInitialRoute((prev) => (prev === null ? 'Welcome' : prev));
+      }
+    }, BOOTSTRAP_FALLBACK_MS);
+
     (async () => {
       try {
         const token = await getStoredToken();
@@ -54,6 +64,7 @@ export function RootNavigator() {
     })();
     return () => {
       cancelled = true;
+      clearTimeout(fallbackTimer);
     };
   }, []);
 
@@ -91,6 +102,7 @@ export function RootNavigator() {
       <Stack.Screen name="Questionnaire" component={QuestionnaireScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="SupportChat" component={SupportChatScreen} />
     </Stack.Navigator>
   );
 }

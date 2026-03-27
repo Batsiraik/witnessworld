@@ -30,6 +30,7 @@ CREATE TABLE settings (
 
 INSERT INTO settings (`key`, `value`) VALUES
   ('support_email', 'info@witnessworldconnect.com'),
+  ('support_user_id', '0'),
   ('smtp_host', ''),
   ('smtp_port', '465'),
   ('smtp_user', ''),
@@ -286,6 +287,8 @@ CREATE TABLE conversations (
   user_high_id INT UNSIGNED NOT NULL,
   context_key VARCHAR(96) NOT NULL DEFAULT 'general',
   last_message_at DATETIME NULL,
+  member_last_read_at DATETIME NULL,
+  support_last_read_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_conv_ul FOREIGN KEY (user_low_id) REFERENCES users(id) ON DELETE CASCADE,

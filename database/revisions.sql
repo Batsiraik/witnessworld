@@ -10,4 +10,11 @@ SET NAMES utf8mb4;
 -- nothing below this line.
 -- ---------------------------------------------------------------------------
 
--- (no pending revisions)
+-- ---------------------------------------------------------------------------
+-- 2026-03-25: Tech support chat (Fiverr-style FAB → admin customer support)
+-- ---------------------------------------------------------------------------
+ALTER TABLE conversations
+  ADD COLUMN member_last_read_at DATETIME NULL DEFAULT NULL AFTER last_message_at,
+  ADD COLUMN support_last_read_at DATETIME NULL DEFAULT NULL AFTER member_last_read_at;
+
+INSERT IGNORE INTO settings (`key`, `value`) VALUES ('support_user_id', '0');

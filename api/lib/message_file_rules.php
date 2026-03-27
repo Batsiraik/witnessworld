@@ -49,6 +49,36 @@ function ww_message_attachment_resolve_type(string $declaredMime, ?string $origi
 }
 
 /**
+ * Images only (for tech-support messages from members).
+ *
+ * @return array{ext: string, mime: string}|null
+ */
+function ww_message_attachment_resolve_image_only(string $declaredMime, ?string $originalName): ?array
+{
+    $declaredMime = strtolower(trim($declaredMime));
+    $byMime = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+    ];
+    if (isset($byMime[$declaredMime])) {
+        return ['ext' => $byMime[$declaredMime], 'mime' => $declaredMime];
+    }
+
+    $extFromName = strtolower(pathinfo($originalName ?: '', PATHINFO_EXTENSION));
+    $byExt = [
+        'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png',
+        'gif' => 'image/gif', 'webp' => 'image/webp',
+    ];
+    if ($extFromName !== '' && isset($byExt[$extFromName])) {
+        return ['ext' => $extFromName === 'jpeg' ? 'jpg' : $extFromName, 'mime' => $byExt[$extFromName]];
+    }
+
+    return null;
+}
+
+/**
  * Safe original file name for DB display (basename, strip control chars).
  */
 function ww_message_attachment_safe_original_name(string $name): string

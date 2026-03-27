@@ -55,6 +55,7 @@ export type RootStackParamList = {
   Questionnaire: undefined;
   PrivacyPolicy: undefined;
   Dashboard: undefined;
+  SupportChat: { conversationId?: number };
 };
 
 export type RootNav = NativeStackNavigationProp<RootStackParamList>;

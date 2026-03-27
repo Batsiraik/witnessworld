@@ -2,7 +2,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useRef, useState } from 'react';
-import { ResizeMode, Video } from 'expo-av';
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { ListingVideoBlock } from '../components/ListingVideoBlock';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
@@ -22,7 +22,7 @@ import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
-import { REMOTE_MEDIA_HEADERS, resolvePublicMediaUrl } from '../utils/mediaUrl';
+import { resolvePublicMediaUrl } from '../utils/mediaUrl';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ListingDetail'>;
 
@@ -164,16 +164,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           {hasVideo ? (
             <>
               <Text style={styles.section}>Video</Text>
-              <Video
-                source={{
-                  uri: videoUri,
-                  headers: REMOTE_MEDIA_HEADERS,
-                }}
-                useNativeControls
-                resizeMode={ResizeMode.CONTAIN}
-                style={styles.heroVideo}
-                shouldPlay={false}
-              />
+              <ListingVideoBlock uri={videoUri} style={styles.heroVideo} />
             </>
           ) : null}
           <Text style={styles.title}>{listing.title}</Text>

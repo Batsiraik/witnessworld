@@ -44,13 +44,6 @@ if (!$user) {
     exit;
 }
 
-if (($user['status'] ?? '') !== 'verified') {
-    http_response_code(403);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Forbidden';
-    exit;
-}
-
 $userId = (int) $user['id'];
 $attachmentId = (int) ($_GET['id'] ?? 0);
 if ($attachmentId <= 0) {
@@ -60,17 +53,29 @@ if ($attachmentId <= 0) {
     exit;
 }
 
+$verified = ($user['status'] ?? '') === 'verified';
+/** @var array<string, mixed>|false|null $row */
+$row = null;
+
 try {
-    $st = $pdo->prepare(
-        'SELECT ma.file_name, ma.mime_type, ma.file_size, ma.storage_name
+    $sql = 'SELECT ma.file_name, ma.mime_type, ma.file_size, ma.storage_name, c.context_key
          FROM message_attachments ma
          INNER JOIN messages m ON m.id = ma.message_id
          INNER JOIN conversations c ON c.id = m.conversation_id
          WHERE ma.id = ? AND (c.user_low_id = ? OR c.user_high_id = ?)
-         LIMIT 1'
-    );
+         LIMIT 1';
+    $st = $pdo->prepare($sql);
     $st->execute([$attachmentId, $userId, $userId]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row && !$verified && strtolower(trim((string) ($row['context_key'] ?? ''))) !== 'support') {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Forbidden';
+        exit;
+    }
+    if ($row) {
+        unset($row['context_key']);
+    }
 } catch (Throwable) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');

@@ -14,6 +14,7 @@ $flash = '';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $keys = [
         'support_email',
+        'support_user_id',
         'smtp_host',
         'smtp_port',
         'smtp_user',
@@ -36,12 +37,17 @@ $get = static function (string $k) use ($pdo): string {
 };
 
 $support = $get('support_email');
+$supportUserId = $get('support_user_id');
 $smtpHost = $get('smtp_host');
 $smtpPort = $get('smtp_port') ?: '465';
 $smtpUser = $get('smtp_user');
 $smtpPass = $get('smtp_pass');
 $smtpFrom = $get('smtp_from_email');
 $smtpEnc = $get('smtp_encryption') ?: 'ssl';
+
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+$customerSupportHref =
+    ($base === '' || $base === '.') ? 'customer_support.php' : $base . '/customer_support.php';
 
 require __DIR__ . '/partials/head.php';
 require __DIR__ . '/partials/sidebar.php';
@@ -71,6 +77,22 @@ require __DIR__ . '/partials/shell_open.php';
         required
       />
       <p class="mt-1 text-xs text-slate-500">Stored as <code class="rounded bg-slate-100 px-1">settings.support_email</code> — change anytime; the app picks it up on next refresh.</p>
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-slate-600">Support user ID (app account)</label>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        name="support_user_id"
+        value="<?= htmlspecialchars($supportUserId, ENT_QUOTES, 'UTF-8') ?>"
+        class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        placeholder="0 = disabled"
+      />
+      <p class="mt-1 text-xs text-slate-500">
+        Numeric <code class="rounded bg-slate-100 px-1">users.id</code> for the account that sends in-app replies (create a dedicated verified member, e.g. “Witness Support”). Required for the blue support button and
+        <a href="<?= htmlspecialchars($customerSupportHref, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand underline">Customer support</a>.
+      </p>
     </div>
     <hr class="border-slate-100" />
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Outgoing mail (OTP &amp; notifications)</p>

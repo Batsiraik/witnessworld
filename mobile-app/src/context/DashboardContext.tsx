@@ -16,6 +16,7 @@ export type DashboardUser = {
 type Ctx = {
   user: DashboardUser | null;
   supportEmail: string;
+  supportAvailable: boolean;
   refreshProfile: () => Promise<void>;
   stackNavigation: NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 };
@@ -26,18 +27,20 @@ export function DashboardProvider({
   children,
   user,
   supportEmail,
+  supportAvailable,
   refreshProfile,
   stackNavigation,
 }: {
   children: ReactNode;
   user: DashboardUser | null;
   supportEmail: string;
+  supportAvailable: boolean;
   refreshProfile: () => Promise<void>;
   stackNavigation: NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 }) {
   return (
     <DashboardContext.Provider
-      value={{ user, supportEmail, refreshProfile, stackNavigation }}
+      value={{ user, supportEmail, supportAvailable, refreshProfile, stackNavigation }}
     >
       {children}
     </DashboardContext.Provider>

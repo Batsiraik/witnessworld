@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
+require_once __DIR__ . '/lib/support_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -20,10 +21,6 @@ if (!$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
 }
 
-if (($user['status'] ?? '') !== 'verified') {
-    ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
-}
-
 $userId = (int) $user['id'];
 $conversationId = (int) ($_GET['conversation_id'] ?? 0);
 if ($conversationId <= 0) {
@@ -32,11 +29,16 @@ if ($conversationId <= 0) {
 
 try {
     $st = $pdo->prepare(
-        'SELECT id FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
+        'SELECT id, context_key FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
     );
     $st->execute([$conversationId, $userId, $userId]);
-    if (!$st->fetchColumn()) {
+    $convRow = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$convRow) {
         ww_json(['ok' => false, 'error' => 'Conversation not found'], 404);
+    }
+    $isSupport = ww_is_support_context($convRow);
+    if (($user['status'] ?? '') !== 'verified' && !$isSupport) {
+        ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
     }
 
     $afterId = (int) ($_GET['after_id'] ?? 0);

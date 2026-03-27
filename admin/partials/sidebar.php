@@ -25,6 +25,7 @@ $moderation = $base === '' ? 'moderation.php' : $base . '/moderation.php';
 $analytics = $base === '' ? 'analytics.php' : $base . '/analytics.php';
 $admins = $base === '' ? 'admins.php' : $base . '/admins.php';
 $pushNotifications = $base === '' ? 'push_notifications.php' : $base . '/push_notifications.php';
+$customerSupport = $base === '' ? 'customer_support.php' : $base . '/customer_support.php';
 $logout = $base === '' ? 'logout.php' : $base . '/logout.php';
 $isSuper = !empty($cu['is_super']);
 ?>
@@ -51,6 +52,13 @@ $isSuper = !empty($cu['is_super']);
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
       </span>
       App users
+    </a>
+    <a href="<?= htmlspecialchars($customerSupport, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('support'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+      </span>
+      Customer support
     </a>
     <a href="<?= htmlspecialchars($listings, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('listings'), ENT_QUOTES, 'UTF-8') ?>">

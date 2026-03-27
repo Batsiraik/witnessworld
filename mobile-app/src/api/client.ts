@@ -5,6 +5,17 @@ import { API_BASE } from '../config/api';
 
 const TOKEN_KEY = 'ww_token';
 
+/** Avoid hung splash: RN fetch has no built-in timeout. */
+const API_FETCH_TIMEOUT_MS = 30_000;
+
+function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), API_FETCH_TIMEOUT_MS);
+  return fetch(url, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
+const XHR_UPLOAD_TIMEOUT_MS = 120_000;
+
 export async function getStoredToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
 }
@@ -37,6 +48,8 @@ function multipartPostWithProgress(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_BASE}/${relativePath}`);
+    xhr.timeout = XHR_UPLOAD_TIMEOUT_MS;
+    xhr.ontimeout = () => reject(new Error('Upload timed out'));
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.setRequestHeader('X-Auth-Token', token);
@@ -84,7 +97,7 @@ export async function apiPost(path: string, body: Json, withAuth = false): Promi
     const t = await getStoredToken();
     if (t) attachAuthHeaders(headers, t);
   }
-  const res = await fetch(`${API_BASE}/${path}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/${path}`, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -104,7 +117,7 @@ export async function apiGet(path: string, withAuth = true): Promise<Json> {
     const t = await getStoredToken();
     if (t) attachAuthHeaders(headers, t);
   }
-  const res = await fetch(`${API_BASE}/${path}`, { method: 'GET', headers, cache: 'no-store' });
+  const res = await fetchWithTimeout(`${API_BASE}/${path}`, { method: 'GET', headers, cache: 'no-store' });
   const data = await parseJson(res);
   if (!res.ok) {
     const err = (data.error as string) || `Request failed (${res.status})`;
