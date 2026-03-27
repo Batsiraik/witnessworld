@@ -104,6 +104,13 @@ function ww_expo_push_send_detailed(array $messages): array
             } else {
                 $rejected++;
                 $msg = (string) ($item['message'] ?? 'error');
+                $det = $item['details'] ?? null;
+                if (is_array($det)) {
+                    $code = (string) ($det['error'] ?? '');
+                    if ($code !== '') {
+                        $msg = $msg !== '' && $msg !== 'error' ? $msg . ' [' . $code . ']' : $code;
+                    }
+                }
                 if ($msg !== '' && count($errorSamples) < 5) {
                     $errorSamples[] = $msg;
                 }

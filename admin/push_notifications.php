@@ -261,6 +261,7 @@ require __DIR__ . '/partials/shell_open.php';
             <th class="px-4 py-3 text-right">Devices</th>
             <th class="px-4 py-3 text-right">Expo ✓</th>
             <th class="px-4 py-3 text-right">Expo ✗</th>
+            <th class="px-4 py-3">Expo error (sample)</th>
             <th class="px-4 py-3 text-right">Deliv.</th>
             <th class="px-4 py-3 text-right">Fail</th>
             <th class="px-4 py-3 text-right">Opens</th>
@@ -274,6 +275,7 @@ require __DIR__ . '/partials/shell_open.php';
               $audLabel = $aud === 'user' ? ('User #' . (int) ($lr['target_user_id'] ?? 0)) : 'Broadcast';
               $tit = mb_substr((string) ($lr['title'] ?? ''), 0, 40);
               $chk = $lr['receipt_checked_at'] ?? null;
+              $errS = (string) ($lr['error_sample'] ?? '');
               ?>
           <tr class="text-slate-800">
             <td class="whitespace-nowrap px-4 py-3 text-xs text-slate-600"><?= htmlspecialchars((string) ($lr['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
@@ -282,6 +284,7 @@ require __DIR__ . '/partials/shell_open.php';
             <td class="px-4 py-3 text-right tabular-nums"><?= (int) ($lr['recipients_attempted'] ?? 0) ?></td>
             <td class="px-4 py-3 text-right tabular-nums text-emerald-700"><?= (int) ($lr['expo_accepted'] ?? 0) ?></td>
             <td class="px-4 py-3 text-right tabular-nums text-amber-700"><?= (int) ($lr['expo_rejected'] ?? 0) ?></td>
+            <td class="max-w-[280px] px-4 py-3 text-xs text-rose-800" title="<?= htmlspecialchars($errS, ENT_QUOTES, 'UTF-8') ?>"><?= $errS !== '' ? htmlspecialchars(mb_substr($errS, 0, 120), ENT_QUOTES, 'UTF-8') . (mb_strlen($errS) > 120 ? '…' : '') : '—' ?></td>
             <td class="px-4 py-3 text-right tabular-nums"><?= (int) ($lr['delivery_ok'] ?? 0) ?></td>
             <td class="px-4 py-3 text-right tabular-nums"><?= (int) ($lr['delivery_failed'] ?? 0) ?></td>
             <td class="px-4 py-3 text-right tabular-nums"><?= (int) ($lr['opens_count'] ?? 0) ?></td>
