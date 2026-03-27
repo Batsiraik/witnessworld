@@ -29,6 +29,7 @@ if ($id <= 0) {
     ww_json(['ok' => false, 'error' => 'Invalid product id'], 422);
 }
 
+$userId = (int) $user['id'];
 try {
     $st = $pdo->prepare(
         'SELECT p.*, s.id AS store_id, s.name AS store_name, s.logo_url AS store_logo_url,
@@ -43,6 +44,24 @@ try {
     );
     $st->execute([$id, 'approved', 'approved']);
     $row = $st->fetch(PDO::FETCH_ASSOC);
+
+    // Store owner can open their own catalog items before approval (same shape as public).
+    if (!$row) {
+        $st2 = $pdo->prepare(
+            'SELECT p.*, s.id AS store_id, s.name AS store_name, s.logo_url AS store_logo_url,
+                    s.description AS store_description, s.moderation_status AS store_status,
+                    s.location_country_name, s.location_us_state, s.delivery_type,
+                    u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
+             FROM store_products p
+             INNER JOIN stores s ON s.id = p.store_id
+             INNER JOIN users u ON u.id = s.user_id
+             WHERE p.id = ? AND s.user_id = ? AND p.moderation_status != ?
+               AND s.moderation_status IN (\'approved\', \'pending_approval\')
+             LIMIT 1'
+        );
+        $st2->execute([$id, $userId, 'removed']);
+        $row = $st2->fetch(PDO::FETCH_ASSOC);
+    }
 } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Database error'], 500);
 }
@@ -62,6 +81,7 @@ ww_json([
         'price_amount' => (string) $row['price_amount'],
         'currency' => (string) $row['currency'],
         'image_url' => $row['image_url'] ? (string) $row['image_url'] : null,
+        'moderation_status' => (string) ($row['moderation_status'] ?? ''),
         'created_at' => (string) $row['created_at'],
     ],
     'store' => [

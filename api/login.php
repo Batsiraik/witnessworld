@@ -24,6 +24,10 @@ $user = $st->fetch(PDO::FETCH_ASSOC);
 if (!$user || !password_verify($password, (string) $user['password_hash'])) {
     ww_json(['ok' => false, 'error' => 'Invalid email or password'], 401);
 }
+// Defensive: ensure row email matches request (rules out any odd driver/encoding edge cases).
+if (strtolower(trim((string) ($user['email'] ?? ''))) !== $email) {
+    ww_json(['ok' => false, 'error' => 'Invalid email or password'], 401);
+}
 
 if (($user['status'] ?? '') === 'pending_otp') {
     ww_json([

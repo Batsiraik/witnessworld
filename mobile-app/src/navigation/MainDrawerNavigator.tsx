@@ -7,9 +7,10 @@ import {
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiLogout } from '../api/client';
+import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import { MainTabNavigator } from './MainTabNavigator';
 import type { HomeStackParamList, MainDrawerParamList, RootStackParamList } from './types';
@@ -89,7 +90,7 @@ function CustomDrawerContent(
         <View style={styles.drawerHeader}>
           <View style={styles.avatar}>
             {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatarImg} accessibilityLabel="Profile photo" />
+              <RemoteImage url={avatarUri} style={styles.avatarImg} contentFit="cover" accessibilityLabel="Profile photo" />
             ) : (
               <Ionicons name="person" size={28} color={colors.primaryDark} />
             )}

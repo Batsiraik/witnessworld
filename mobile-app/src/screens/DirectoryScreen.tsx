@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -17,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -245,7 +245,7 @@ export function DirectoryScreen({ navigation }: Props) {
               >
                 <View style={styles.cardRow}>
                   {item.logo_url ? (
-                    <Image source={{ uri: item.logo_url }} style={styles.logo} />
+                    <RemoteImage url={item.logo_url} style={styles.logo} contentFit="cover" />
                   ) : (
                     <View style={styles.logoPh}>
                       <Ionicons name="business-outline" size={22} color={colors.textMuted} />

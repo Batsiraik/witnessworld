@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -18,7 +18,7 @@ import { GlassCard } from '../components/GlassCard';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { apiPost } from '../api/client';
+import { apiPost, setStoredToken } from '../api/client';
 import { DEFAULT_DIAL, type DialCountry } from '../constants/dialCodes';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -26,6 +26,10 @@ import { colors } from '../theme/colors';
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 export function RegisterScreen({ navigation }: Props) {
+  useEffect(() => {
+    void setStoredToken(null);
+  }, []);
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');

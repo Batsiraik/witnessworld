@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -169,7 +169,7 @@ export function StoreManageScreen({ navigation, route }: Props) {
               <View style={styles.card}>
                 <View style={styles.cardRow}>
                   {item.image_url ? (
-                    <Image source={{ uri: item.image_url }} style={styles.thumb} />
+                    <RemoteImage url={item.image_url} style={styles.thumb} contentFit="cover" />
                   ) : (
                     <View style={styles.thumbPlaceholder}>
                       <Ionicons name="cube-outline" size={22} color={colors.textMuted} />

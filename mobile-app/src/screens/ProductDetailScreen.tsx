@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -32,6 +32,7 @@ type Payload = {
     price_amount: string;
     currency: string;
     image_url: string | null;
+    moderation_status?: string;
   };
   store: {
     id: number;
@@ -45,7 +46,9 @@ type Payload = {
 };
 
 export function ProductDetailScreen({ navigation, route }: Props) {
-  const { id } = route.params;
+  const rawId = route.params?.id;
+  const id =
+    typeof rawId === 'number' && Number.isFinite(rawId) ? Math.floor(rawId) : Math.floor(Number(rawId));
   const { user } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [row, setRow] = useState<Payload | null>(null);
@@ -55,6 +58,11 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!Number.isFinite(id) || id <= 0) {
+      setErr('Invalid product');
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -128,13 +136,22 @@ export function ProductDetailScreen({ navigation, route }: Props) {
 
   const { product, store, seller } = row;
   const loc = [store.location_country_name, store.location_us_state].filter(Boolean).join(' · ');
+  const pendingApproval = product.moderation_status === 'pending_approval';
+  const ownerPreview = pendingApproval && seller.user_id === myId;
 
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll}>
+          {ownerPreview ? (
+            <View style={styles.ownerNote}>
+              <Text style={styles.ownerNoteText}>
+                Only you see this until an admin approves your product. Shoppers will see it after approval.
+              </Text>
+            </View>
+          ) : null}
           {product.image_url ? (
-            <Image source={{ uri: product.image_url }} style={styles.hero} />
+            <RemoteImage url={product.image_url} style={styles.hero} contentFit="cover" />
           ) : (
             <View style={[styles.hero, styles.heroPh]}>
               <Ionicons name="cube-outline" size={48} color={colors.textMuted} />
@@ -146,7 +163,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           </Text>
 
           <Pressable onPress={openStore} style={({ pressed }) => [styles.storeCard, pressed && styles.pressed]}>
-            <Image source={{ uri: store.logo_url }} style={styles.storeLogo} />
+            <RemoteImage url={store.logo_url} style={styles.storeLogo} contentFit="cover" />
             <View style={{ flex: 1 }}>
               <Text style={styles.storeLabel}>From store</Text>
               <Text style={styles.storeName}>{store.name}</Text>
@@ -166,7 +183,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           <Text style={styles.section}>Seller</Text>
           <View style={styles.sellerRow}>
             {seller.avatar_url ? (
-              <Image source={{ uri: seller.avatar_url }} style={styles.avatar} />
+              <RemoteImage url={seller.avatar_url} style={styles.avatar} contentFit="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarPh]}>
                 <Ionicons name="person" size={22} color={colors.primaryDark} />
@@ -248,4 +265,13 @@ const styles = StyleSheet.create({
   sellerName: { fontSize: 16, fontWeight: '800', color: colors.text },
   sellerUser: { fontSize: 13, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
   reportBtn: { marginTop: 10 },
+  ownerNote: {
+    backgroundColor: 'rgba(194, 65, 12, 0.12)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(194, 65, 12, 0.35)',
+  },
+  ownerNoteText: { fontSize: 13, fontWeight: '600', color: '#9a3412', lineHeight: 18 },
 });

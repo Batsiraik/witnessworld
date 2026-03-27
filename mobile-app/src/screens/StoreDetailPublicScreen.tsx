@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -29,6 +29,7 @@ type ProductMini = {
   price_amount: string;
   currency: string;
   image_url: string | null;
+  moderation_status?: string;
 };
 
 type Store = {
@@ -128,10 +129,10 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {store.banner_url ? (
-            <Image source={{ uri: store.banner_url }} style={styles.banner} />
+            <RemoteImage url={store.banner_url} style={styles.banner} contentFit="cover" />
           ) : null}
           <View style={styles.headRow}>
-            <Image source={{ uri: store.logo_url }} style={styles.logo} />
+            <RemoteImage url={store.logo_url} style={styles.logo} contentFit="cover" />
           </View>
           <Text style={styles.title}>{store.name}</Text>
           <Text style={styles.summary}>{store.sells_summary}</Text>
@@ -151,7 +152,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
                 onPress={() => navigation.navigate('ProductDetail', { id: p.id })}
               >
                 {p.image_url ? (
-                  <Image source={{ uri: p.image_url }} style={styles.pImg} />
+                  <RemoteImage url={p.image_url} style={styles.pImg} contentFit="cover" />
                 ) : (
                   <View style={[styles.pImg, styles.pPh]}>
                     <Ionicons name="cube-outline" size={22} color={colors.textMuted} />
@@ -161,6 +162,9 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
                   <Text style={styles.pName} numberOfLines={2}>
                     {p.name}
                   </Text>
+                  {p.moderation_status === 'pending_approval' ? (
+                    <Text style={styles.pPending}>Pending approval</Text>
+                  ) : null}
                   <Text style={styles.pPrice}>
                     {p.currency} {p.price_amount}
                   </Text>
@@ -173,7 +177,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
           <Text style={styles.section}>Owner</Text>
           <View style={styles.sellerRow}>
             {store.seller.avatar_url ? (
-              <Image source={{ uri: store.seller.avatar_url }} style={styles.avatar} />
+              <RemoteImage url={store.seller.avatar_url} style={styles.avatar} contentFit="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarPh]}>
                 <Ionicons name="person" size={22} color={colors.primaryDark} />
@@ -256,6 +260,7 @@ const styles = StyleSheet.create({
   pImg: { width: 56, height: 56, borderRadius: 10, backgroundColor: colors.primarySoft },
   pPh: { alignItems: 'center', justifyContent: 'center' },
   pName: { fontSize: 15, fontWeight: '800', color: colors.text },
+  pPending: { fontSize: 11, fontWeight: '800', color: '#c2410c', marginTop: 4 },
   pPrice: { fontSize: 14, fontWeight: '800', color: colors.primaryDark, marginTop: 4 },
   sellerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, marginTop: 12 },
   avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primarySoft },

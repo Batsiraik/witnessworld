@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -21,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadStoreMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -58,6 +58,7 @@ export function CreateStoreScreen({ navigation, route }: Props) {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
   const [bannerBusy, setBannerBusy] = useState(false);
+  const [storeUploadPct, setStoreUploadPct] = useState<number | null>(null);
 
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
@@ -162,6 +163,7 @@ export function CreateStoreScreen({ navigation, route }: Props) {
     }
     if (kind === 'logo') setLogoBusy(true);
     else setBannerBusy(true);
+    setStoreUploadPct(0);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -172,12 +174,13 @@ export function CreateStoreScreen({ navigation, route }: Props) {
       if (result.canceled || !result.assets?.[0]) return;
       const asset = result.assets[0];
       const mime = asset.mimeType ?? 'image/jpeg';
-      const { url } = await apiUploadStoreMedia(asset.uri, mime, kind);
+      const { url } = await apiUploadStoreMedia(asset.uri, mime, kind, (p) => setStoreUploadPct(p));
       if (kind === 'logo') setLogoUrl(url);
       else setBannerUrl(url);
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.');
     } finally {
+      setStoreUploadPct(null);
       if (kind === 'logo') setLogoBusy(false);
       else setBannerBusy(false);
     }
@@ -300,7 +303,7 @@ export function CreateStoreScreen({ navigation, route }: Props) {
               {logoBusy ? (
                 <ActivityIndicator color={colors.primary} />
               ) : logoUrl ? (
-                <Image source={{ uri: logoUrl }} style={styles.logoPrev} />
+                <RemoteImage url={logoUrl} style={styles.logoPrev} contentFit="cover" />
               ) : (
                 <Text style={styles.mediaBtnText}>Tap to upload logo</Text>
               )}
@@ -314,11 +317,16 @@ export function CreateStoreScreen({ navigation, route }: Props) {
               {bannerBusy ? (
                 <ActivityIndicator color={colors.primary} />
               ) : bannerUrl ? (
-                <Image source={{ uri: bannerUrl }} style={styles.bannerPrev} />
+                <RemoteImage url={bannerUrl} style={styles.bannerPrev} contentFit="cover" />
               ) : (
                 <Text style={styles.mediaBtnText}>Wide image for your storefront header</Text>
               )}
             </Pressable>
+            {logoBusy || bannerBusy ? (
+              <Text style={styles.uploadPct}>
+                {storeUploadPct != null ? `Uploading ${storeUploadPct}%` : 'Starting…'}
+              </Text>
+            ) : null}
 
             <Text style={styles.label}>Store location *</Text>
             <Pressable onPress={() => setCountryModal(true)} style={styles.selectRow}>
@@ -529,6 +537,7 @@ const styles = StyleSheet.create({
   selectVal: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   selectPh: { flex: 1, fontSize: 16, color: colors.textMuted },
   hint: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  uploadPct: { marginTop: 8, fontSize: 14, fontWeight: '800', color: colors.primaryDark },
   pressed: { opacity: 0.92 },
   modalSafe: { flex: 1, backgroundColor: colors.white },
   modalHeader: {

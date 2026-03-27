@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadListingMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -86,6 +86,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
   const [videoBusy, setVideoBusy] = useState(false);
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([]);
   const [portfolioBusy, setPortfolioBusy] = useState(false);
+  const [mediaUploadPct, setMediaUploadPct] = useState<number | null>(null);
 
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
@@ -300,6 +301,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
     }
     if (forMain) setMainBusy(true);
     else setPortfolioBusy(true);
+    setMediaUploadPct(0);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -315,7 +317,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
       for (const asset of result.assets) {
         if (portfolioUrls.length + newUrls.length >= 12 && !forMain) break;
         const mime = asset.mimeType ?? 'image/jpeg';
-        const { url } = await apiUploadListingMedia(asset.uri, mime);
+        const { url } = await apiUploadListingMedia(asset.uri, mime, (p) => setMediaUploadPct(p));
         newUrls.push(url);
       }
 
@@ -324,6 +326,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.');
     } finally {
+      setMediaUploadPct(null);
       if (forMain) setMainBusy(false);
       else setPortfolioBusy(false);
     }
@@ -336,6 +339,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
       return;
     }
     setVideoBusy(true);
+    setMediaUploadPct(0);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['videos'],
@@ -345,7 +349,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
       const mime = asset.mimeType ?? 'video/mp4';
-      const { url, kind } = await apiUploadListingMedia(asset.uri, mime);
+      const { url, kind } = await apiUploadListingMedia(asset.uri, mime, (p) => setMediaUploadPct(p));
       if (kind !== 'video') {
         throw new Error('Please choose a video file (MP4 or MOV).');
       }
@@ -353,6 +357,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
     } catch (e) {
       Alert.alert('Video upload failed', e instanceof Error ? e.message : 'Try a shorter MP4 or MOV under 45 MB.');
     } finally {
+      setMediaUploadPct(null);
       setVideoBusy(false);
     }
   };
@@ -531,7 +536,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
               {mainBusy ? (
                 <ActivityIndicator color={colors.primary} />
               ) : mainUrl ? (
-                <Image source={{ uri: mainUrl }} style={styles.mainPreview} resizeMode="cover" />
+                <RemoteImage url={mainUrl} style={styles.mainPreview} contentFit="cover" />
               ) : (
                 <>
                   <Ionicons name="image-outline" size={32} color={colors.primaryDark} />
@@ -541,6 +546,11 @@ export function CreateListingScreen({ navigation, route }: Props) {
                 </>
               )}
             </Pressable>
+            {mainBusy ? (
+              <Text style={styles.uploadPctText}>
+                {mediaUploadPct != null ? `Uploading main image… ${mediaUploadPct}%` : 'Starting…'}
+              </Text>
+            ) : null}
             <Text style={styles.micro}>{formCopy.mainMicro}</Text>
 
             <Text style={styles.label}>Video (optional)</Text>
@@ -568,7 +578,11 @@ export function CreateListingScreen({ navigation, route }: Props) {
                 </Pressable>
               ) : null}
             </View>
-            {videoUrl ? (
+            {videoBusy ? (
+              <Text style={styles.uploadPctText}>
+                {mediaUploadPct != null ? `Uploading video… ${mediaUploadPct}%` : 'Starting…'}
+              </Text>
+            ) : videoUrl ? (
               <Text style={styles.micro}>Video uploaded. MP4/MOV up to 45 MB.</Text>
             ) : (
               <Text style={styles.micro}>{formCopy.videoMicro}</Text>
@@ -578,7 +592,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ph}>
               {portfolioUrls.map((url) => (
                 <View key={url} style={styles.thumbWrap}>
-                  <Image source={{ uri: url }} style={styles.thumb} />
+                  <RemoteImage url={url} style={styles.thumb} contentFit="cover" />
                   <Pressable
                     onPress={() => setPortfolioUrls((prev) => prev.filter((u) => u !== url))}
                     style={styles.thumbX}
@@ -604,6 +618,11 @@ export function CreateListingScreen({ navigation, route }: Props) {
                 </Pressable>
               ) : null}
             </ScrollView>
+            {portfolioBusy ? (
+              <Text style={styles.uploadPctText}>
+                {mediaUploadPct != null ? `Uploading portfolio… ${mediaUploadPct}%` : 'Starting…'}
+              </Text>
+            ) : null}
             <Text style={styles.micro}>{formCopy.portfolioMicro}</Text>
 
             <Text style={styles.label}>{formCopy.skillsLabel}</Text>
@@ -808,6 +827,12 @@ const styles = StyleSheet.create({
   },
   dangerText: { fontSize: 15, fontWeight: '800', color: colors.danger },
   micro: { marginTop: 6, fontSize: 12, color: colors.textMuted, fontWeight: '500' },
+  uploadPctText: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
   ph: { gap: 10, paddingVertical: 4 },
   thumbWrap: { position: 'relative' },
   thumb: { width: 88, height: 88, borderRadius: 14, backgroundColor: colors.cardBorder },

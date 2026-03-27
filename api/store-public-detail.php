@@ -55,17 +55,32 @@ if (!$row) {
     ww_json(['ok' => false, 'error' => 'Store not found'], 404);
 }
 
+$storeOwnerId = (int) ($row['user_id'] ?? 0);
+$viewerId = (int) $user['id'];
+$isOwner = $storeOwnerId === $viewerId;
+
 $products = [];
 if ($limit > 0) {
     try {
-        $st = $pdo->prepare(
-            'SELECT id, name, description, price_amount, currency, image_url, created_at
-             FROM store_products
-             WHERE store_id = ? AND moderation_status = ?
-             ORDER BY id DESC
-             LIMIT ' . (int) $limit
-        );
-        $st->execute([$id, 'approved']);
+        if ($isOwner) {
+            $st = $pdo->prepare(
+                'SELECT id, name, description, price_amount, currency, image_url, moderation_status, created_at
+                 FROM store_products
+                 WHERE store_id = ? AND moderation_status IN (\'approved\', \'pending_approval\')
+                 ORDER BY id DESC
+                 LIMIT ' . (int) $limit
+            );
+            $st->execute([$id]);
+        } else {
+            $st = $pdo->prepare(
+                'SELECT id, name, description, price_amount, currency, image_url, moderation_status, created_at
+                 FROM store_products
+                 WHERE store_id = ? AND moderation_status = ?
+                 ORDER BY id DESC
+                 LIMIT ' . (int) $limit
+            );
+            $st->execute([$id, 'approved']);
+        }
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $p) {
             $products[] = [
                 'id' => (int) $p['id'],
@@ -74,6 +89,7 @@ if ($limit > 0) {
                 'price_amount' => (string) $p['price_amount'],
                 'currency' => (string) $p['currency'],
                 'image_url' => $p['image_url'] ? (string) $p['image_url'] : null,
+                'moderation_status' => (string) ($p['moderation_status'] ?? ''),
                 'created_at' => (string) $p['created_at'],
             ];
         }

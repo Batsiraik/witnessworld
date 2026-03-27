@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -27,6 +27,9 @@ type Row = {
   title: string;
   moderation_status: string;
   media_url: string | null;
+  video_url?: string | null;
+  display_image_url?: string | null;
+  has_video?: boolean;
   location_country_name: string | null;
   location_us_state: string | null;
   created_at: string;
@@ -46,6 +49,7 @@ type DirRow = {
   city: string;
   category_label: string;
   moderation_status: string;
+  logo_url?: string | null;
 };
 
 function statusLabel(s: string): string {
@@ -193,9 +197,13 @@ export function MyOfficeScreen({ navigation }: Props) {
           return (
             <View key={d.id} style={styles.storeCard}>
               <View style={styles.storeTop}>
-                <View style={styles.dirIconPh}>
-                  <Ionicons name="business-outline" size={20} color="#0e7490" />
-                </View>
+                {d.logo_url ? (
+                  <RemoteImage url={d.logo_url} style={styles.storeLogo} contentFit="cover" />
+                ) : (
+                  <View style={styles.dirIconPh}>
+                    <Ionicons name="business-outline" size={20} color="#0e7490" />
+                  </View>
+                )}
                 <View style={styles.storeBody}>
                   <Text style={styles.storeName} numberOfLines={2}>
                     {d.business_name}
@@ -252,7 +260,7 @@ export function MyOfficeScreen({ navigation }: Props) {
             <View key={s.id} style={styles.storeCard}>
               <View style={styles.storeTop}>
                 {s.logo_url ? (
-                  <Image source={{ uri: s.logo_url }} style={styles.storeLogo} />
+                  <RemoteImage url={s.logo_url} style={styles.storeLogo} contentFit="cover" />
                 ) : (
                   <View style={styles.storeLogoPh}>
                     <Ionicons name="storefront-outline" size={20} color={colors.textMuted} />
@@ -346,11 +354,24 @@ export function MyOfficeScreen({ navigation }: Props) {
             ListEmptyComponent={
               <Text style={styles.empty}>No listings yet. Post one from Home → Become a service provider.</Text>
             }
-            renderItem={({ item }) => (
+            renderItem={({ item }) => {
+              const thumbUrl = item.display_image_url || item.media_url;
+              return (
               <View style={styles.card}>
                 <View style={styles.cardRow}>
-                  {item.media_url ? (
-                    <Image source={{ uri: item.media_url }} style={styles.thumb} />
+                  {thumbUrl ? (
+                    <View style={styles.thumbWrap}>
+                      <RemoteImage url={thumbUrl} style={styles.thumb} contentFit="cover" />
+                      {item.has_video ? (
+                        <View style={styles.videoBadge}>
+                          <Ionicons name="videocam" size={12} color="#fff" />
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : item.has_video ? (
+                    <View style={[styles.thumbPlaceholder, styles.videoThumbPh]}>
+                      <Ionicons name="videocam" size={26} color={colors.primaryDark} />
+                    </View>
                   ) : (
                     <View style={styles.thumbPlaceholder}>
                       <Ionicons name="image-outline" size={22} color={colors.textMuted} />
@@ -388,7 +409,8 @@ export function MyOfficeScreen({ navigation }: Props) {
                   </Pressable>
                 </View>
               </View>
-            )}
+              );
+            }}
           />
         )}
       </SafeAreaView>
@@ -418,7 +440,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardRow: { flexDirection: 'row', gap: 12 },
+  thumbWrap: { position: 'relative' },
   thumb: { width: 72, height: 72, borderRadius: 14, backgroundColor: colors.primarySoft },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(11,18,32,0.75)',
+    borderRadius: 6,
+    padding: 4,
+  },
+  videoThumbPh: { borderWidth: 1, borderColor: 'rgba(31, 170, 242, 0.35)' },
   thumbPlaceholder: {
     width: 72,
     height: 72,

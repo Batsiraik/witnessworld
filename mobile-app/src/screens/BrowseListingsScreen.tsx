@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { BrowseLocationFilters, type LocCountry, type LocState } from '../components/BrowseLocationFilters';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -31,6 +31,9 @@ type Row = {
   media_url: string | null;
   location_country_name: string | null;
   location_us_state: string | null;
+  seller_label?: string;
+  seller_username?: string;
+  seller_avatar_url?: string | null;
 };
 
 export function BrowseListingsScreen({ navigation, route }: Props) {
@@ -164,7 +167,7 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
                 onPress={() => navigation.navigate('ListingDetail', { id: item.id })}
               >
                 {item.media_url ? (
-                  <Image source={{ uri: item.media_url }} style={styles.thumb} />
+                  <RemoteImage url={item.media_url} style={styles.thumb} contentFit="cover" />
                 ) : (
                   <View style={[styles.thumb, styles.thumbPh]}>
                     <Ionicons name="image-outline" size={28} color={colors.textMuted} />
@@ -174,6 +177,20 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
                   <Text style={styles.cardTitle} numberOfLines={2}>
                     {item.title}
                   </Text>
+                  {item.seller_label || item.seller_username ? (
+                    <View style={styles.sellerInline}>
+                      {item.seller_avatar_url ? (
+                        <RemoteImage url={item.seller_avatar_url} style={styles.sellerAvatar} contentFit="cover" />
+                      ) : (
+                        <View style={[styles.sellerAvatar, styles.sellerAvatarPh]}>
+                          <Ionicons name="person" size={14} color={colors.textMuted} />
+                        </View>
+                      )}
+                      <Text style={styles.sellerInlineText} numberOfLines={1}>
+                        {item.seller_label?.trim() || `@${item.seller_username ?? ''}`}
+                      </Text>
+                    </View>
+                  ) : null}
                   <Text style={styles.cardMeta} numberOfLines={1}>
                     {[item.location_country_name, item.location_us_state].filter(Boolean).join(' · ') || 'Location not set'}
                   </Text>
@@ -244,6 +261,15 @@ const styles = StyleSheet.create({
   thumbPh: { alignItems: 'center', justifyContent: 'center' },
   cardText: { flex: 1, minWidth: 0 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
+  sellerInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  sellerAvatar: { width: 26, height: 26, borderRadius: 8, backgroundColor: colors.primarySoft },
+  sellerAvatarPh: { alignItems: 'center', justifyContent: 'center' },
+  sellerInlineText: { flex: 1, fontSize: 12, fontWeight: '700', color: colors.textMuted, minWidth: 0 },
   cardMeta: { fontSize: 12, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
   price: { fontSize: 14, fontWeight: '800', color: colors.primaryDark, marginTop: 6 },
   priceMuted: { fontSize: 13, fontWeight: '600', color: colors.textMuted, marginTop: 6 },

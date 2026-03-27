@@ -25,6 +25,8 @@ if (($user['status'] ?? '') !== 'verified') {
     ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
 }
 
+$viewerId = (int) $user['id'];
+
 $section = strtolower(trim((string) ($_GET['section'] ?? 'all')));
 if (!in_array($section, ['all', 'services', 'classifieds', 'products', 'stores', 'directory'], true)) {
     $section = 'all';
@@ -97,11 +99,15 @@ try {
              FROM store_products p
              INNER JOIN stores s ON s.id = p.store_id
              INNER JOIN users u ON u.id = s.user_id
-             WHERE p.moderation_status = ? AND s.moderation_status = ?
+             WHERE s.moderation_status = ?
+               AND (
+                 p.moderation_status = ?
+                 OR (p.moderation_status = ? AND s.user_id = ?)
+               )
              ORDER BY p.id DESC
              LIMIT ' . (int) $limit
         );
-        $st->execute(['approved', 'approved']);
+        $st->execute(['approved', 'approved', 'pending_approval', $viewerId]);
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
             $out['products'][] = [
                 'id' => (int) $r['id'],

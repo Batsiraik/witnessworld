@@ -36,6 +36,7 @@ export function LoginScreen({ navigation }: Props) {
     if (Object.keys(next).length) return;
     setLoading(true);
     try {
+      await setStoredToken(null);
       const data = await apiPost(
         'login.php',
         { email: email.trim().toLowerCase(), password },

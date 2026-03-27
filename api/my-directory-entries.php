@@ -27,7 +27,7 @@ $cats = ww_directory_categories();
 try {
     $st = $pdo->prepare(
         'SELECT id, business_name, tagline, category, city, location_country_name, location_us_state,
-                moderation_status, created_at, updated_at
+                logo_url, moderation_status, created_at, updated_at
          FROM directory_entries
          WHERE user_id = ?
          ORDER BY id DESC'
@@ -50,6 +50,7 @@ foreach ($rows as $r) {
         'city' => (string) $r['city'],
         'location_country_name' => (string) $r['location_country_name'],
         'location_us_state' => $r['location_us_state'] ? (string) $r['location_us_state'] : null,
+        'logo_url' => $r['logo_url'] ? (string) $r['logo_url'] : null,
         'moderation_status' => (string) $r['moderation_status'],
         'created_at' => (string) $r['created_at'],
         'updated_at' => (string) $r['updated_at'],

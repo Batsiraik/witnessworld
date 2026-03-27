@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadDirectoryLogo } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -76,6 +76,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
   const [hoursText, setHoursText] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
+  const [logoUploadPct, setLogoUploadPct] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [countryModal, setCountryModal] = useState(false);
@@ -239,6 +240,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
       return;
     }
     setLogoBusy(true);
+    setLogoUploadPct(0);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -248,11 +250,14 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
       });
       if (result.canceled || !result.assets?.[0]) return;
       const a = result.assets[0];
-      const { url } = await apiUploadDirectoryLogo(a.uri, a.mimeType ?? 'image/jpeg');
+      const { url } = await apiUploadDirectoryLogo(a.uri, a.mimeType ?? 'image/jpeg', (p) =>
+        setLogoUploadPct(p)
+      );
       setLogoUrl(url);
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.');
     } finally {
+      setLogoUploadPct(null);
       setLogoBusy(false);
     }
   };
@@ -364,11 +369,16 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
               {logoBusy ? (
                 <ActivityIndicator color={colors.primary} />
               ) : logoUrl ? (
-                <Image source={{ uri: logoUrl }} style={styles.logoPrev} />
+                <RemoteImage url={logoUrl} style={styles.logoPrev} contentFit="cover" />
               ) : (
                 <Text style={styles.logoBtnText}>Tap to upload</Text>
               )}
             </Pressable>
+            {logoBusy ? (
+              <Text style={styles.uploadPct}>
+                {logoUploadPct != null ? `Uploading ${logoUploadPct}%` : 'Starting…'}
+              </Text>
+            ) : null}
 
             <Text style={styles.label}>Country *</Text>
             <Pressable onPress={() => setCountryModal(true)} style={styles.selectRow}>
@@ -562,6 +572,7 @@ const styles = StyleSheet.create({
   },
   selectVal: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   selectPh: { flex: 1, fontSize: 16, color: colors.textMuted },
+  uploadPct: { marginTop: 8, fontSize: 14, fontWeight: '800', color: colors.primaryDark },
   logoBtn: {
     minHeight: 100,
     borderRadius: 16,

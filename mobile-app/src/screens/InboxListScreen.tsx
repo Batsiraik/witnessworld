@@ -4,7 +4,6 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import type { InboxStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -101,8 +101,8 @@ export function InboxListScreen({ navigation }: Props) {
                   navigation.navigate('Chat', { conversationId: item.id, peerName: item.peer.label })
                 }
               >
-                {item.peer.avatar_url ? (
-                  <Image source={{ uri: item.peer.avatar_url }} style={styles.avatar} />
+                {item.peer.avatar_url && String(item.peer.avatar_url).trim() !== '' ? (
+                  <RemoteImage url={item.peer.avatar_url} style={styles.avatar} contentFit="cover" />
                 ) : (
                   <View style={[styles.avatar, styles.avatarPh]}>
                     <Text style={styles.avatarLetter}>{item.peer.label.slice(0, 1).toUpperCase()}</Text>

@@ -28,6 +28,7 @@ export function RecoverPasswordScreen({ navigation, route }: Props) {
     if (Object.keys(next).length) return;
     setLoading(true);
     try {
+      await setStoredToken(null);
       const data = await apiPost(
         'reset-password.php',
         { email, reset_token: resetToken, password, confirm_password: confirm },

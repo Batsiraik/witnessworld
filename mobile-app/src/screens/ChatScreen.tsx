@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -9,6 +10,7 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -17,13 +19,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   apiGet,
   apiSendMessage,
   apiSendMessageWithFile,
   downloadMessageAttachment,
 } from '../api/client';
+import { ChatAttachmentImage } from '../components/ChatAttachmentImage';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import type { InboxStackParamList } from '../navigation/types';
@@ -51,6 +54,7 @@ type PendingFile = { uri: string; name: string; mime: string };
 
 export function ChatScreen({ route }: Props) {
   const { conversationId, peerName } = route.params;
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,6 +62,8 @@ export function ChatScreen({ route }: Props) {
   const [sending, setSending] = useState(false);
   const [pendingFile, setPendingFile] = useState<PendingFile | null>(null);
   const [openingAttId, setOpeningAttId] = useState<number | null>(null);
+  const [sendProgress, setSendProgress] = useState<number | null>(null);
+  const [previewAttachmentId, setPreviewAttachmentId] = useState<number | null>(null);
   const listRef = useRef<FlatList<Msg>>(null);
 
   const load = useCallback(
@@ -132,10 +138,13 @@ export function ChatScreen({ route }: Props) {
     const t = text.trim();
     if ((!t && !pendingFile) || sending) return;
     setSending(true);
+    setSendProgress(null);
     try {
       if (pendingFile) {
-        await apiSendMessageWithFile(conversationId, t, pendingFile);
+        setSendProgress(0);
+        await apiSendMessageWithFile(conversationId, t, pendingFile, (p) => setSendProgress(p));
         setPendingFile(null);
+        setSendProgress(null);
       } else {
         await apiSendMessage(conversationId, t);
       }
@@ -144,11 +153,16 @@ export function ChatScreen({ route }: Props) {
     } catch (e) {
       Alert.alert('Send failed', e instanceof Error ? e.message : 'Try again');
     } finally {
+      setSendProgress(null);
       setSending(false);
     }
   };
 
   const openAttachment = async (att: Attachment) => {
+    if (att.mime_type.startsWith('image/')) {
+      setPreviewAttachmentId(att.id);
+      return;
+    }
     if (openingAttId != null) return;
     setOpeningAttId(att.id);
     try {
@@ -162,14 +176,35 @@ export function ChatScreen({ route }: Props) {
 
   const canSend = text.trim().length > 0 || pendingFile != null;
 
+  const kbOffset = Platform.OS === 'ios' ? insets.top + 56 : 0;
+
   return (
     <GradientBackground>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={88}
+        keyboardVerticalOffset={kbOffset}
       >
         <SafeAreaView style={styles.flex} edges={['bottom']}>
+          <Modal
+            visible={previewAttachmentId != null}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setPreviewAttachmentId(null)}
+          >
+            <Pressable style={styles.previewBackdrop} onPress={() => setPreviewAttachmentId(null)}>
+              {previewAttachmentId != null ? (
+                <View pointerEvents="none" style={styles.previewInner}>
+                  <ChatAttachmentImage
+                    attachmentId={previewAttachmentId}
+                    contentFit="contain"
+                    style={styles.previewImage}
+                    accessibilityLabel="Full screen photo"
+                  />
+                </View>
+              ) : null}
+            </Pressable>
+          </Modal>
           {loading && !refreshing ? (
             <View style={styles.center}>
               <ActivityIndicator size="large" color={colors.primary} />
@@ -180,6 +215,8 @@ export function ChatScreen({ route }: Props) {
               data={messages}
               keyExtractor={(m) => String(m.id)}
               contentContainerStyle={styles.list}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -195,25 +232,30 @@ export function ChatScreen({ route }: Props) {
                     <Text style={[styles.bubbleText, item.mine && styles.bubbleTextMine]}>{item.body}</Text>
                   ) : null}
                   {item.attachment ? (
-                    <Pressable
-                      onPress={() => void openAttachment(item.attachment!)}
-                      disabled={openingAttId === item.attachment.id}
-                      style={({ pressed }) => [styles.attachBox, pressed && styles.attachBoxPressed]}
-                    >
-                      {item.attachment.mime_type.startsWith('image/') ? (
-                        <Ionicons name="image-outline" size={22} color={colors.primaryDark} />
-                      ) : (
+                    item.attachment.mime_type.startsWith('image/') ? (
+                      <ChatAttachmentImage
+                        attachmentId={item.attachment.id}
+                        style={styles.chatImageThumb}
+                        onPress={() => void openAttachment(item.attachment!)}
+                        accessibilityLabel={item.attachment.file_name}
+                      />
+                    ) : (
+                      <Pressable
+                        onPress={() => void openAttachment(item.attachment!)}
+                        disabled={openingAttId === item.attachment.id}
+                        style={({ pressed }) => [styles.attachBox, pressed && styles.attachBoxPressed]}
+                      >
                         <Ionicons name="document-attach-outline" size={22} color={colors.primaryDark} />
-                      )}
-                      <View style={styles.attachTextWrap}>
-                        <Text style={styles.attachName} numberOfLines={2}>
-                          {item.attachment.file_name}
-                        </Text>
-                        <Text style={styles.attachHint}>
-                          {openingAttId === item.attachment.id ? 'Preparing…' : 'Tap to save or open'}
-                        </Text>
-                      </View>
-                    </Pressable>
+                        <View style={styles.attachTextWrap}>
+                          <Text style={styles.attachName} numberOfLines={2}>
+                            {item.attachment.file_name}
+                          </Text>
+                          <Text style={styles.attachHint}>
+                            {openingAttId === item.attachment.id ? 'Preparing…' : 'Tap to save or open'}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    )
                   ) : null}
                   <Text style={[styles.time, item.mine && styles.timeMine]}>
                     {item.created_at.slice(11, 16)}
@@ -225,6 +267,9 @@ export function ChatScreen({ route }: Props) {
           <View style={styles.composer}>
             {pendingFile ? (
               <View style={styles.pendingRow}>
+                {pendingFile.mime.startsWith('image/') ? (
+                  <Image source={{ uri: pendingFile.uri }} style={styles.pendingThumb} contentFit="cover" />
+                ) : null}
                 <Text style={styles.pendingName} numberOfLines={1}>
                   {pendingFile.name}
                 </Text>
@@ -248,7 +293,11 @@ export function ChatScreen({ route }: Props) {
               value={text}
               onChangeText={setText}
               multiline
+              textAlignVertical="top"
             />
+            {sendProgress != null ? (
+              <Text style={styles.sendProgress}>Sending file… {sendProgress}%</Text>
+            ) : null}
             <PrimaryButton
               label={sending ? '…' : 'Send'}
               onPress={() => void send()}
@@ -297,6 +346,26 @@ const styles = StyleSheet.create({
   attachTextWrap: { flex: 1, minWidth: 0 },
   attachName: { fontSize: 14, fontWeight: '700', color: colors.text },
   attachHint: { fontSize: 11, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
+  chatImageThumb: {
+    marginTop: 8,
+    width: 220,
+    maxWidth: '100%',
+    height: 220,
+    borderRadius: 14,
+  },
+  previewBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    justifyContent: 'center',
+  },
+  previewInner: { flex: 1, width: '100%', paddingVertical: 48 },
+  previewImage: { flex: 1, width: '100%' },
+  sendProgress: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    marginBottom: 8,
+  },
   time: { fontSize: 10, color: colors.textMuted, marginTop: 6, fontWeight: '600' },
   timeMine: { textAlign: 'right' },
   composer: {
@@ -315,6 +384,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.primarySoft,
   },
+  pendingThumb: { width: 44, height: 44, borderRadius: 10, backgroundColor: 'rgba(11,18,32,0.08)' },
   pendingName: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.primaryDark },
   attachBar: { flexDirection: 'row', gap: 4 },
   iconBtn: { padding: 4 },

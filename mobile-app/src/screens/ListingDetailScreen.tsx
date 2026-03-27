@@ -1,10 +1,11 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { ResizeMode, Video } from 'expo-av';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,11 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
+import { REMOTE_MEDIA_HEADERS, resolvePublicMediaUrl } from '../utils/mediaUrl';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ListingDetail'>;
 
@@ -50,29 +53,58 @@ export function ListingDetailScreen({ navigation, route }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [contactBusy, setContactBusy] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const data = await apiGet(`listing-public-detail.php?id=${id}`, true);
-        if (cancelled) return;
-        const L = data.listing as Listing | undefined;
-        if (!L) {
-          setErr('Not found');
-          return;
-        }
-        setListing(L);
-      } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : 'Error');
-      } finally {
-        if (!cancelled) setLoading(false);
+  const loadedIdRef = useRef<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      const fullLoad = loadedIdRef.current !== id;
+      if (fullLoad) {
+        loadedIdRef.current = id;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+
+      (async () => {
+        if (fullLoad) {
+          setLoading(true);
+          setErr(null);
+          try {
+            const data = await apiGet(`listing-public-detail.php?id=${id}`, true);
+            if (cancelled) return;
+            const L = data.listing as Listing | undefined;
+            if (!L) {
+              setErr('Not found');
+              setListing(null);
+              return;
+            }
+            setListing(L);
+          } catch (e) {
+            if (!cancelled) {
+              setErr(e instanceof Error ? e.message : 'Error');
+              setListing(null);
+            }
+          } finally {
+            if (!cancelled) setLoading(false);
+          }
+        } else {
+          try {
+            const data = await apiGet(`listing-public-detail.php?id=${id}`, true);
+            if (cancelled) return;
+            const L = data.listing as Listing | undefined;
+            if (L) {
+              setListing(L);
+              setErr(null);
+            }
+          } catch {
+            /* keep existing listing */
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [id])
+  );
 
   const contact = async () => {
     if (!listing) return;
@@ -119,12 +151,30 @@ export function ListingDetailScreen({ navigation, route }: Props) {
     listing.listing_type === 'classified' ? 'Contact seller' : 'Contact provider';
   const loc = [listing.location_country_name, listing.location_us_state].filter(Boolean).join(' · ');
 
+  const videoUri = resolvePublicMediaUrl(listing.video_url?.trim() || '') ?? '';
+  const hasVideo = videoUri.length > 0;
+
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {listing.media_url ? (
-            <Image source={{ uri: listing.media_url }} style={styles.hero} />
+            <RemoteImage url={listing.media_url} style={styles.hero} contentFit="cover" />
+          ) : null}
+          {hasVideo ? (
+            <>
+              <Text style={styles.section}>Video</Text>
+              <Video
+                source={{
+                  uri: videoUri,
+                  headers: REMOTE_MEDIA_HEADERS,
+                }}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                style={styles.heroVideo}
+                shouldPlay={false}
+              />
+            </>
           ) : null}
           <Text style={styles.title}>{listing.title}</Text>
           {loc ? <Text style={styles.loc}>{loc}</Text> : null}
@@ -150,7 +200,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
               <Text style={styles.section}>Portfolio</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.portRow}>
                 {listing.portfolio_urls.map((u) => (
-                  <Image key={u} source={{ uri: u }} style={styles.portImg} />
+                  <RemoteImage key={u} url={u} style={styles.portImg} contentFit="cover" />
                 ))}
               </ScrollView>
             </>
@@ -159,7 +209,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           <Text style={styles.section}>Posted by</Text>
           <View style={styles.sellerRow}>
             {listing.seller.avatar_url ? (
-              <Image source={{ uri: listing.seller.avatar_url }} style={styles.avatar} />
+              <RemoteImage url={listing.seller.avatar_url} style={styles.avatar} contentFit="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarPh]}>
                 <Ionicons name="person" size={22} color={colors.primaryDark} />
@@ -205,6 +255,13 @@ const styles = StyleSheet.create({
     aspectRatio: 1.2,
     borderRadius: 16,
     backgroundColor: colors.primarySoft,
+    marginBottom: 16,
+  },
+  heroVideo: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 16,
+    backgroundColor: '#0f172a',
     marginBottom: 16,
   },
   title: { fontSize: 22, fontWeight: '800', color: colors.text },

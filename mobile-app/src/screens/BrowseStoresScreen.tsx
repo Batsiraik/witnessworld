@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { BrowseLocationFilters, type LocCountry, type LocState } from '../components/BrowseLocationFilters';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -133,7 +133,7 @@ export function BrowseStoresScreen({ navigation }: Props) {
                 style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                 onPress={() => navigation.navigate('StoreDetailPublic', { id: item.id })}
               >
-                <Image source={{ uri: item.logo_url }} style={styles.logo} />
+                <RemoteImage url={item.logo_url} style={styles.logo} contentFit="cover" />
                 <View style={styles.cardText}>
                   <Text style={styles.cardTitle} numberOfLines={2}>
                     {item.name}

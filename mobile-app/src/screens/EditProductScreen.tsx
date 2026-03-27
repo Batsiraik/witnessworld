@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadProductMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -35,6 +35,7 @@ export function EditProductScreen({ navigation, route }: Props) {
   const [currency, setCurrency] = useState('USD');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageBusy, setImageBusy] = useState(false);
+  const [imageUploadPct, setImageUploadPct] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -73,6 +74,7 @@ export function EditProductScreen({ navigation, route }: Props) {
       return;
     }
     setImageBusy(true);
+    setImageUploadPct(0);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -81,11 +83,12 @@ export function EditProductScreen({ navigation, route }: Props) {
       if (result.canceled || !result.assets[0]) return;
       const a = result.assets[0];
       const mime = a.mimeType ?? 'image/jpeg';
-      const { url } = await apiUploadProductMedia(a.uri, mime, storeId);
+      const { url } = await apiUploadProductMedia(a.uri, mime, storeId, (p) => setImageUploadPct(p));
       setImageUrl(url);
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.');
     } finally {
+      setImageUploadPct(null);
       setImageBusy(false);
     }
   };
@@ -217,7 +220,7 @@ export function EditProductScreen({ navigation, route }: Props) {
               {imageBusy ? (
                 <ActivityIndicator color={colors.primary} />
               ) : imageUrl ? (
-                <Image source={{ uri: imageUrl }} style={styles.imgPrev} />
+                <RemoteImage url={imageUrl} style={styles.imgPrev} contentFit="cover" />
               ) : (
                 <>
                   <Ionicons name="image-outline" size={28} color={colors.textMuted} />
@@ -225,6 +228,11 @@ export function EditProductScreen({ navigation, route }: Props) {
                 </>
               )}
             </Pressable>
+            {imageBusy ? (
+              <Text style={styles.uploadPct}>
+                {imageUploadPct != null ? `Uploading ${imageUploadPct}%` : 'Starting…'}
+              </Text>
+            ) : null}
 
             <PrimaryButton
               label={submitting ? 'Saving…' : productId ? 'Save product' : 'Create product'}
@@ -241,6 +249,7 @@ export function EditProductScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
+  uploadPct: { marginTop: 8, fontSize: 14, fontWeight: '800', color: colors.primaryDark },
   safe: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 },

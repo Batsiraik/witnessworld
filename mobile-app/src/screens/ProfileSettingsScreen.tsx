@@ -4,7 +4,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,6 +21,7 @@ import { AppPasswordField } from '../components/AppPasswordField';
 import { GlassCard } from '../components/GlassCard';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -31,6 +31,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Profile'>;
 export function ProfileSettingsScreen(_props: Props) {
   const { user, refreshProfile, stackNavigation } = useDashboardContext();
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarUploadPct, setAvatarUploadPct] = useState<number | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -52,6 +53,7 @@ export function ProfileSettingsScreen(_props: Props) {
       return;
     }
     setAvatarBusy(true);
+    setAvatarUploadPct(0);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -62,13 +64,14 @@ export function ProfileSettingsScreen(_props: Props) {
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
       const mime = asset.mimeType ?? 'image/jpeg';
-      await apiUploadAvatar(asset.uri, mime);
+      await apiUploadAvatar(asset.uri, mime, (p) => setAvatarUploadPct(p));
       await refreshProfile();
       Alert.alert('Profile photo', 'Your picture was updated.');
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.');
     } finally {
       setAvatarBusy(false);
+      setAvatarUploadPct(null);
     }
   };
 
@@ -151,9 +154,10 @@ export function ProfileSettingsScreen(_props: Props) {
               >
                 <View style={styles.avatarLarge}>
                   {avatarUri ? (
-                    <Image
-                      source={{ uri: avatarUri }}
+                    <RemoteImage
+                      url={avatarUri}
                       style={styles.avatarImgLarge}
+                      contentFit="cover"
                       accessibilityLabel="Your profile photo"
                     />
                   ) : (
@@ -166,7 +170,13 @@ export function ProfileSettingsScreen(_props: Props) {
                 disabled={avatarBusy}
                 style={styles.changePhotoBtn}
               >
-                <Text style={styles.changePhotoText}>{avatarBusy ? 'Working…' : 'Choose photo'}</Text>
+                <Text style={styles.changePhotoText}>
+                  {avatarBusy
+                    ? avatarUploadPct != null && avatarUploadPct > 0 && avatarUploadPct < 100
+                      ? `Uploading… ${avatarUploadPct}%`
+                      : 'Preparing…'
+                    : 'Choose photo'}
+                </Text>
               </Pressable>
             </GlassCard>
 

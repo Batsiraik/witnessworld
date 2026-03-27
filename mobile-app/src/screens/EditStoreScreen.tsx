@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -21,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadStoreMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -55,6 +55,7 @@ export function EditStoreScreen({ navigation, route }: Props) {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
   const [bannerBusy, setBannerBusy] = useState(false);
+  const [storeUploadPct, setStoreUploadPct] = useState<number | null>(null);
 
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
@@ -168,6 +169,7 @@ export function EditStoreScreen({ navigation, route }: Props) {
     }
     if (kind === 'logo') setLogoBusy(true);
     else setBannerBusy(true);
+    setStoreUploadPct(0);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -178,12 +180,13 @@ export function EditStoreScreen({ navigation, route }: Props) {
       if (result.canceled || !result.assets?.[0]) return;
       const asset = result.assets[0];
       const mime = asset.mimeType ?? 'image/jpeg';
-      const { url } = await apiUploadStoreMedia(asset.uri, mime, kind);
+      const { url } = await apiUploadStoreMedia(asset.uri, mime, kind, (p) => setStoreUploadPct(p));
       if (kind === 'logo') setLogoUrl(url);
       else setBannerUrl(url);
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.');
     } finally {
+      setStoreUploadPct(null);
       if (kind === 'logo') setLogoBusy(false);
       else setBannerBusy(false);
     }
@@ -284,7 +287,7 @@ export function EditStoreScreen({ navigation, route }: Props) {
               {logoBusy ? (
                 <ActivityIndicator color={colors.primary} />
               ) : logoUrl ? (
-                <Image source={{ uri: logoUrl }} style={styles.logoPrev} />
+                <RemoteImage url={logoUrl} style={styles.logoPrev} contentFit="cover" />
               ) : (
                 <Text style={styles.mediaBtnText}>Upload</Text>
               )}
@@ -295,11 +298,16 @@ export function EditStoreScreen({ navigation, route }: Props) {
               {bannerBusy ? (
                 <ActivityIndicator color={colors.primary} />
               ) : bannerUrl ? (
-                <Image source={{ uri: bannerUrl }} style={styles.bannerPrev} />
+                <RemoteImage url={bannerUrl} style={styles.bannerPrev} contentFit="cover" />
               ) : (
                 <Text style={styles.mediaBtnText}>Optional</Text>
               )}
             </Pressable>
+            {logoBusy || bannerBusy ? (
+              <Text style={styles.uploadPct}>
+                {storeUploadPct != null ? `Uploading ${storeUploadPct}%` : 'Starting…'}
+              </Text>
+            ) : null}
 
             <Text style={styles.label}>Country *</Text>
             <Pressable onPress={() => setCountryModal(true)} style={styles.selectRow}>
@@ -481,6 +489,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   multiline: { minHeight: 100, textAlignVertical: 'top' },
+  uploadPct: { marginTop: 8, fontSize: 14, fontWeight: '800', color: colors.primaryDark },
   mediaBtn: {
     borderRadius: 16,
     borderWidth: 1,

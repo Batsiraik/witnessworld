@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { BrowseLocationFilters, type LocCountry, type LocState } from '../components/BrowseLocationFilters';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -31,6 +31,7 @@ type Row = {
   store_name: string;
   location_country_name: string;
   location_us_state: string | null;
+  moderation_status?: string;
 };
 
 export function BrowseProductsScreen({ navigation }: Props) {
@@ -158,7 +159,7 @@ export function BrowseProductsScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate('ProductDetail', { id: item.id })}
               >
                 {item.image_url ? (
-                  <Image source={{ uri: item.image_url }} style={styles.thumb} />
+                  <RemoteImage url={item.image_url} style={styles.thumb} contentFit="cover" />
                 ) : (
                   <View style={[styles.thumb, styles.thumbPh]}>
                     <Ionicons name="image-outline" size={24} color={colors.textMuted} />
@@ -171,6 +172,9 @@ export function BrowseProductsScreen({ navigation }: Props) {
                   <Text style={styles.storeName} numberOfLines={1}>
                     {item.store_name}
                   </Text>
+                  {item.moderation_status === 'pending_approval' ? (
+                    <Text style={styles.pendingHint}>Awaiting approval — only you see this in the catalog for now.</Text>
+                  ) : null}
                   <Text style={styles.price}>
                     {item.currency} {item.price_amount}
                   </Text>
@@ -237,6 +241,13 @@ const styles = StyleSheet.create({
   cardText: { flex: 1, minWidth: 0 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
   storeName: { fontSize: 12, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
+  pendingHint: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#c2410c',
+    marginTop: 6,
+    lineHeight: 15,
+  },
   price: { fontSize: 14, fontWeight: '800', color: colors.primaryDark, marginTop: 6 },
   meta: { fontSize: 12, fontWeight: '600', color: colors.textMuted, marginTop: 4 },
 });

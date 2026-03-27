@@ -2,7 +2,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -145,6 +145,9 @@ export function HomeScreen({ navigation }: Props) {
     const price = row.price_amount ? String(row.price_amount) : null;
     const cur = String(row.currency ?? 'USD');
     const pt = String(row.pricing_type ?? 'fixed');
+    const sellerLabel = row.seller_label ? String(row.seller_label).trim() : '';
+    const sellerUser = row.seller_username ? String(row.seller_username) : '';
+    const sellerAvatar = row.seller_avatar_url ? String(row.seller_avatar_url) : null;
     const imgStyle = wide ? styles.hImgWide : styles.hImg;
     return (
       <Pressable
@@ -153,7 +156,7 @@ export function HomeScreen({ navigation }: Props) {
         onPress={() => navigation.navigate('ListingDetail', { id })}
       >
         {media ? (
-          <Image source={{ uri: media }} style={imgStyle} />
+          <RemoteImage url={media} style={imgStyle} contentFit="cover" />
         ) : (
           <View style={[imgStyle, styles.hPh]}>
             <Ionicons name="document-text-outline" size={22} color={colors.textMuted} />
@@ -163,6 +166,20 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={[styles.hTitle, wide && styles.hTitleWide]} numberOfLines={2}>
             {title}
           </Text>
+          {sellerLabel || sellerUser ? (
+            <View style={styles.feedSeller}>
+              {sellerAvatar ? (
+                <RemoteImage url={sellerAvatar} style={styles.feedSellerAvatar} contentFit="cover" />
+              ) : (
+                <View style={[styles.feedSellerAvatar, styles.feedSellerAvatarPh]}>
+                  <Ionicons name="person" size={12} color={colors.textMuted} />
+                </View>
+              )}
+              <Text style={styles.feedSellerName} numberOfLines={1}>
+                {sellerLabel || `@${sellerUser}`}
+              </Text>
+            </View>
+          ) : null}
           {price ? (
             <Text style={styles.hPrice}>
               {cur} {price}
@@ -188,7 +205,7 @@ export function HomeScreen({ navigation }: Props) {
         onPress={() => navigation.navigate('ProductDetail', { id })}
       >
         {img ? (
-          <Image source={{ uri: img }} style={imgStyle} />
+          <RemoteImage url={img} style={imgStyle} contentFit="cover" />
         ) : (
           <View style={[imgStyle, styles.hPh]}>
             <Ionicons name="cube-outline" size={22} color={colors.textMuted} />
@@ -209,7 +226,7 @@ export function HomeScreen({ navigation }: Props) {
   const storeCard = (row: Record<string, unknown>, wide?: boolean) => {
     const id = Number(row.id);
     const name = String(row.name ?? '');
-    const logo = String(row.logo_url ?? '');
+    const logo = row.logo_url ? String(row.logo_url) : '';
     const imgStyle = wide ? styles.hImgWide : styles.hImg;
     return (
       <Pressable
@@ -217,7 +234,13 @@ export function HomeScreen({ navigation }: Props) {
         style={({ pressed }) => [styles.hCard, wide && styles.hCardWide, pressed && styles.pressed]}
         onPress={() => navigation.navigate('StoreDetailPublic', { id })}
       >
-        <Image source={{ uri: logo }} style={imgStyle} />
+        {logo ? (
+          <RemoteImage url={logo} style={imgStyle} contentFit="cover" />
+        ) : (
+          <View style={[imgStyle, styles.hPh]}>
+            <Ionicons name="storefront-outline" size={22} color={colors.textMuted} />
+          </View>
+        )}
         <View style={wide ? styles.hCardText : undefined}>
           <Text style={[styles.hTitle, wide && styles.hTitleWide]} numberOfLines={2}>
             {name}
@@ -240,7 +263,7 @@ export function HomeScreen({ navigation }: Props) {
         onPress={() => navigation.navigate('DirectoryDetail', { id })}
       >
         {logo ? (
-          <Image source={{ uri: logo }} style={imgStyle} />
+          <RemoteImage url={logo} style={imgStyle} contentFit="cover" />
         ) : (
           <View style={[imgStyle, styles.hPh]}>
             <Ionicons name="business-outline" size={22} color={colors.textMuted} />
@@ -303,7 +326,12 @@ export function HomeScreen({ navigation }: Props) {
         >
           <View style={styles.greetRow}>
             {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.homeAvatar} accessibilityLabel="Your profile" />
+              <RemoteImage
+                url={avatarUri}
+                style={styles.homeAvatar}
+                contentFit="cover"
+                accessibilityLabel="Your profile"
+              />
             ) : (
               <View style={styles.homeAvatarPlaceholder}>
                 <Ionicons name="person" size={22} color={colors.primaryDark} />
@@ -621,6 +649,21 @@ const styles = StyleSheet.create({
   hPh: { alignItems: 'center', justifyContent: 'center' },
   hTitle: { fontSize: 14, fontWeight: '800', color: colors.text, minHeight: 38 },
   hTitleWide: { minHeight: 0 },
+  feedSeller: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    maxWidth: '100%',
+  },
+  feedSellerAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    backgroundColor: colors.primarySoft,
+  },
+  feedSellerAvatarPh: { alignItems: 'center', justifyContent: 'center' },
+  feedSellerName: { flex: 1, fontSize: 11, fontWeight: '700', color: colors.textMuted, minWidth: 0 },
   hSub: { fontSize: 12, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
   hPrice: { fontSize: 13, fontWeight: '800', color: colors.primaryDark, marginTop: 6 },
   stackSec: { marginBottom: 20 },

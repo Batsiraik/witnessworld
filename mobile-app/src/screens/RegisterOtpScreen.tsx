@@ -28,6 +28,7 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
     setError(undefined);
     setLoading(true);
     try {
+      await setStoredToken(null);
       const data = await apiPost('verify-registration-otp.php', { email, otp: cleaned }, false);
       const token = data.token as string | undefined;
       if (!token) throw new Error('No token returned');

@@ -26,6 +26,9 @@ $user = $st->fetch(PDO::FETCH_ASSOC);
 if (!$user || (string) ($user['registration_otp'] ?? '') !== $otp) {
     ww_json(['ok' => false, 'error' => 'Invalid or expired code'], 400);
 }
+if (strtolower(trim((string) ($user['email'] ?? ''))) !== $email) {
+    ww_json(['ok' => false, 'error' => 'Invalid or expired code'], 400);
+}
 
 $exp = $user['registration_otp_expires_at'] ?? null;
 if ($exp && strtotime((string) $exp) < time()) {

@@ -19,10 +19,50 @@ export async function setStoredToken(token: string | null): Promise<void> {
 
 type Json = Record<string, unknown>;
 
+export type UploadProgressHandler = (percent: number) => void;
+
 /** Apache/XAMPP often strips Authorization; X-Auth-Token is read by the PHP API as a fallback. */
 function attachAuthHeaders(headers: Record<string, string>, token: string): void {
   headers.Authorization = `Bearer ${token}`;
   headers['X-Auth-Token'] = token;
+}
+
+/** Multipart POST with upload progress (fetch has no upload progress in RN). */
+function multipartPostWithProgress(
+  relativePath: string,
+  form: FormData,
+  token: string,
+  onProgress?: UploadProgressHandler
+): Promise<Json> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}/${relativePath}`);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('X-Auth-Token', token);
+    xhr.upload.onprogress = (ev) => {
+      if (onProgress && ev.lengthComputable && ev.total > 0) {
+        onProgress(Math.min(100, Math.round((100 * ev.loaded) / ev.total)));
+      }
+    };
+    xhr.onload = () => {
+      const text = xhr.responseText || '';
+      let data: Json;
+      try {
+        data = JSON.parse(text) as Json;
+      } catch {
+        reject(new Error(text.slice(0, 160) || 'Invalid server response'));
+        return;
+      }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error((data.error as string) || `Request failed (${xhr.status})`));
+        return;
+      }
+      resolve(data);
+    };
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(form as unknown as Parameters<XMLHttpRequest['send']>[0]);
+  });
 }
 
 async function parseJson(res: Response): Promise<Json> {
@@ -48,6 +88,7 @@ export async function apiPost(path: string, body: Json, withAuth = false): Promi
     method: 'POST',
     headers,
     body: JSON.stringify(body),
+    cache: 'no-store',
   });
   const data = await parseJson(res);
   if (!res.ok) {
@@ -63,7 +104,7 @@ export async function apiGet(path: string, withAuth = true): Promise<Json> {
     const t = await getStoredToken();
     if (t) attachAuthHeaders(headers, t);
   }
-  const res = await fetch(`${API_BASE}/${path}`, { method: 'GET', headers });
+  const res = await fetch(`${API_BASE}/${path}`, { method: 'GET', headers, cache: 'no-store' });
   const data = await parseJson(res);
   if (!res.ok) {
     const err = (data.error as string) || `Request failed (${res.status})`;
@@ -82,7 +123,11 @@ export async function apiLogout(): Promise<void> {
 }
 
 /** Multipart avatar upload (React Native FormData). */
-export async function apiUploadAvatar(localUri: string, mimeType: string): Promise<{ avatar_url: string }> {
+export async function apiUploadAvatar(
+  localUri: string,
+  mimeType: string,
+  onProgress?: UploadProgressHandler
+): Promise<{ avatar_url: string }> {
   const token = await getStoredToken();
   if (!token) {
     throw new Error('Not signed in');
@@ -93,20 +138,7 @@ export async function apiUploadAvatar(localUri: string, mimeType: string): Promi
     name: 'avatar.jpg',
     type: mimeType || 'image/jpeg',
   } as unknown as Blob);
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  attachAuthHeaders(headers, token);
-  const res = await fetch(`${API_BASE}/profile-avatar.php`, { method: 'POST', headers, body: form });
-  const text = await res.text();
-  let data: Json;
-  try {
-    data = JSON.parse(text) as Json;
-  } catch {
-    throw new Error(text.slice(0, 120) || 'Upload failed');
-  }
-  if (!res.ok) {
-    const err = (data.error as string) || `Upload failed (${res.status})`;
-    throw new Error(err);
-  }
+  const data = await multipartPostWithProgress('profile-avatar.php', form, token, onProgress);
   const url = data.avatar_url as string | undefined;
   if (!url) {
     throw new Error('No avatar URL returned');
@@ -117,7 +149,8 @@ export async function apiUploadAvatar(localUri: string, mimeType: string): Promi
 /** Multipart listing media (image or short video) for provider ads. */
 export async function apiUploadListingMedia(
   localUri: string,
-  mimeType: string
+  mimeType: string,
+  onProgress?: UploadProgressHandler
 ): Promise<{ url: string; kind: string }> {
   const token = await getStoredToken();
   if (!token) {
@@ -131,20 +164,7 @@ export async function apiUploadListingMedia(
     name: isVid ? `clip.${ext}` : `photo.${ext}`,
     type: mimeType || (isVid ? 'video/mp4' : 'image/jpeg'),
   } as unknown as Blob);
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  attachAuthHeaders(headers, token);
-  const res = await fetch(`${API_BASE}/listing-media-upload.php`, { method: 'POST', headers, body: form });
-  const text = await res.text();
-  let data: Json;
-  try {
-    data = JSON.parse(text) as Json;
-  } catch {
-    throw new Error(text.slice(0, 120) || 'Upload failed');
-  }
-  if (!res.ok) {
-    const err = (data.error as string) || `Upload failed (${res.status})`;
-    throw new Error(err);
-  }
+  const data = await multipartPostWithProgress('listing-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   const kind = (data.kind as string) || 'image';
   if (!url) {
@@ -157,7 +177,8 @@ export async function apiUploadListingMedia(
 export async function apiUploadStoreMedia(
   localUri: string,
   mimeType: string,
-  asset: 'logo' | 'banner'
+  asset: 'logo' | 'banner',
+  onProgress?: UploadProgressHandler
 ): Promise<{ url: string }> {
   const token = await getStoredToken();
   if (!token) {
@@ -170,20 +191,7 @@ export async function apiUploadStoreMedia(
     name: asset === 'logo' ? 'logo.jpg' : 'banner.jpg',
     type: mimeType || 'image/jpeg',
   } as unknown as Blob);
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  attachAuthHeaders(headers, token);
-  const res = await fetch(`${API_BASE}/store-media-upload.php`, { method: 'POST', headers, body: form });
-  const text = await res.text();
-  let data: Json;
-  try {
-    data = JSON.parse(text) as Json;
-  } catch {
-    throw new Error(text.slice(0, 120) || 'Upload failed');
-  }
-  if (!res.ok) {
-    const err = (data.error as string) || `Upload failed (${res.status})`;
-    throw new Error(err);
-  }
+  const data = await multipartPostWithProgress('store-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   if (!url) {
     throw new Error('No file URL returned');
@@ -195,7 +203,8 @@ export async function apiUploadStoreMedia(
 export async function apiUploadProductMedia(
   localUri: string,
   mimeType: string,
-  storeId: number
+  storeId: number,
+  onProgress?: UploadProgressHandler
 ): Promise<{ url: string }> {
   const token = await getStoredToken();
   if (!token) {
@@ -208,20 +217,7 @@ export async function apiUploadProductMedia(
     name: 'product.jpg',
     type: mimeType || 'image/jpeg',
   } as unknown as Blob);
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  attachAuthHeaders(headers, token);
-  const res = await fetch(`${API_BASE}/product-media-upload.php`, { method: 'POST', headers, body: form });
-  const text = await res.text();
-  let data: Json;
-  try {
-    data = JSON.parse(text) as Json;
-  } catch {
-    throw new Error(text.slice(0, 120) || 'Upload failed');
-  }
-  if (!res.ok) {
-    const err = (data.error as string) || `Upload failed (${res.status})`;
-    throw new Error(err);
-  }
+  const data = await multipartPostWithProgress('product-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   if (!url) {
     throw new Error('No file URL returned');
@@ -230,7 +226,11 @@ export async function apiUploadProductMedia(
 }
 
 /** Directory business logo (multipart). */
-export async function apiUploadDirectoryLogo(localUri: string, mimeType: string): Promise<{ url: string }> {
+export async function apiUploadDirectoryLogo(
+  localUri: string,
+  mimeType: string,
+  onProgress?: UploadProgressHandler
+): Promise<{ url: string }> {
   const token = await getStoredToken();
   if (!token) {
     throw new Error('Not signed in');
@@ -241,20 +241,7 @@ export async function apiUploadDirectoryLogo(localUri: string, mimeType: string)
     name: 'logo.jpg',
     type: mimeType || 'image/jpeg',
   } as unknown as Blob);
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  attachAuthHeaders(headers, token);
-  const res = await fetch(`${API_BASE}/directory-media-upload.php`, { method: 'POST', headers, body: form });
-  const text = await res.text();
-  let data: Json;
-  try {
-    data = JSON.parse(text) as Json;
-  } catch {
-    throw new Error(text.slice(0, 120) || 'Upload failed');
-  }
-  if (!res.ok) {
-    const err = (data.error as string) || `Upload failed (${res.status})`;
-    throw new Error(err);
-  }
+  const data = await multipartPostWithProgress('directory-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   if (!url) {
     throw new Error('No file URL returned');
@@ -291,7 +278,8 @@ export async function apiSendMessage(conversationId: number, text: string): Prom
 export async function apiSendMessageWithFile(
   conversationId: number,
   body: string,
-  file: { uri: string; name: string; mime: string }
+  file: { uri: string; name: string; mime: string },
+  onProgress?: UploadProgressHandler
 ): Promise<void> {
   const token = await getStoredToken();
   if (!token) {
@@ -305,19 +293,7 @@ export async function apiSendMessageWithFile(
     name: file.name || 'attachment',
     type: file.mime || 'application/octet-stream',
   } as unknown as Blob);
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  attachAuthHeaders(headers, token);
-  const res = await fetch(`${API_BASE}/message-send.php`, { method: 'POST', headers, body: form });
-  const text = await res.text();
-  let data: Json;
-  try {
-    data = JSON.parse(text) as Json;
-  } catch {
-    throw new Error(text.slice(0, 120) || 'Send failed');
-  }
-  if (!res.ok) {
-    throw new Error((data.error as string) || `Send failed (${res.status})`);
-  }
+  await multipartPostWithProgress('message-send.php', form, token, onProgress);
 }
 
 export function messageAttachmentUrl(attachmentId: number): string {

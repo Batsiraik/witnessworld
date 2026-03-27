@@ -68,6 +68,7 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   pressable: {
+    alignSelf: 'stretch',
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: colors.primary,
@@ -79,6 +80,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   disabled: { opacity: 0.55 },
   gradient: {
+    width: '100%',
     paddingVertical: 16,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -99,8 +101,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   outlineInner: {
+    width: '100%',
     paddingVertical: 14,
     paddingHorizontal: 18,
     borderRadius: 16,

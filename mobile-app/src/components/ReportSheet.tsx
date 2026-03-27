@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { PrimaryButton } from './PrimaryButton';
 
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function ReportSheet({ visible, title, onClose, onSubmit }: Props) {
+  const insets = useSafeAreaInsets();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -42,7 +44,10 @@ export function ReportSheet({ visible, title, onClose, onSubmit }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={[styles.sheet, { paddingBottom: Math.max(28, insets.bottom + 20) }]}
+          onPress={(e) => e.stopPropagation()}
+        >
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.hint}>Describe what is wrong. Our team will review.</Text>
           <TextInput
@@ -73,11 +78,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    width: '100%',
     backgroundColor: colors.white,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 22,
-    paddingBottom: 32,
+    paddingBottom: 28,
     gap: 12,
   },
   title: { fontSize: 18, fontWeight: '800', color: colors.text },
@@ -92,7 +98,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '500',
   },
-  cancel: { alignItems: 'center', paddingVertical: 8 },
+  cancel: { alignItems: 'center', paddingVertical: 10, marginBottom: 4 },
   cancelText: { fontSize: 16, fontWeight: '700', color: colors.textMuted },
   spin: { marginTop: 8 },
 });

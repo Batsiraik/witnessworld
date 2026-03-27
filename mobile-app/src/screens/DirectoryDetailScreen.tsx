@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -138,7 +138,7 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {entry.logo_url ? (
-            <Image source={{ uri: entry.logo_url }} style={styles.heroLogo} />
+            <RemoteImage url={entry.logo_url} style={styles.heroLogo} contentFit="cover" />
           ) : null}
           <Text style={styles.title}>{entry.business_name}</Text>
           <Text style={styles.meta}>

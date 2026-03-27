@@ -16,7 +16,9 @@
       "bundleIdentifier": "com.witnessworldconnect.app",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -26,7 +28,8 @@
         "foregroundImage": "./assets/logo.jpg",
         "backgroundColor": "#FFFFFF"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -48,7 +51,9 @@
           "defaultChannel": "default",
           "sounds": []
         }
-      ]
+      ],
+      "expo-image",
+      "expo-av"
     ],
     "extra": {
       "eas": {
