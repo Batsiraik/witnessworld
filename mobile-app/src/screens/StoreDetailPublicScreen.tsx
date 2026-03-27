@@ -149,7 +149,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
               <Pressable
                 key={p.id}
                 style={({ pressed }) => [styles.pRow, pressed && styles.pPressed]}
-                onPress={() => navigation.navigate('ProductDetail', { id: p.id })}
+                onPress={() => navigation.push('ProductDetail', { id: p.id })}
               >
                 {p.image_url ? (
                   <RemoteImage url={p.image_url} style={styles.pImg} contentFit="cover" />

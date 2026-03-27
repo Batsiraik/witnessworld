@@ -156,7 +156,7 @@ export function BrowseProductsScreen({ navigation }: Props) {
             renderItem={({ item }) => (
               <Pressable
                 style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-                onPress={() => navigation.navigate('ProductDetail', { id: item.id })}
+                onPress={() => navigation.push('ProductDetail', { id: item.id })}
               >
                 {item.image_url ? (
                   <RemoteImage url={item.image_url} style={styles.thumb} contentFit="cover" />

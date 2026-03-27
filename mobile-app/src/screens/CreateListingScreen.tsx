@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadListingMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { MediaUploadZone } from '../components/MediaUploadZone';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
@@ -528,24 +529,20 @@ export function CreateListingScreen({ navigation, route }: Props) {
             ) : null}
 
             <Text style={styles.label}>Main image *</Text>
-            <Pressable
+            <MediaUploadZone
+              variant="hero"
               onPress={() => void pickAndUploadImage(true)}
+              loading={mainBusy}
               disabled={mainBusy}
-              style={({ pressed }) => [styles.mediaBox, pressed && styles.pickerRowPressed]}
-            >
-              {mainBusy ? (
-                <ActivityIndicator color={colors.primary} />
-              ) : mainUrl ? (
-                <RemoteImage url={mainUrl} style={styles.mainPreview} contentFit="cover" />
-              ) : (
-                <>
-                  <Ionicons name="image-outline" size={32} color={colors.primaryDark} />
-                  <Text style={styles.mediaHint}>
-                    Tap to add {listingType === 'service' ? 'your cover photo' : 'your main photo'}
-                  </Text>
-                </>
-              )}
-            </Pressable>
+              imageUrl={mainUrl}
+              title={mainUrl ? 'Replace main photo' : 'Tap to upload photo'}
+              subtitle={
+                listingType === 'service'
+                  ? 'Cover image — buyers see this first'
+                  : 'Primary photo for your classified or service listing'
+              }
+              mediaType="image"
+            />
             {mainBusy ? (
               <Text style={styles.uploadPctText}>
                 {mediaUploadPct != null ? `Uploading main image… ${mediaUploadPct}%` : 'Starting…'}
@@ -554,39 +551,33 @@ export function CreateListingScreen({ navigation, route }: Props) {
             <Text style={styles.micro}>{formCopy.mainMicro}</Text>
 
             <Text style={styles.label}>Video (optional)</Text>
-            <View style={styles.rowBtns}>
-              <Pressable
-                onPress={() => void pickAndUploadVideo()}
-                disabled={videoBusy}
-                style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pickerRowPressed]}
-              >
-                {videoBusy ? (
-                  <ActivityIndicator color={colors.primaryDark} />
-                ) : (
-                  <>
-                    <Ionicons name="videocam-outline" size={20} color={colors.primaryDark} />
-                    <Text style={styles.secondaryBtnText}>{videoUrl ? 'Replace video' : 'Add video'}</Text>
-                  </>
-                )}
-              </Pressable>
-              {videoUrl ? (
-                <Pressable
-                  onPress={() => setVideoUrl(null)}
-                  style={({ pressed }) => [styles.dangerOutline, pressed && styles.pickerRowPressed]}
-                >
-                  <Text style={styles.dangerText}>Remove</Text>
-                </Pressable>
-              ) : null}
-            </View>
+            <MediaUploadZone
+              variant="wide"
+              onPress={() => void pickAndUploadVideo()}
+              loading={videoBusy}
+              disabled={videoBusy}
+              mediaType="video"
+              title={videoUrl ? 'Replace video' : 'Tap to upload video'}
+              subtitle={
+                videoUrl
+                  ? 'MP4 or MOV · up to 45 MB — tap to pick a different file'
+                  : formCopy.videoMicro
+              }
+            />
             {videoBusy ? (
               <Text style={styles.uploadPctText}>
                 {mediaUploadPct != null ? `Uploading video… ${mediaUploadPct}%` : 'Starting…'}
               </Text>
-            ) : videoUrl ? (
-              <Text style={styles.micro}>Video uploaded. MP4/MOV up to 45 MB.</Text>
-            ) : (
-              <Text style={styles.micro}>{formCopy.videoMicro}</Text>
-            )}
+            ) : null}
+            {videoUrl ? (
+              <Pressable
+                onPress={() => setVideoUrl(null)}
+                style={({ pressed }) => [styles.videoRemoveRow, pressed && styles.pickerRowPressed]}
+              >
+                <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                <Text style={styles.videoRemoveLabel}>Remove video</Text>
+              </Pressable>
+            ) : null}
 
             <Text style={styles.label}>{formCopy.portfolioLabel}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ph}>
@@ -602,20 +593,16 @@ export function CreateListingScreen({ navigation, route }: Props) {
                 </View>
               ))}
               {portfolioUrls.length < 12 ? (
-                <Pressable
+                <MediaUploadZone
+                  variant="compact"
                   onPress={() => void pickAndUploadImage(false)}
+                  loading={portfolioBusy}
                   disabled={portfolioBusy}
-                  style={[styles.addThumb, portfolioBusy && styles.addThumbDisabled]}
-                >
-                  {portfolioBusy ? (
-                    <ActivityIndicator color={colors.primaryDark} />
-                  ) : (
-                    <>
-                      <Ionicons name="add" size={28} color={colors.primaryDark} />
-                      <Text style={styles.addThumbText}>Add</Text>
-                    </>
-                  )}
-                </Pressable>
+                  title="Add photos"
+                  subtitle="Tap to upload"
+                  mediaType="image"
+                  style={styles.portfolioAddZone}
+                />
               ) : null}
             </ScrollView>
             {portfolioBusy ? (
@@ -792,40 +779,20 @@ const styles = StyleSheet.create({
   pickerRowPressed: { opacity: 0.9 },
   pickerVal: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1, paddingRight: 8 },
   pickerPlaceholder: { fontSize: 16, fontWeight: '600', color: colors.textMuted, flex: 1, paddingRight: 8 },
-  mediaBox: {
-    minHeight: 180,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  mainPreview: { width: '100%', height: 200 },
-  mediaHint: { marginTop: 8, fontSize: 14, fontWeight: '600', color: colors.textMuted },
-  rowBtns: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  secondaryBtn: {
+  videoRemoveRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.card,
-  },
-  secondaryBtnText: { fontSize: 15, fontWeight: '700', color: colors.primaryDark },
-  dangerOutline: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(220, 38, 38, 0.45)',
+    borderColor: 'rgba(220, 38, 38, 0.35)',
     backgroundColor: 'rgba(220, 38, 38, 0.06)',
   },
-  dangerText: { fontSize: 15, fontWeight: '800', color: colors.danger },
+  videoRemoveLabel: { fontSize: 14, fontWeight: '800', color: colors.danger },
   micro: { marginTop: 6, fontSize: 12, color: colors.textMuted, fontWeight: '500' },
   uploadPctText: {
     marginTop: 8,
@@ -847,19 +814,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addThumb: {
-    width: 88,
-    height: 88,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-  },
-  addThumbDisabled: { opacity: 0.7 },
-  addThumbText: { fontSize: 12, fontWeight: '800', color: colors.primaryDark, marginTop: 2 },
+  portfolioAddZone: { width: 112, minHeight: 96 },
   spacer: { height: 8 },
   modalSafe: { flex: 1, backgroundColor: colors.bgTop },
   modalHeader: {

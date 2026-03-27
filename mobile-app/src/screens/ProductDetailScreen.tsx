@@ -111,7 +111,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
 
   const openStore = () => {
     if (!row) return;
-    navigation.navigate('StoreDetailPublic', { id: row.store.id });
+    navigation.push('StoreDetailPublic', { id: row.store.id });
   };
 
   if (loading) {

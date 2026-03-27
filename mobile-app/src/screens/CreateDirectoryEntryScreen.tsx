@@ -20,8 +20,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadDirectoryLogo } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { MediaUploadZone } from '../components/MediaUploadZone';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -365,15 +365,16 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
             />
 
             <Text style={styles.label}>Logo (optional)</Text>
-            <Pressable onPress={() => void pickLogo()} style={styles.logoBtn}>
-              {logoBusy ? (
-                <ActivityIndicator color={colors.primary} />
-              ) : logoUrl ? (
-                <RemoteImage url={logoUrl} style={styles.logoPrev} contentFit="cover" />
-              ) : (
-                <Text style={styles.logoBtnText}>Tap to upload</Text>
-              )}
-            </Pressable>
+            <MediaUploadZone
+              variant="square"
+              onPress={() => void pickLogo()}
+              loading={logoBusy}
+              disabled={logoBusy}
+              imageUrl={logoUrl}
+              title={logoUrl ? 'Replace logo' : 'Tap to upload logo'}
+              subtitle="JPG or PNG — optional for directory"
+              mediaType="image"
+            />
             {logoBusy ? (
               <Text style={styles.uploadPct}>
                 {logoUploadPct != null ? `Uploading ${logoUploadPct}%` : 'Starting…'}
@@ -573,17 +574,6 @@ const styles = StyleSheet.create({
   selectVal: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   selectPh: { flex: 1, fontSize: 16, color: colors.textMuted },
   uploadPct: { marginTop: 8, fontSize: 14, fontWeight: '800', color: colors.primaryDark },
-  logoBtn: {
-    minHeight: 100,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoBtnText: { color: colors.textMuted, fontWeight: '600' },
-  logoPrev: { width: 100, height: 100, borderRadius: 16 },
   modalSafe: { flex: 1, backgroundColor: colors.white },
   modalHeader: {
     flexDirection: 'row',

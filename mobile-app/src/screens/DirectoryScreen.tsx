@@ -240,7 +240,7 @@ export function DirectoryScreen({ navigation }: Props) {
             }
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => navigation.navigate('DirectoryDetail', { id: item.id })}
+                onPress={() => navigation.push('DirectoryDetail', { id: item.id })}
                 style={({ pressed }) => [styles.card, pressed && styles.pressed]}
               >
                 <View style={styles.cardRow}>

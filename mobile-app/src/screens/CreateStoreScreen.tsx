@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadStoreMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
-import { RemoteImage } from '../components/RemoteImage';
+import { MediaUploadZone } from '../components/MediaUploadZone';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -296,32 +296,28 @@ export function CreateStoreScreen({ navigation, route }: Props) {
             />
 
             <Text style={styles.label}>Store logo *</Text>
-            <Pressable
+            <MediaUploadZone
+              variant="square"
               onPress={() => void pickUpload('logo')}
-              style={({ pressed }) => [styles.mediaBtn, pressed && styles.pressed]}
-            >
-              {logoBusy ? (
-                <ActivityIndicator color={colors.primary} />
-              ) : logoUrl ? (
-                <RemoteImage url={logoUrl} style={styles.logoPrev} contentFit="cover" />
-              ) : (
-                <Text style={styles.mediaBtnText}>Tap to upload logo</Text>
-              )}
-            </Pressable>
+              loading={logoBusy}
+              disabled={logoBusy}
+              imageUrl={logoUrl}
+              title={logoUrl ? 'Replace store logo' : 'Tap to upload logo'}
+              subtitle="Required · JPG or PNG — square works best"
+              mediaType="image"
+            />
 
             <Text style={styles.label}>Banner (optional)</Text>
-            <Pressable
+            <MediaUploadZone
+              variant="wide"
               onPress={() => void pickUpload('banner')}
-              style={({ pressed }) => [styles.mediaBtn, styles.bannerBtn, pressed && styles.pressed]}
-            >
-              {bannerBusy ? (
-                <ActivityIndicator color={colors.primary} />
-              ) : bannerUrl ? (
-                <RemoteImage url={bannerUrl} style={styles.bannerPrev} contentFit="cover" />
-              ) : (
-                <Text style={styles.mediaBtnText}>Wide image for your storefront header</Text>
-              )}
-            </Pressable>
+              loading={bannerBusy}
+              disabled={bannerBusy}
+              imageUrl={bannerUrl}
+              title={bannerUrl ? 'Replace banner image' : 'Tap to upload banner'}
+              subtitle="Wide header image for your storefront"
+              mediaType="image"
+            />
             {logoBusy || bannerBusy ? (
               <Text style={styles.uploadPct}>
                 {storeUploadPct != null ? `Uploading ${storeUploadPct}%` : 'Starting…'}
@@ -509,20 +505,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   multiline: { minHeight: 120, textAlignVertical: 'top' },
-  mediaBtn: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.card,
-    minHeight: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  bannerBtn: { minHeight: 140 },
-  mediaBtnText: { color: colors.textMuted, fontWeight: '600', padding: 16, textAlign: 'center' },
-  logoPrev: { width: 120, height: 120, borderRadius: 16 },
-  bannerPrev: { width: '100%', height: 140 },
   selectRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -538,7 +520,6 @@ const styles = StyleSheet.create({
   selectPh: { flex: 1, fontSize: 16, color: colors.textMuted },
   hint: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
   uploadPct: { marginTop: 8, fontSize: 14, fontWeight: '800', color: colors.primaryDark },
-  pressed: { opacity: 0.92 },
   modalSafe: { flex: 1, backgroundColor: colors.white },
   modalHeader: {
     flexDirection: 'row',

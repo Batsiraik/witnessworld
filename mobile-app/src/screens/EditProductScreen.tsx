@@ -1,5 +1,4 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -17,8 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadProductMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { MediaUploadZone } from '../components/MediaUploadZone';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { RemoteImage } from '../components/RemoteImage';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -216,18 +215,16 @@ export function EditProductScreen({ navigation, route }: Props) {
             />
 
             <Text style={styles.label}>Product photo *</Text>
-            <Pressable onPress={() => void pickImage()} style={styles.imgBtn}>
-              {imageBusy ? (
-                <ActivityIndicator color={colors.primary} />
-              ) : imageUrl ? (
-                <RemoteImage url={imageUrl} style={styles.imgPrev} contentFit="cover" />
-              ) : (
-                <>
-                  <Ionicons name="image-outline" size={28} color={colors.textMuted} />
-                  <Text style={styles.imgBtnText}>Tap to upload (required)</Text>
-                </>
-              )}
-            </Pressable>
+            <MediaUploadZone
+              variant="hero"
+              onPress={() => void pickImage()}
+              loading={imageBusy}
+              disabled={imageBusy}
+              imageUrl={imageUrl}
+              title={imageUrl ? 'Replace product photo' : 'Tap to upload product photo'}
+              subtitle="Required — clear, well-lit image sells better"
+              mediaType="image"
+            />
             {imageBusy ? (
               <Text style={styles.uploadPct}>
                 {imageUploadPct != null ? `Uploading ${imageUploadPct}%` : 'Starting…'}
@@ -269,17 +266,4 @@ const styles = StyleSheet.create({
   priceInput: { flex: 1 },
   curInput: { width: 88, textAlign: 'center', fontWeight: '800' },
   multiline: { minHeight: 100, textAlignVertical: 'top' },
-  imgBtn: {
-    minHeight: 140,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    gap: 8,
-  },
-  imgBtnText: { color: colors.textMuted, fontWeight: '600' },
-  imgPrev: { width: '100%', height: 160 },
 });

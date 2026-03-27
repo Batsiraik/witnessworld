@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AndroidBackHandler } from './src/components/AndroidBackHandler';
 import { AppErrorBoundary } from './src/components/AppErrorBoundary';
 import { navigationRef } from './src/navigation/navigationRef';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -47,6 +48,7 @@ export default function App() {
           <NavigationContainer ref={navigationRef} theme={navTheme} onReady={hideSplash}>
             <StatusBar style="dark" />
             <RootNavigator />
+            <AndroidBackHandler />
           </NavigationContainer>
         </AppErrorBoundary>
       </SafeAreaProvider>

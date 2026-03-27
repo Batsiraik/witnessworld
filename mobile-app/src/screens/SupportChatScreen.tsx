@@ -10,7 +10,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -214,7 +213,8 @@ export function SupportChatScreen({ navigation, route }: Props) {
   };
 
   const canSend = pendingFile != null;
-  const kbOffset = Platform.OS === 'ios' ? insets.top + 56 : 0;
+  /** Root stack has no native header; offset = status bar + custom top bar. */
+  const keyboardVerticalOffset = insets.top + 56;
 
   if (opening || conversationId == null) {
     return (
@@ -231,8 +231,9 @@ export function SupportChatScreen({ navigation, route }: Props) {
     <GradientBackground>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={kbOffset}
+        behavior="padding"
+        enabled
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
         <SafeAreaView style={styles.flex} edges={['bottom']}>
           <View style={styles.topBar}>
@@ -268,6 +269,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
           ) : (
             <FlatList
               ref={listRef}
+              style={styles.flex}
               data={messages}
               keyExtractor={(m) => String(m.id)}
               contentContainerStyle={styles.list}

@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -11,7 +12,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -19,7 +19,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   apiGet,
   apiSendMessage,
@@ -54,7 +54,7 @@ type PendingFile = { uri: string; name: string; mime: string };
 
 export function ChatScreen({ route }: Props) {
   const { conversationId, peerName } = route.params;
-  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -176,14 +176,15 @@ export function ChatScreen({ route }: Props) {
 
   const canSend = text.trim().length > 0 || pendingFile != null;
 
-  const kbOffset = Platform.OS === 'ios' ? insets.top + 56 : 0;
+  const keyboardVerticalOffset = headerHeight;
 
   return (
     <GradientBackground>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={kbOffset}
+        behavior="padding"
+        enabled
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
         <SafeAreaView style={styles.flex} edges={['bottom']}>
           <Modal
@@ -212,6 +213,7 @@ export function ChatScreen({ route }: Props) {
           ) : (
             <FlatList
               ref={listRef}
+              style={styles.flex}
               data={messages}
               keyExtractor={(m) => String(m.id)}
               contentContainerStyle={styles.list}

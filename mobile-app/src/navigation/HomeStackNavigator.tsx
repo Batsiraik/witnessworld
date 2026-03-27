@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet } from 'react-native';
+import { homeStackSafeGoBack, type HomeStackBackNavigation } from './homeStackSafeBack';
 import { BrowseListingsScreen } from '../screens/BrowseListingsScreen';
 import { BrowseProductsScreen } from '../screens/BrowseProductsScreen';
 import { BrowseStoresScreen } from '../screens/BrowseStoresScreen';
@@ -29,9 +30,15 @@ function MenuIcon({ onPress }: { onPress: () => void }) {
   );
 }
 
-function BackIcon({ onPress }: { onPress: () => void }) {
+function BackIcon({ navigation }: { navigation: HomeStackBackNavigation }) {
   return (
-    <Pressable onPress={onPress} style={styles.iconBtn} hitSlop={12} accessibilityRole="button" accessibilityLabel="Go back">
+    <Pressable
+      onPress={() => homeStackSafeGoBack(navigation)}
+      style={styles.iconBtn}
+      hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel="Go back"
+    >
       <Ionicons name="arrow-back" size={24} color={colors.text} />
     </Pressable>
   );
@@ -55,7 +62,7 @@ export function HomeStackNavigator() {
                   }}
                 />
               )
-            : () => <BackIcon onPress={() => navigation.goBack()} />,
+            : () => <BackIcon navigation={navigation} />,
       })}
     >
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Witness World' }} />
@@ -78,7 +85,7 @@ export function HomeStackNavigator() {
         component={ProviderHubScreen}
         options={({ navigation }) => ({
           title: 'Become a service provider',
-          headerLeft: () => <BackIcon onPress={() => navigation.navigate('Home')} />,
+          headerLeft: () => <BackIcon navigation={navigation} />,
         })}
       />
       <Stack.Screen

@@ -153,7 +153,7 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable
         key={`${isService ? 's' : 'c'}-${id}`}
         style={({ pressed }) => [styles.hCard, wide && styles.hCardWide, pressed && styles.pressed]}
-        onPress={() => navigation.navigate('ListingDetail', { id })}
+        onPress={() => navigation.push('ListingDetail', { id })}
       >
         {media ? (
           <RemoteImage url={media} style={imgStyle} contentFit="cover" />
@@ -202,7 +202,7 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable
         key={`p-${id}`}
         style={({ pressed }) => [styles.hCard, wide && styles.hCardWide, pressed && styles.pressed]}
-        onPress={() => navigation.navigate('ProductDetail', { id })}
+        onPress={() => navigation.push('ProductDetail', { id })}
       >
         {img ? (
           <RemoteImage url={img} style={imgStyle} contentFit="cover" />
@@ -232,7 +232,7 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable
         key={`st-${id}`}
         style={({ pressed }) => [styles.hCard, wide && styles.hCardWide, pressed && styles.pressed]}
-        onPress={() => navigation.navigate('StoreDetailPublic', { id })}
+        onPress={() => navigation.push('StoreDetailPublic', { id })}
       >
         {logo ? (
           <RemoteImage url={logo} style={imgStyle} contentFit="cover" />
@@ -260,7 +260,7 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable
         key={`d-${id}`}
         style={({ pressed }) => [styles.hCard, wide && styles.hCardWide, pressed && styles.pressed]}
-        onPress={() => navigation.navigate('DirectoryDetail', { id })}
+        onPress={() => navigation.push('DirectoryDetail', { id })}
       >
         {logo ? (
           <RemoteImage url={logo} style={imgStyle} contentFit="cover" />
