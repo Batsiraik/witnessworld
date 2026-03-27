@@ -8,7 +8,7 @@ function witnessworld_db_status(): array
     try {
         require_once __DIR__ . '/conn.php';
         witnessworld_pdo()->query('SELECT 1');
-        return ['ok' => true, 'message' => 'Connected to remote database.'];
+        return ['ok' => true, 'message' => 'Connected to database.'];
     } catch (Throwable $e) {
         return [
             'ok' => false,
