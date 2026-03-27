@@ -274,3 +274,12 @@ const styles = StyleSheet.create({
   price: { fontSize: 14, fontWeight: '800', color: colors.primaryDark, marginTop: 6 },
   priceMuted: { fontSize: 13, fontWeight: '600', color: colors.textMuted, marginTop: 6 },
 });
+
+/** Separate route components so native-stack keeps distinct screen instances (shared component breaks back stack). */
+export function BrowseClassifiedsScreen(props: NativeStackScreenProps<HomeStackParamList, 'Classifieds'>) {
+  return <BrowseListingsScreen {...props} />;
+}
+
+export function BrowseServicesScreen(props: NativeStackScreenProps<HomeStackParamList, 'Services'>) {
+  return <BrowseListingsScreen {...props} />;
+}

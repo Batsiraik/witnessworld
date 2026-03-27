@@ -99,16 +99,13 @@ try {
     if (($user['status'] ?? '') !== 'verified' && !$isSupportConv) {
         ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
     }
-    if ($isSupportConv && $userId !== $suid) {
-        if (!$hasFile) {
-            ww_json(['ok' => false, 'error' => 'Tech support requires a photo with each message'], 422);
-        }
+    if ($isSupportConv && $userId !== $suid && $hasFile) {
         $img = ww_message_attachment_resolve_image_only($detected ?? '', $uploadOrigName);
         if ($img === null) {
             $img = ww_message_attachment_resolve_image_only($uploadClientMime, $uploadOrigName);
         }
         if ($img === null) {
-            ww_json(['ok' => false, 'error' => 'Only image attachments are allowed for tech support'], 422);
+            ww_json(['ok' => false, 'error' => 'Only image attachments are allowed for Customer Support'], 422);
         }
         $resolved = $img;
     }

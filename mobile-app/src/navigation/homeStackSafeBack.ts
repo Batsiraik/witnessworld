@@ -1,18 +1,22 @@
-/** Minimal API used by back handler (avoids route-specific navigation prop variance). */
+import { StackActions, type StackNavigationState } from '@react-navigation/native';
+import type { HomeStackParamList } from './types';
+
+/** Narrow surface so each screen’s navigation prop is accepted without route-level union conflicts. */
 export type HomeStackBackNavigation = {
-  canGoBack(): boolean;
-  goBack(): void;
+  getState(): StackNavigationState<HomeStackParamList>;
+  dispatch(action: ReturnType<typeof StackActions.pop>): void;
   navigate(name: 'Home'): void;
 };
 
 /**
  * Header / programmatic back for the home marketplace stack.
- * If the stack has no history (common when `navigate` reused a screen as "root"),
- * `goBack()` can finish the Android activity — fall back to Home instead.
+ * Uses an explicit stack pop (not `goBack()`) so we never bubble to the tab/drawer/root
+ * when the inner stack is already at index 0 — which can finish the Android activity.
  */
 export function homeStackSafeGoBack(navigation: HomeStackBackNavigation): void {
-  if (navigation.canGoBack()) {
-    navigation.goBack();
+  const state = navigation.getState();
+  if (state.index > 0) {
+    navigation.dispatch(StackActions.pop());
     return;
   }
   navigation.navigate('Home');

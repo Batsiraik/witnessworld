@@ -49,7 +49,7 @@ function ww_message_attachment_resolve_type(string $declaredMime, ?string $origi
 }
 
 /**
- * Images only (for tech-support messages from members).
+ * Images only (for Customer Support messages from members).
  *
  * @return array{ext: string, mime: string}|null
  */

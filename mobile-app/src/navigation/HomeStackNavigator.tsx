@@ -3,7 +3,7 @@ import { DrawerActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet } from 'react-native';
 import { homeStackSafeGoBack, type HomeStackBackNavigation } from './homeStackSafeBack';
-import { BrowseListingsScreen } from '../screens/BrowseListingsScreen';
+import { BrowseClassifiedsScreen, BrowseServicesScreen } from '../screens/BrowseListingsScreen';
 import { BrowseProductsScreen } from '../screens/BrowseProductsScreen';
 import { BrowseStoresScreen } from '../screens/BrowseStoresScreen';
 import { CreateListingScreen } from '../screens/CreateListingScreen';
@@ -68,10 +68,10 @@ export function HomeStackNavigator() {
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Witness World' }} />
       <Stack.Screen
         name="Classifieds"
-        component={BrowseListingsScreen}
+        component={BrowseClassifiedsScreen}
         options={{ title: 'Classified marketplace' }}
       />
-      <Stack.Screen name="Services" component={BrowseListingsScreen} options={{ title: 'Service marketplace' }} />
+      <Stack.Screen name="Services" component={BrowseServicesScreen} options={{ title: 'Service marketplace' }} />
       <Stack.Screen name="Stores" component={BrowseStoresScreen} options={{ title: 'Online stores' }} />
       <Stack.Screen name="ProductsBrowse" component={BrowseProductsScreen} options={{ title: 'Shop products' }} />
       <Stack.Screen name="Directory" component={DirectoryScreen} options={{ title: 'Business directory' }} />

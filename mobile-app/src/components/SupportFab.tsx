@@ -18,7 +18,7 @@ export function SupportFab() {
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
       <Pressable
-        accessibilityLabel="Message tech support"
+        accessibilityLabel="Message Customer Support"
         onPress={() => stackNavigation.navigate('SupportChat', {})}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
       >

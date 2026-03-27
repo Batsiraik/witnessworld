@@ -43,8 +43,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $suid > 0) {
                     ww_push_to_user(
                         $pdo,
                         $memberId,
-                        'Support team',
-                        'You have a new message from the support team.',
+                        'Customer Support',
+                        'You have a new message from Customer Support.',
                         [
                             'type' => 'support_reply',
                             'conversation_id' => (string) $cid,
@@ -292,11 +292,35 @@ require __DIR__ . '/partials/shell_open.php';
                 <p class="whitespace-pre-wrap"><?= htmlspecialchars((string) $msg['body'], ENT_QUOTES, 'UTF-8') ?></p>
               <?php endif; ?>
               <?php if ($attId > 0): ?>
-                <p class="mt-2 text-xs font-semibold text-slate-600">
-                  📷 Image:
-                  <a class="text-brand underline" target="_blank" rel="noopener" href="<?= htmlspecialchars(($base === '' || $base === '.' ? '' : $base) . '/support_attachment.php?id=' . $attId, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) $msg['att_fn'], ENT_QUOTES, 'UTF-8') ?></a>
-                  <span class="text-slate-400">(<?= htmlspecialchars((string) $msg['att_mime'], ENT_QUOTES, 'UTF-8') ?>)</span>
-                </p>
+                <?php
+                  $attHref = ($base === '' || $base === '.' ? '' : $base) . '/support_attachment.php?id=' . $attId;
+                  $attMimeLower = strtolower(trim((string) $msg['att_mime']));
+                  $attIsImage = str_starts_with($attMimeLower, 'image/');
+                  ?>
+                <div class="mt-2 space-y-2">
+                  <?php if ($attIsImage): ?>
+                    <a href="<?= htmlspecialchars($attHref, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" class="block rounded-xl border border-slate-200 bg-slate-50/90 p-1 hover:border-brand/40" title="Open full size">
+                      <img
+                        src="<?= htmlspecialchars($attHref, ENT_QUOTES, 'UTF-8') ?>"
+                        alt="<?= htmlspecialchars((string) $msg['att_fn'], ENT_QUOTES, 'UTF-8') ?>"
+                        class="max-h-72 w-full rounded-lg object-contain"
+                        loading="lazy"
+                      />
+                    </a>
+                    <p class="text-[11px] text-slate-500">
+                      <span class="font-semibold text-slate-600">Attachment</span>
+                      · <?= htmlspecialchars((string) $msg['att_fn'], ENT_QUOTES, 'UTF-8') ?>
+                      · <?= htmlspecialchars((string) $msg['att_mime'], ENT_QUOTES, 'UTF-8') ?>
+                      · <a class="text-brand underline" href="<?= htmlspecialchars($attHref, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Open full size</a>
+                    </p>
+                  <?php else: ?>
+                    <p class="text-xs font-semibold text-slate-600">
+                      📎 File:
+                      <a class="text-brand underline" target="_blank" rel="noopener" href="<?= htmlspecialchars($attHref, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) $msg['att_fn'], ENT_QUOTES, 'UTF-8') ?></a>
+                      <span class="text-slate-400">(<?= htmlspecialchars((string) $msg['att_mime'], ENT_QUOTES, 'UTF-8') ?>)</span>
+                    </p>
+                  <?php endif; ?>
+                </div>
               <?php endif; ?>
               <p class="mt-1 text-[10px] text-slate-400"><?= htmlspecialchars(substr((string) $msg['created_at'], 0, 16), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
@@ -309,7 +333,7 @@ require __DIR__ . '/partials/shell_open.php';
       <form method="post" class="border-t border-slate-100 p-4 space-y-2 bg-white">
         <input type="hidden" name="action" value="reply" />
         <input type="hidden" name="conversation_id" value="<?= (int) $openId ?>" />
-        <label class="text-xs font-semibold text-slate-600">Reply as support</label>
+        <label class="text-xs font-semibold text-slate-600">Reply as Customer Support</label>
         <textarea
           name="body"
           rows="3"

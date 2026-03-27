@@ -21,6 +21,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   apiGet,
   apiPost,
+  apiSendMessage,
   apiSendMessageWithFile,
   downloadMessageAttachment,
 } from '../api/client';
@@ -78,7 +79,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
         const cid =
           typeof data.conversation_id === 'number' ? data.conversation_id : Number(data.conversation_id);
         if (!Number.isFinite(cid) || cid <= 0) {
-          throw new Error('Could not open support chat');
+          throw new Error('Could not open Customer Support chat');
         }
         if (!cancelled) {
           setConversationId(cid);
@@ -86,8 +87,8 @@ export function SupportChatScreen({ navigation, route }: Props) {
       } catch (e) {
         if (!cancelled) {
           Alert.alert(
-            'Support',
-            e instanceof Error ? e.message : 'Support is unavailable. Try again later.'
+            'Customer Support',
+            e instanceof Error ? e.message : 'Customer Support is unavailable. Try again later.'
           );
           navigation.goBack();
         }
@@ -154,7 +155,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (perm.status !== 'granted') {
-        Alert.alert('Photos', 'Allow photo access to send pictures to support.');
+        Alert.alert('Photos', 'Allow photo access to attach images for Customer Support.');
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -177,15 +178,19 @@ export function SupportChatScreen({ navigation, route }: Props) {
 
   const send = async () => {
     const cid = conversationId;
-    if (cid == null || !pendingFile || sending) return;
     const t = text.trim();
+    if (cid == null || (!t && !pendingFile) || sending) return;
     setSending(true);
     setSendProgress(null);
     try {
-      setSendProgress(0);
-      await apiSendMessageWithFile(cid, t, pendingFile, (p) => setSendProgress(p));
-      setPendingFile(null);
-      setSendProgress(null);
+      if (pendingFile) {
+        setSendProgress(0);
+        await apiSendMessageWithFile(cid, t, pendingFile, (p) => setSendProgress(p));
+        setPendingFile(null);
+        setSendProgress(null);
+      } else {
+        await apiSendMessage(cid, t);
+      }
       setText('');
       await load('full');
     } catch (e) {
@@ -212,7 +217,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
     }
   };
 
-  const canSend = pendingFile != null;
+  const canSend = text.trim().length > 0 || pendingFile != null;
   /** Root stack has no native header; offset = status bar + custom top bar. */
   const keyboardVerticalOffset = insets.top + 56;
 
@@ -221,7 +226,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
       <GradientBackground>
         <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.openingHint}>Connecting to support…</Text>
+          <Text style={styles.openingHint}>Connecting to Customer Support…</Text>
         </SafeAreaView>
       </GradientBackground>
     );
@@ -240,7 +245,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
             <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={26} color={colors.primaryDark} />
             </Pressable>
-            <Text style={styles.topTitle}>Tech support</Text>
+            <Text style={styles.topTitle}>Customer Support</Text>
             <View style={styles.backBtn} />
           </View>
           <Modal
@@ -316,7 +321,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
             />
           )}
           <View style={styles.composer}>
-            <Text style={styles.hint}>Send a photo (required). You can add a short note.</Text>
+            <Text style={styles.hint}>Write a message, or attach a photo (optional).</Text>
             {pendingFile ? (
               <View style={styles.pendingRow}>
                 <Image source={{ uri: pendingFile.uri }} style={styles.pendingThumb} contentFit="cover" />
@@ -330,11 +335,11 @@ export function SupportChatScreen({ navigation, route }: Props) {
             ) : null}
             <Pressable onPress={() => void pickImage()} style={styles.pickPhotoBtn} hitSlop={8}>
               <Ionicons name="image-outline" size={22} color={colors.primaryDark} />
-              <Text style={styles.pickPhotoText}>Choose photo</Text>
+              <Text style={styles.pickPhotoText}>Attach photo (optional)</Text>
             </Pressable>
             <TextInput
               style={styles.input}
-              placeholder="Optional message with your photo…"
+              placeholder="Message to Customer Support…"
               placeholderTextColor={colors.textMuted}
               value={text}
               onChangeText={setText}
@@ -345,7 +350,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
               <Text style={styles.sendProgress}>Sending… {sendProgress}%</Text>
             ) : null}
             <PrimaryButton
-              label={sending ? '…' : 'Send to support'}
+              label={sending ? '…' : 'Send to Customer Support'}
               onPress={() => void send()}
               disabled={!canSend}
               loading={sending}

@@ -24,7 +24,7 @@ if (!$user) {
 
 $suid = ww_support_user_id($pdo);
 if ($suid <= 0) {
-    ww_json(['ok' => false, 'error' => 'Tech support is not configured'], 503);
+    ww_json(['ok' => false, 'error' => 'Customer Support is not configured'], 503);
 }
 
 $userId = (int) $user['id'];
@@ -36,7 +36,7 @@ try {
     $st = $pdo->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
     $st->execute([$suid]);
     if (!$st->fetchColumn()) {
-        ww_json(['ok' => false, 'error' => 'Support account missing'], 503);
+        ww_json(['ok' => false, 'error' => 'Customer Support account missing'], 503);
     }
 } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Database error'], 500);
@@ -52,7 +52,7 @@ try {
     $ins->execute([$low, $high, $contextKey]);
     $cid = (int) $pdo->lastInsertId();
 } catch (Throwable) {
-    ww_json(['ok' => false, 'error' => 'Could not open support conversation'], 500);
+    ww_json(['ok' => false, 'error' => 'Could not open Customer Support conversation'], 500);
 }
 
 ww_json(['ok' => true, 'conversation_id' => $cid]);

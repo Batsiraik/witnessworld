@@ -11,7 +11,7 @@ SET NAMES utf8mb4;
 -- ---------------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------------
--- 2026-03-25: Tech support chat (Fiverr-style FAB → admin customer support)
+-- 2026-03-25: Customer Support chat (Fiverr-style FAB → admin inbox)
 -- ---------------------------------------------------------------------------
 ALTER TABLE conversations
   ADD COLUMN member_last_read_at DATETIME NULL DEFAULT NULL AFTER last_message_at,

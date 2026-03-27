@@ -17,7 +17,7 @@ type Props = {
   visible: boolean;
   variant: 'pending' | 'declined';
   supportEmail: string;
-  /** When set with onMessageSupport, shows in-app tech support entry above the email line. */
+  /** When set with onMessageSupport, shows in-app Customer Support entry above the email line. */
   supportAvailable?: boolean;
   onMessageSupport?: () => void;
   /** Re-fetches account status from the server (e.g. after admin approval). */
@@ -83,9 +83,9 @@ export function VerificationLockOverlay({
               <Pressable
                 onPress={onMessageSupport}
                 style={({ pressed }) => [styles.supportChatBtn, pressed && styles.supportChatBtnPressed]}
-                accessibilityLabel="Open tech support chat"
+                accessibilityLabel="Open Customer Support chat"
               >
-                <Text style={styles.supportChatBtnText}>Message tech support (photos)</Text>
+                <Text style={styles.supportChatBtnText}>Message Customer Support</Text>
               </Pressable>
             ) : null}
             <Text style={styles.hint}>This message will clear once an admin has verified your account.</Text>

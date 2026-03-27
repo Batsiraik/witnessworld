@@ -31,7 +31,7 @@ if ($conversationId <= 0) {
 
 $suid = ww_support_user_id($pdo);
 if ($suid <= 0) {
-    ww_json(['ok' => false, 'error' => 'Tech support is not configured'], 503);
+    ww_json(['ok' => false, 'error' => 'Customer Support is not configured'], 503);
 }
 
 try {
