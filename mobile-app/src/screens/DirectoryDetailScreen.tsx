@@ -48,7 +48,7 @@ type Entry = {
 
 export function DirectoryDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user } = useDashboardContext();
+  const { user, stackNavigation } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [entry, setEntry] = useState<Entry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +97,13 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
         context_type: 'directory_entry',
         context_id: entry.id,
       });
-      openInboxChat(navigation, conversation_id, entry.owner_label);
+      openInboxChat(
+        navigation,
+        conversation_id,
+        entry.owner_label,
+        entry.owner_user_id,
+        entry.owner_username
+      );
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');
     } finally {
@@ -188,7 +194,24 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
           </Text>
 
           {entry.owner_user_id !== myId ? (
+            <PrimaryButton
+              label="View profile"
+              variant="outline"
+              style={styles.ownerCtaFirst}
+              onPress={() => navigation.push('MemberPublicProfile', { userId: entry.owner_user_id })}
+            />
+          ) : null}
+          {entry.owner_user_id !== myId ? (
             <PrimaryButton label="Message owner" onPress={() => void messageOwner()} loading={msgBusy} />
+          ) : null}
+          {entry.owner_user_id !== myId ? (
+            <PrimaryButton
+              label={`Hire (${entry.owner_username})`}
+              variant="outline"
+              onPress={() =>
+                stackNavigation.navigate('HireComingSoon', { username: entry.owner_username })
+              }
+            />
           ) : null}
           <PrimaryButton
             label="Report this listing"
@@ -243,5 +266,6 @@ const styles = StyleSheet.create({
   },
   actionText: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
   actionTextShrink: { flexShrink: 1 },
+  ownerCtaFirst: { marginTop: 14 },
   reportBtn: { marginTop: 10 },
 });

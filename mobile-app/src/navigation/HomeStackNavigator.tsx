@@ -9,6 +9,7 @@ import { BrowseStoresScreen } from '../screens/BrowseStoresScreen';
 import { CreateListingScreen } from '../screens/CreateListingScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ListingDetailScreen } from '../screens/ListingDetailScreen';
+import { MemberPublicProfileScreen } from '../screens/MemberPublicProfileScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { ProfileSettingsScreen } from '../screens/ProfileSettingsScreen';
 import { CreateDirectoryEntryScreen } from '../screens/CreateDirectoryEntryScreen';
@@ -17,6 +18,7 @@ import { StoreDetailPublicScreen } from '../screens/StoreDetailPublicScreen';
 import { DirectoryDetailScreen } from '../screens/DirectoryDetailScreen';
 import { DirectoryScreen } from '../screens/DirectoryScreen';
 import { ProviderHubScreen } from '../screens/ProviderHubScreen';
+import { CartScreen } from '../screens/CartScreen';
 import { colors } from '../theme/colors';
 import type { HomeStackParamList } from './types';
 
@@ -77,8 +79,14 @@ export function HomeStackNavigator() {
       <Stack.Screen name="Directory" component={DirectoryScreen} options={{ title: 'Business directory' }} />
       <Stack.Screen name="DirectoryDetail" component={DirectoryDetailScreen} options={{ title: 'Business' }} />
       <Stack.Screen name="ListingDetail" component={ListingDetailScreen} options={{ title: 'Listing' }} />
+      <Stack.Screen
+        name="MemberPublicProfile"
+        component={MemberPublicProfileScreen}
+        options={{ title: 'Profile' }}
+      />
       <Stack.Screen name="StoreDetailPublic" component={StoreDetailPublicScreen} options={{ title: 'Store' }} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product' }} />
+      <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart' }} />
       <Stack.Screen name="Profile" component={ProfileSettingsScreen} options={{ title: 'Profile & settings' }} />
       <Stack.Screen
         name="ProviderHub"

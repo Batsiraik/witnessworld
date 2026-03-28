@@ -41,6 +41,8 @@ type ExploreRoute = Exclude<
   | 'CreateDirectoryEntry'
   | 'DirectoryDetail'
   | 'ListingDetail'
+  | 'MemberPublicProfile'
+  | 'Cart'
   | 'StoreDetailPublic'
   | 'ProductDetail'
 >;

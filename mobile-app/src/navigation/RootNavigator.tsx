@@ -14,6 +14,7 @@ import { QuestionnaireScreen } from '../screens/QuestionnaireScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { SupportChatScreen } from '../screens/SupportChatScreen';
+import { HireComingSoonScreen } from '../screens/HireComingSoonScreen';
 import { colors } from '../theme/colors';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -103,6 +104,18 @@ export function RootNavigator() {
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="SupportChat" component={SupportChatScreen} />
+      <Stack.Screen
+        name="HireComingSoon"
+        component={HireComingSoonScreen}
+        options={{
+          headerShown: true,
+          title: 'Hire',
+          headerStyle: { backgroundColor: colors.white },
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: '800', fontSize: 17, color: colors.text },
+        }}
+      />
     </Stack.Navigator>
   );
 }

@@ -10,8 +10,10 @@ export type HomeStackParamList = {
   Directory: undefined;
   DirectoryDetail: { id: number };
   ListingDetail: { id: number };
+  MemberPublicProfile: { userId: number };
   StoreDetailPublic: { id: number };
   ProductDetail: { id: number };
+  Cart: undefined;
   Profile: undefined;
   ProviderHub: undefined;
   CreateListing: { listingType?: 'classified' | 'service'; seed?: number };
@@ -21,7 +23,7 @@ export type HomeStackParamList = {
 
 export type InboxStackParamList = {
   Inbox: undefined;
-  Chat: { conversationId: number; peerName?: string };
+  Chat: { conversationId: number; peerName?: string; peerUserId?: number; peerUsername?: string };
 };
 
 export type OfficeStackParamList = {
@@ -56,6 +58,7 @@ export type RootStackParamList = {
   PrivacyPolicy: undefined;
   Dashboard: undefined;
   SupportChat: { conversationId?: number };
+  HireComingSoon: { username?: string };
 };
 
 export type RootNav = NativeStackNavigationProp<RootStackParamList>;

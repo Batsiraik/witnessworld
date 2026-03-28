@@ -98,7 +98,12 @@ export function InboxListScreen({ navigation }: Props) {
               <Pressable
                 style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
                 onPress={() =>
-                  navigation.navigate('Chat', { conversationId: item.id, peerName: item.peer.label })
+                  navigation.navigate('Chat', {
+                    conversationId: item.id,
+                    peerName: item.peer.label?.trim() || item.peer.username,
+                    peerUserId: item.peer.user_id,
+                    peerUsername: item.peer.username,
+                  })
                 }
               >
                 {item.peer.avatar_url && String(item.peer.avatar_url).trim() !== '' ? (

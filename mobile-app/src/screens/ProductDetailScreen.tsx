@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -88,6 +88,29 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     };
   }, [id]);
 
+  useLayoutEffect(() => {
+    const canAddToCart =
+      row != null &&
+      row.seller.user_id !== myId &&
+      row.product.moderation_status !== 'pending_approval';
+    navigation.setOptions({
+      headerRight:
+        canAddToCart === true
+          ? () => (
+              <Pressable
+                onPress={() => navigation.push('Cart')}
+                style={headerCartStyles.wrap}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Add to cart"
+              >
+                <Ionicons name="cart-outline" size={26} color={colors.text} />
+              </Pressable>
+            )
+          : undefined,
+    });
+  }, [navigation, row, myId]);
+
   const contact = async () => {
     if (!row) return;
     if (row.seller.user_id === myId) {
@@ -101,7 +124,13 @@ export function ProductDetailScreen({ navigation, route }: Props) {
         context_type: 'product',
         context_id: row.product.id,
       });
-      openInboxChat(navigation, conversation_id, row.seller.label);
+      openInboxChat(
+        navigation,
+        conversation_id,
+        row.seller.label,
+        row.seller.user_id,
+        row.seller.username
+      );
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');
     } finally {
@@ -196,6 +225,14 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           </View>
 
           {seller.user_id !== myId ? (
+            <PrimaryButton
+              label="View profile"
+              variant="outline"
+              onPress={() => navigation.push('MemberPublicProfile', { userId: seller.user_id })}
+              style={styles.viewProfileBtn}
+            />
+          ) : null}
+          {seller.user_id !== myId ? (
             <PrimaryButton label="Contact shop owner" onPress={() => void contact()} loading={busy} />
           ) : null}
           <PrimaryButton
@@ -264,6 +301,7 @@ const styles = StyleSheet.create({
   avatarPh: { alignItems: 'center', justifyContent: 'center' },
   sellerName: { fontSize: 16, fontWeight: '800', color: colors.text },
   sellerUser: { fontSize: 13, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
+  viewProfileBtn: { marginTop: 12 },
   reportBtn: { marginTop: 10 },
   ownerNote: {
     backgroundColor: 'rgba(194, 65, 12, 0.12)',
@@ -274,4 +312,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(194, 65, 12, 0.35)',
   },
   ownerNoteText: { fontSize: 13, fontWeight: '600', color: '#9a3412', lineHeight: 18 },
+});
+
+const headerCartStyles = StyleSheet.create({
+  wrap: { marginRight: 12, padding: 4 },
 });

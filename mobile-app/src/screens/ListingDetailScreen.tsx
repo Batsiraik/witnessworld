@@ -45,7 +45,7 @@ type Listing = {
 
 export function ListingDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user } = useDashboardContext();
+  const { user, stackNavigation } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +119,13 @@ export function ListingDetailScreen({ navigation, route }: Props) {
         context_type: 'listing',
         context_id: listing.id,
       });
-      openInboxChat(navigation, conversation_id, listing.seller.label || listing.seller.username);
+      openInboxChat(
+        navigation,
+        conversation_id,
+        listing.seller.label || listing.seller.username,
+        listing.seller.user_id,
+        listing.seller.username
+      );
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');
     } finally {
@@ -213,7 +219,24 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           </View>
 
           {listing.seller.user_id !== myId ? (
+            <PrimaryButton
+              label="View profile"
+              variant="outline"
+              onPress={() => navigation.push('MemberPublicProfile', { userId: listing.seller.user_id })}
+              style={styles.viewProfileBtn}
+            />
+          ) : null}
+          {listing.seller.user_id !== myId ? (
             <PrimaryButton label={contactLabel} onPress={() => void contact()} loading={contactBusy} />
+          ) : null}
+          {listing.seller.user_id !== myId ? (
+            <PrimaryButton
+              label={`Hire (${listing.seller.username})`}
+              variant="outline"
+              onPress={() =>
+                stackNavigation.navigate('HireComingSoon', { username: listing.seller.username })
+              }
+            />
           ) : null}
           <PrimaryButton
             label="Report this listing"
@@ -288,5 +311,6 @@ const styles = StyleSheet.create({
   avatarPh: { alignItems: 'center', justifyContent: 'center' },
   sellerName: { fontSize: 16, fontWeight: '800', color: colors.text },
   sellerUser: { fontSize: 13, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
+  viewProfileBtn: { marginTop: 12 },
   reportBtn: { marginTop: 10 },
 });

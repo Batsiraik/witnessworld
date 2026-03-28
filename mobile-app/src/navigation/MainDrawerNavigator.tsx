@@ -28,6 +28,8 @@ type DrawerExploreKey = Exclude<
   | 'CreateDirectoryEntry'
   | 'DirectoryDetail'
   | 'ListingDetail'
+  | 'MemberPublicProfile'
+  | 'Cart'
   | 'StoreDetailPublic'
   | 'ProductDetail'
 >;

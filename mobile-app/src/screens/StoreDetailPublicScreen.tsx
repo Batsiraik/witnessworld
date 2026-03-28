@@ -49,7 +49,7 @@ type Store = {
 
 export function StoreDetailPublicScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user } = useDashboardContext();
+  const { user, stackNavigation } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,7 +94,13 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
         context_type: 'store',
         context_id: store.id,
       });
-      openInboxChat(navigation, conversation_id, store.seller.label);
+      openInboxChat(
+        navigation,
+        conversation_id,
+        store.seller.label,
+        store.seller.user_id,
+        store.seller.username
+      );
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');
     } finally {
@@ -145,33 +151,49 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
           {store.products.length === 0 ? (
             <Text style={styles.empty}>No approved products yet.</Text>
           ) : (
-            store.products.map((p) => (
-              <Pressable
-                key={p.id}
-                style={({ pressed }) => [styles.pRow, pressed && styles.pPressed]}
-                onPress={() => navigation.push('ProductDetail', { id: p.id })}
-              >
-                {p.image_url ? (
-                  <RemoteImage url={p.image_url} style={styles.pImg} contentFit="cover" />
-                ) : (
-                  <View style={[styles.pImg, styles.pPh]}>
-                    <Ionicons name="cube-outline" size={22} color={colors.textMuted} />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.pName} numberOfLines={2}>
-                    {p.name}
-                  </Text>
-                  {p.moderation_status === 'pending_approval' ? (
-                    <Text style={styles.pPending}>Pending approval</Text>
+            store.products.map((p) => {
+              const canAddToCart =
+                store.seller.user_id !== myId && p.moderation_status !== 'pending_approval';
+              return (
+                <View key={p.id} style={styles.pRow}>
+                  <Pressable
+                    style={({ pressed }) => [styles.pRowMain, pressed && styles.pPressed]}
+                    onPress={() => navigation.push('ProductDetail', { id: p.id })}
+                  >
+                    {p.image_url ? (
+                      <RemoteImage url={p.image_url} style={styles.pImg} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.pImg, styles.pPh]}>
+                        <Ionicons name="cube-outline" size={22} color={colors.textMuted} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.pName} numberOfLines={2}>
+                        {p.name}
+                      </Text>
+                      {p.moderation_status === 'pending_approval' ? (
+                        <Text style={styles.pPending}>Pending approval</Text>
+                      ) : null}
+                      <Text style={styles.pPrice}>
+                        {p.currency} {p.price_amount}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  </Pressable>
+                  {canAddToCart ? (
+                    <Pressable
+                      onPress={() => navigation.push('Cart')}
+                      style={({ pressed }) => [styles.pCartBtn, pressed && styles.pCartBtnPressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Add to cart"
+                      hitSlop={8}
+                    >
+                      <Ionicons name="cart-outline" size={24} color={colors.primaryDark} />
+                    </Pressable>
                   ) : null}
-                  <Text style={styles.pPrice}>
-                    {p.currency} {p.price_amount}
-                  </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              </Pressable>
-            ))
+              );
+            })
           )}
 
           <Text style={styles.section}>Owner</Text>
@@ -191,7 +213,23 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
 
           <View style={styles.ctaBlock}>
             {store.seller.user_id !== myId ? (
+              <PrimaryButton
+                label="View profile"
+                variant="outline"
+                onPress={() => navigation.push('MemberPublicProfile', { userId: store.seller.user_id })}
+              />
+            ) : null}
+            {store.seller.user_id !== myId ? (
               <PrimaryButton label="Contact shop owner" onPress={() => void contact()} loading={busy} />
+            ) : null}
+            {store.seller.user_id !== myId ? (
+              <PrimaryButton
+                label={`Hire (${store.seller.username})`}
+                variant="outline"
+                onPress={() =>
+                  stackNavigation.navigate('HireComingSoon', { username: store.seller.username })
+                }
+              />
             ) : null}
             <PrimaryButton
               label="Report this store"
@@ -246,16 +284,32 @@ const styles = StyleSheet.create({
   empty: { paddingHorizontal: 20, marginTop: 8, color: colors.textMuted, fontWeight: '600' },
   pRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    alignItems: 'stretch',
     marginHorizontal: 20,
     marginTop: 10,
-    padding: 12,
     borderRadius: 14,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    overflow: 'hidden',
   },
+  pRowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    minWidth: 0,
+  },
+  pCartBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: colors.cardBorder,
+    backgroundColor: 'rgba(31, 170, 242, 0.08)',
+  },
+  pCartBtnPressed: { opacity: 0.88 },
   pPressed: { opacity: 0.92 },
   pImg: { width: 56, height: 56, borderRadius: 10, backgroundColor: colors.primarySoft },
   pPh: { alignItems: 'center', justifyContent: 'center' },

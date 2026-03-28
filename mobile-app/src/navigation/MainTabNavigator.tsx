@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { CommonActions, type NavigationState } from '@react-navigation/native';
+import { HOME_STACK_DETAIL_ROUTES } from './homeStackSafeBack';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { InboxStackNavigator } from './InboxStackNavigator';
 import { OfficeStackNavigator } from './OfficeStackNavigator';
@@ -30,6 +32,30 @@ export function MainTabNavigator() {
           title: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            let nav: typeof navigation | undefined = navigation;
+            for (let i = 0; i < 8 && nav; i++) {
+              const s = nav.getState() as NavigationState;
+              if (
+                s.type === 'stack' &&
+                Array.isArray(s.routeNames) &&
+                s.routeNames.includes('Home') &&
+                s.routeNames.includes('ListingDetail')
+              ) {
+                const idx = s.index;
+                const name = String(s.routes[idx]?.name ?? '');
+                if (idx === 0 && name === 'Home') return;
+                if (idx > 0 || HOME_STACK_DETAIL_ROUTES.has(name)) {
+                  e.preventDefault();
+                  nav.dispatch(CommonActions.navigate({ name: 'Home' }));
+                }
+                return;
+              }
+              nav = nav.getParent();
+            }
+          },
+        })}
       />
       <Tab.Screen
         name="InboxTab"

@@ -1,6 +1,8 @@
 import type { NavigationState, PartialState } from '@react-navigation/native';
+import { StackActions } from '@react-navigation/native';
 import { useEffect } from 'react';
 import { Alert, BackHandler, Platform } from 'react-native';
+import { findHomeStackPopTargetKey } from '../navigation/homeStackSafeBack';
 import { navigationRef } from '../navigation/navigationRef';
 
 /**
@@ -35,7 +37,13 @@ export function AndroidBackHandler(): null {
         return false;
       }
 
-      const root = navigationRef.getRootState();
+      const root = navigationRef.getRootState() as NavigationState | PartialState<NavigationState>;
+      const popKey = findHomeStackPopTargetKey(root as NavigationState);
+      if (popKey) {
+        navigationRef.dispatch({ ...StackActions.pop(1), target: popKey });
+        return true;
+      }
+
       if (navTreeCanGoBack(root)) {
         navigationRef.goBack();
         return true;

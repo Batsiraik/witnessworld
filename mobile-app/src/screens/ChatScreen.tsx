@@ -30,6 +30,7 @@ import { ChatAttachmentImage } from '../components/ChatAttachmentImage';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import type { InboxStackParamList } from '../navigation/types';
+import { useDashboardContext } from '../context/DashboardContext';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<InboxStackParamList, 'Chat'>;
@@ -52,8 +53,25 @@ type Msg = {
 
 type PendingFile = { uri: string; name: string; mime: string };
 
-export function ChatScreen({ route }: Props) {
-  const { conversationId, peerName } = route.params;
+export function ChatScreen({ route, navigation }: Props) {
+  const { conversationId, peerName, peerUserId, peerUsername } = route.params;
+  const { stackNavigation } = useDashboardContext();
+  const hireDisplay = peerUsername?.trim() || peerName?.trim() || 'member';
+  const hireLabel = `Hire (${hireDisplay})`;
+
+  const openPeerProfile = () => {
+    if (peerUserId == null || peerUserId <= 0) return;
+    navigation.getParent()?.navigate('HomeTab', {
+      screen: 'MemberPublicProfile',
+      params: { userId: peerUserId },
+    });
+  };
+
+  const openHire = () => {
+    stackNavigation.navigate('HireComingSoon', {
+      username: peerUsername?.trim() || peerName?.trim(),
+    });
+  };
   const headerHeight = useHeaderHeight();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
@@ -266,6 +284,22 @@ export function ChatScreen({ route }: Props) {
               )}
             />
           )}
+          <View style={styles.peerBar}>
+            {peerUserId != null && peerUserId > 0 ? (
+              <PrimaryButton
+                label="View profile"
+                variant="outline"
+                onPress={openPeerProfile}
+                style={styles.peerBarBtn}
+              />
+            ) : null}
+            <PrimaryButton
+              label={hireLabel}
+              variant="outline"
+              onPress={openHire}
+              style={styles.peerBarBtn}
+            />
+          </View>
           <View style={styles.composer}>
             {pendingFile ? (
               <View style={styles.pendingRow}>
@@ -317,6 +351,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16, paddingBottom: 8 },
+  peerBar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
+    backgroundColor: colors.white,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(11,18,32,0.08)',
+  },
+  peerBarBtn: { flexGrow: 1, flexBasis: '45%', minWidth: 120 },
   bubble: {
     maxWidth: '88%',
     padding: 12,
