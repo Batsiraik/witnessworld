@@ -218,8 +218,9 @@ export function SupportChatScreen({ navigation, route }: Props) {
   };
 
   const canSend = text.trim().length > 0 || pendingFile != null;
-  /** Root stack has no native header; offset = status bar + custom top bar. */
-  const keyboardVerticalOffset = insets.top + 56;
+  /** Root stack has no native header; offset = status bar + custom top bar (matches padded topBar). */
+  const topBarPaddingTop = insets.top + 10;
+  const keyboardVerticalOffset = topBarPaddingTop + 52;
 
   if (opening || conversationId == null) {
     return (
@@ -241,7 +242,7 @@ export function SupportChatScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
         <SafeAreaView style={styles.flex} edges={['bottom']}>
-          <View style={styles.topBar}>
+          <View style={[styles.topBar, { paddingTop: topBarPaddingTop }]}>
             <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={26} color={colors.primaryDark} />
             </Pressable>
@@ -372,7 +373,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(11,18,32,0.1)',
     backgroundColor: colors.white,
