@@ -10,7 +10,7 @@ export type HomeStackParamList = {
   Directory: undefined;
   DirectoryDetail: { id: number };
   ListingDetail: { id: number };
-  MemberPublicProfile: { userId: number };
+  MemberPublicProfile: { userId: number; listingViaHomeTab?: boolean };
   StoreDetailPublic: { id: number };
   ProductDetail: { id: number };
   Cart: undefined;
@@ -24,6 +24,7 @@ export type HomeStackParamList = {
 export type InboxStackParamList = {
   Inbox: undefined;
   Chat: { conversationId: number; peerName?: string; peerUserId?: number; peerUsername?: string };
+  MemberPublicProfile: { userId: number; listingViaHomeTab?: boolean };
 };
 
 export type OfficeStackParamList = {

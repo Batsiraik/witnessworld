@@ -1,4 +1,4 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,10 +14,12 @@ import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
-import type { HomeStackParamList } from '../navigation/types';
+import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'MemberPublicProfile'>;
+type Props =
+  | NativeStackScreenProps<HomeStackParamList, 'MemberPublicProfile'>
+  | NativeStackScreenProps<InboxStackParamList, 'MemberPublicProfile'>;
 
 type Member = {
   user_id: number;
@@ -37,8 +39,21 @@ type ListingMini = {
 };
 
 export function MemberPublicProfileScreen({ navigation, route }: Props) {
-  const { userId } = route.params;
+  const { userId, listingViaHomeTab } = route.params;
   const { stackNavigation } = useDashboardContext();
+
+  const goToListing = (listingId: number) => {
+    if (listingViaHomeTab) {
+      navigation.getParent()?.navigate('HomeTab', {
+        screen: 'ListingDetail',
+        params: { id: listingId },
+      });
+      return;
+    }
+    (navigation as NativeStackNavigationProp<HomeStackParamList>).push('ListingDetail', {
+      id: listingId,
+    });
+  };
   const [member, setMember] = useState<Member | null>(null);
   const [listings, setListings] = useState<ListingMini[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +144,7 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
               <Pressable
                 key={it.id}
                 style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-                onPress={() => navigation.push('ListingDetail', { id: it.id })}
+                onPress={() => goToListing(it.id)}
               >
                 {it.media_url ? (
                   <RemoteImage url={it.media_url} style={styles.thumb} contentFit="cover" />

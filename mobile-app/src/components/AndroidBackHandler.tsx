@@ -2,7 +2,11 @@ import type { NavigationState, PartialState } from '@react-navigation/native';
 import { StackActions } from '@react-navigation/native';
 import { useEffect } from 'react';
 import { Alert, BackHandler, Platform } from 'react-native';
-import { findHomeStackPopTargetKey } from '../navigation/homeStackSafeBack';
+import {
+  buildNavigateHomeOnStackAction,
+  findHomeStackNavigateHomeTargetKey,
+  findHomeStackPopTargetKey,
+} from '../navigation/homeStackSafeBack';
 import { navigationRef } from '../navigation/navigationRef';
 
 /**
@@ -41,6 +45,12 @@ export function AndroidBackHandler(): null {
       const popKey = findHomeStackPopTargetKey(root as NavigationState);
       if (popKey) {
         navigationRef.dispatch({ ...StackActions.pop(1), target: popKey });
+        return true;
+      }
+
+      const homeKey = findHomeStackNavigateHomeTargetKey(root as NavigationState);
+      if (homeKey) {
+        navigationRef.dispatch(buildNavigateHomeOnStackAction(homeKey));
         return true;
       }
 

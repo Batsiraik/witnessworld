@@ -61,9 +61,9 @@ export function ChatScreen({ route, navigation }: Props) {
 
   const openPeerProfile = () => {
     if (peerUserId == null || peerUserId <= 0) return;
-    navigation.getParent()?.navigate('HomeTab', {
-      screen: 'MemberPublicProfile',
-      params: { userId: peerUserId },
+    navigation.navigate('MemberPublicProfile', {
+      userId: peerUserId,
+      listingViaHomeTab: true,
     });
   };
 

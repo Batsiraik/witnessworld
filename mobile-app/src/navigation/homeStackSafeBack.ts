@@ -1,4 +1,4 @@
-import { StackActions, type NavigationState } from '@react-navigation/native';
+import { CommonActions, StackActions, type NavigationState } from '@react-navigation/native';
 import type { HomeStackParamList } from './types';
 
 /** Detail routes on the main Home tab stack (not root index screens like Classifieds). */
@@ -46,9 +46,21 @@ export function homeStackSafeGoBack(navigation: HomeStackBackNavigation): void {
     const idx = state.index;
     const route = state.routes[idx];
     const name = route ? String(route.name) : '';
+    const depth = state.routes.length;
+    const isDetail = HOME_STACK_DETAIL_ROUTES.has(name);
 
-    if (idx > 0 || HOME_STACK_DETAIL_ROUTES.has(name)) {
+    /**
+     * Never pop the last screen of the stack: on release Android builds with
+     * react-native-screens this can native-crash. Pop once only if history exists
+     * or the stack reports more than one route (RN Screens index quirk).
+     */
+    if (idx > 0 || (isDetail && depth > 1)) {
       nav.dispatch(StackActions.pop(1));
+      return;
+    }
+
+    if (isDetail && depth <= 1) {
+      nav.navigate('Home');
       return;
     }
 
@@ -78,8 +90,32 @@ export function findHomeStackPopTargetKey(state: NavigationState | undefined): s
   const idx = state.index;
   const r = state.routes[idx];
   const name = r ? String(r.name) : '';
-  if (idx > 0 || HOME_STACK_DETAIL_ROUTES.has(name)) {
+  const depth = state.routes.length;
+  const isDetail = HOME_STACK_DETAIL_ROUTES.has(name);
+  if (idx > 0 || (isDetail && depth > 1)) {
     return state.key;
   }
   return null;
+}
+
+/** When the home stack is a single detail route, hardware back should jump to Home, not pop. */
+export function findHomeStackNavigateHomeTargetKey(state: NavigationState | undefined): string | null {
+  if (!state) return null;
+  const active = state.routes[state.index];
+  if (active?.state) {
+    const deeper = findHomeStackNavigateHomeTargetKey(active.state as NavigationState);
+    if (deeper) return deeper;
+  }
+  if (!isWitnessHomeStackState(state)) return null;
+  const idx = state.index;
+  const r = state.routes[idx];
+  const name = r ? String(r.name) : '';
+  if (HOME_STACK_DETAIL_ROUTES.has(name) && state.routes.length <= 1) {
+    return state.key;
+  }
+  return null;
+}
+
+export function buildNavigateHomeOnStackAction(stackKey: string) {
+  return { ...CommonActions.navigate({ name: 'Home' }), target: stackKey };
 }

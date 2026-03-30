@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ChatScreen } from '../screens/ChatScreen';
 import { InboxListScreen } from '../screens/InboxListScreen';
+import { MemberPublicProfileScreen } from '../screens/MemberPublicProfileScreen';
 import { colors } from '../theme/colors';
 import type { InboxStackParamList } from './types';
 
@@ -22,6 +23,11 @@ export function InboxStackNavigator() {
         name="Chat"
         component={ChatScreen}
         options={({ route }) => ({ title: route.params.peerName || 'Chat' })}
+      />
+      <Stack.Screen
+        name="MemberPublicProfile"
+        component={MemberPublicProfileScreen}
+        options={{ title: 'Profile' }}
       />
     </Stack.Navigator>
   );
