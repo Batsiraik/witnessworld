@@ -56,7 +56,7 @@ export function BrowseStoresScreen({ navigation }: Props) {
       else setLoading(true);
       setErr(null);
       try {
-        const data = await apiGet(`marketplace-stores.php?${qs}`, true);
+        const data = await apiGet(`marketplace-stores.php?${qs}`, false);
         const L = data.stores;
         setRows(Array.isArray(L) ? (L as Row[]) : []);
       } catch (e) {

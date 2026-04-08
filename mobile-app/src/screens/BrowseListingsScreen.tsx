@@ -49,6 +49,18 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const initialQuery =
+    route.params && typeof route.params === 'object' && 'initialQuery' in route.params
+      ? String(route.params.initialQuery ?? '').trim()
+      : '';
+
+  useEffect(() => {
+    if (initialQuery) {
+      setQ(initialQuery);
+      setAppliedQ(initialQuery);
+    }
+  }, [initialQuery]);
+
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
     p.set('listing_type', listingType);
@@ -67,7 +79,7 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
       else setLoading(true);
       setErr(null);
       try {
-        const data = await apiGet(`marketplace-listings.php?${queryString}`, true);
+        const data = await apiGet(`marketplace-listings.php?${queryString}`, false);
         const L = data.listings;
         setRows(Array.isArray(L) ? (L as Row[]) : []);
       } catch (e) {

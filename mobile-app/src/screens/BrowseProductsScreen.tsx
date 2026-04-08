@@ -63,7 +63,7 @@ export function BrowseProductsScreen({ navigation }: Props) {
       else setLoading(true);
       setErr(null);
       try {
-        const data = await apiGet(`marketplace-products.php?${qs}`, true);
+        const data = await apiGet(`marketplace-products.php?${qs}`, false);
         const L = data.products;
         setRows(Array.isArray(L) ? (L as Row[]) : []);
       } catch (e) {

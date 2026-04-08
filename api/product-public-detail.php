@@ -10,26 +10,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
 }
 
 $tok = ww_bearer_token();
-if (!$tok) {
-    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
 $pdo = witnessworld_pdo();
-$user = ww_user_from_token($pdo, $tok);
-if (!$user) {
+$user = $tok ? ww_user_from_token($pdo, $tok) : null;
+if ($tok && !$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
 }
 
-if (($user['status'] ?? '') !== 'verified') {
-    ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
-}
+$userId = $user ? (int) $user['id'] : 0;
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
     ww_json(['ok' => false, 'error' => 'Invalid product id'], 422);
 }
 
-$userId = (int) $user['id'];
 try {
     $st = $pdo->prepare(
         'SELECT p.*, s.id AS store_id, s.name AS store_name, s.logo_url AS store_logo_url,
@@ -45,8 +38,8 @@ try {
     $st->execute([$id, 'approved', 'approved']);
     $row = $st->fetch(PDO::FETCH_ASSOC);
 
-    // Store owner can open their own catalog items before approval (same shape as public).
-    if (!$row) {
+    // Logged-in store owner can open their own catalog items before approval (same shape as public).
+    if (!$row && $userId > 0) {
         $st2 = $pdo->prepare(
             'SELECT p.*, s.id AS store_id, s.name AS store_name, s.logo_url AS store_logo_url,
                     s.description AS store_description, s.moderation_status AS store_status,

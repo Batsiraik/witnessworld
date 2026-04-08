@@ -3,26 +3,12 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once __DIR__ . '/lib/user_tokens.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
 }
 
-$tok = ww_bearer_token();
-if (!$tok) {
-    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
 $pdo = witnessworld_pdo();
-$viewer = ww_user_from_token($pdo, $tok);
-if (!$viewer) {
-    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
-if (($viewer['status'] ?? '') !== 'verified') {
-    ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
-}
 
 $targetId = (int) ($_GET['user_id'] ?? 0);
 if ($targetId <= 0) {

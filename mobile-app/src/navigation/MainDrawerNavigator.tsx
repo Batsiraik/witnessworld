@@ -48,9 +48,9 @@ function CustomDrawerContent(
   }
 ) {
   const insets = useSafeAreaInsets();
-  const { user } = useDashboardContext();
+  const { user, isGuest, showGuestPrompt } = useDashboardContext();
   const name =
-    [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() || 'Member';
+    [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() || (isGuest ? 'Guest' : 'Member');
   const avatarUri = user?.avatar_url && String(user.avatar_url).trim() !== '' ? String(user.avatar_url) : null;
 
   const signOut = async () => {
@@ -66,13 +66,21 @@ function CustomDrawerContent(
   };
 
   const goProfile = () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
     props.navigation.navigate('Main', {
-      screen: 'HomeTab',
+      screen: 'ProfileTab',
       params: { screen: 'Profile' },
     });
   };
 
   const goOffice = () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
     props.navigation.navigate('Main', {
       screen: 'OfficeTab',
       params: { screen: 'MyOffice' },
@@ -80,6 +88,10 @@ function CustomDrawerContent(
   };
 
   const goInbox = () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
     props.navigation.navigate('Main', {
       screen: 'InboxTab',
       params: { screen: 'Inbox' },
@@ -98,7 +110,10 @@ function CustomDrawerContent(
             )}
           </View>
           <Text style={styles.drawerName}>{name}</Text>
-          {user?.email ? <Text style={styles.drawerEmail}>{user.email}</Text> : null}
+          {!isGuest && user?.email ? <Text style={styles.drawerEmail}>{user.email}</Text> : null}
+          {isGuest ? (
+            <Text style={styles.drawerEmail}>Browse the marketplace. Sign in to message, hire, and sell.</Text>
+          ) : null}
         </View>
         <DrawerItem
           label="Home"
@@ -142,20 +157,41 @@ function CustomDrawerContent(
         ))}
       </DrawerContentScrollView>
       <View style={[styles.drawerFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <Pressable
-          onPress={goProfile}
-          style={({ pressed }) => [styles.profileBtn, pressed && styles.profileBtnPressed]}
-        >
-          <Ionicons name="settings-outline" size={22} color={colors.primaryDark} />
-          <Text style={styles.profileBtnText}>Profile & settings</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => void signOut()}
-          style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]}
-        >
-          <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-          <Text style={styles.logoutText}>Log out</Text>
-        </Pressable>
+        {isGuest ? (
+          <>
+            <Pressable
+              onPress={() => props.parentNavigation.navigate('Login')}
+              style={({ pressed }) => [styles.profileBtn, pressed && styles.profileBtnPressed]}
+            >
+              <Ionicons name="log-in-outline" size={22} color={colors.primaryDark} />
+              <Text style={styles.profileBtnText}>Sign in</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => props.parentNavigation.navigate('Register')}
+              style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed, styles.registerBtn]}
+            >
+              <Ionicons name="person-add-outline" size={22} color={colors.primaryDark} />
+              <Text style={styles.registerText}>Create account</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={goProfile}
+              style={({ pressed }) => [styles.profileBtn, pressed && styles.profileBtnPressed]}
+            >
+              <Ionicons name="settings-outline" size={22} color={colors.primaryDark} />
+              <Text style={styles.profileBtnText}>Profile & settings</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => void signOut()}
+              style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]}
+            >
+              <Ionicons name="log-out-outline" size={22} color={colors.danger} />
+              <Text style={styles.logoutText}>Log out</Text>
+            </Pressable>
+          </>
+        )}
       </View>
     </View>
   );
@@ -236,4 +272,10 @@ const styles = StyleSheet.create({
   },
   logoutBtnPressed: { opacity: 0.85 },
   logoutText: { fontSize: 16, fontWeight: '700', color: colors.danger },
+  registerBtn: {
+    backgroundColor: 'rgba(31, 170, 242, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(31, 170, 242, 0.35)',
+  },
+  registerText: { fontSize: 16, fontWeight: '700', color: colors.primaryDark },
 });

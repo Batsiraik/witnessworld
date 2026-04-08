@@ -23,13 +23,15 @@ import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
-import type { HomeStackParamList } from '../navigation/types';
+import type { HomeStackParamList, ProfileStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'Profile'>;
+type Props =
+  | NativeStackScreenProps<HomeStackParamList, 'Profile'>
+  | NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
 
 export function ProfileSettingsScreen(_props: Props) {
-  const { user, refreshProfile, stackNavigation } = useDashboardContext();
+  const { user, refreshProfile, stackNavigation, supportAvailable } = useDashboardContext();
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarUploadPct, setAvatarUploadPct] = useState<number | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -203,6 +205,18 @@ export function ProfileSettingsScreen(_props: Props) {
                 loading={pwdBusy}
               />
             </GlassCard>
+
+            {supportAvailable && user ? (
+              <GlassCard style={styles.card}>
+                <Text style={styles.sectionTitle}>Customer support</Text>
+                <Text style={styles.sectionHint}>Questions about your account or listings? Chat with our team.</Text>
+                <PrimaryButton
+                  label="Message support"
+                  variant="outline"
+                  onPress={() => stackNavigation.navigate('SupportChat', {})}
+                />
+              </GlassCard>
+            ) : null}
 
             <GlassCard style={[styles.card, styles.dangerCard]}>
               <Text style={styles.dangerTitle}>Delete account</Text>

@@ -3,12 +3,12 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, type AppStateStatus, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet } from '../api/client';
+import { apiGet, getStoredToken } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { GuestRequiredModal } from '../components/GuestRequiredModal';
 import { VerificationLockOverlay } from '../components/VerificationLockOverlay';
 import { DashboardProvider, type DashboardUser } from '../context/DashboardContext';
 import { usePushRegistration } from '../hooks/usePushRegistration';
-import { SupportFab } from '../components/SupportFab';
 import { MainDrawerNavigator } from '../navigation/MainDrawerNavigator';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -21,10 +21,17 @@ export function DashboardScreen({ navigation }: Props) {
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [supportEmail, setSupportEmail] = useState('info@witnessworldconnect.com');
   const [supportAvailable, setSupportAvailable] = useState(false);
+  const [guestModalVisible, setGuestModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const token = await getStoredToken();
+      if (!token) {
+        setUser(null);
+        setSupportAvailable(false);
+        return;
+      }
       const data = await apiGet('me.php', true);
       const u = (data.user as DashboardUser) || null;
       setUser(u);
@@ -64,7 +71,8 @@ export function DashboardScreen({ navigation }: Props) {
   );
 
   const status = user?.status ?? '';
-  const lockUnverified = status === 'pending_verification' || status === 'declined';
+  const isGuest = !user;
+  const lockUnverified = !isGuest && (status === 'pending_verification' || status === 'declined');
   const overlayVariant = status === 'declined' ? 'declined' : 'pending';
 
   usePushRegistration(!loading && !!user);
@@ -92,6 +100,8 @@ export function DashboardScreen({ navigation }: Props) {
       ) : (
         <DashboardProvider
           user={user}
+          isGuest={isGuest}
+          showGuestPrompt={() => setGuestModalVisible(true)}
           supportEmail={supportEmail}
           supportAvailable={supportAvailable}
           refreshProfile={refreshProfile}
@@ -99,7 +109,18 @@ export function DashboardScreen({ navigation }: Props) {
         >
           <View style={styles.fill}>
             <MainDrawerNavigator parentNavigation={navigation} />
-            <SupportFab />
+            <GuestRequiredModal
+              visible={guestModalVisible}
+              onDismiss={() => setGuestModalVisible(false)}
+              onSignIn={() => {
+                setGuestModalVisible(false);
+                navigation.navigate('Login');
+              }}
+              onCreateAccount={() => {
+                setGuestModalVisible(false);
+                navigation.navigate('Register');
+              }}
+            />
             <VerificationLockOverlay
               visible={lockUnverified && isDashboardFocused}
               variant={overlayVariant}

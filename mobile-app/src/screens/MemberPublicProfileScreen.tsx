@@ -69,7 +69,7 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
       setLoading(true);
       setErr(null);
       try {
-        const data = await apiGet(`member-public.php?user_id=${userId}`, true);
+        const data = await apiGet(`member-public.php?user_id=${userId}`, false);
         if (cancelled) return;
         const m = data.member as Member | undefined;
         const L = data.listings;

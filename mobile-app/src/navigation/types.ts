@@ -3,8 +3,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 export type HomeStackParamList = {
   Home: undefined;
-  Classifieds: undefined;
-  Services: undefined;
+  Classifieds: { initialQuery?: string } | undefined;
+  Services: { initialQuery?: string } | undefined;
   Stores: undefined;
   ProductsBrowse: undefined;
   Directory: undefined;
@@ -36,9 +36,26 @@ export type OfficeStackParamList = {
   EditDirectoryEntry: { entryId: number };
 };
 
+/** Discover tab — browse entry points (detail screens live on Home stack). */
+export type DiscoverStackParamList = {
+  Discover: undefined;
+};
+
+/** Profile tab — settings only (detail flows use Home stack). */
+export type ProfileStackParamList = {
+  Profile: undefined;
+};
+
+export type PostTabStackParamList = {
+  PostEmpty: undefined;
+};
+
 export type MainTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList>;
+  DiscoverTab: NavigatorScreenParams<DiscoverStackParamList>;
+  PostTab: NavigatorScreenParams<PostTabStackParamList>;
   InboxTab: NavigatorScreenParams<InboxStackParamList>;
+  ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
   OfficeTab: NavigatorScreenParams<OfficeStackParamList>;
 };
 

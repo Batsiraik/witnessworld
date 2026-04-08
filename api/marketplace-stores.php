@@ -11,18 +11,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
 }
 
 $tok = ww_bearer_token();
-if (!$tok) {
-    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
 $pdo = witnessworld_pdo();
-$user = ww_user_from_token($pdo, $tok);
-if (!$user) {
+$user = $tok ? ww_user_from_token($pdo, $tok) : null;
+if ($tok && !$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
-if (($user['status'] ?? '') !== 'verified') {
-    ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
 }
 
 $country = strtoupper(trim((string) ($_GET['country'] ?? '')));

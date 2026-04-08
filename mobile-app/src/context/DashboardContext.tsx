@@ -15,6 +15,10 @@ export type DashboardUser = {
 
 type Ctx = {
   user: DashboardUser | null;
+  /** True when browsing without a logged-in account */
+  isGuest: boolean;
+  /** Prompt to sign in or register (guest-only actions) */
+  showGuestPrompt: () => void;
   supportEmail: string;
   supportAvailable: boolean;
   refreshProfile: () => Promise<void>;
@@ -26,6 +30,8 @@ const DashboardContext = createContext<Ctx | null>(null);
 export function DashboardProvider({
   children,
   user,
+  isGuest,
+  showGuestPrompt,
   supportEmail,
   supportAvailable,
   refreshProfile,
@@ -33,6 +39,8 @@ export function DashboardProvider({
 }: {
   children: ReactNode;
   user: DashboardUser | null;
+  isGuest: boolean;
+  showGuestPrompt: () => void;
   supportEmail: string;
   supportAvailable: boolean;
   refreshProfile: () => Promise<void>;
@@ -40,7 +48,15 @@ export function DashboardProvider({
 }) {
   return (
     <DashboardContext.Provider
-      value={{ user, supportEmail, supportAvailable, refreshProfile, stackNavigation }}
+      value={{
+        user,
+        isGuest,
+        showGuestPrompt,
+        supportEmail,
+        supportAvailable,
+        refreshProfile,
+        stackNavigation,
+      }}
     >
       {children}
     </DashboardContext.Provider>

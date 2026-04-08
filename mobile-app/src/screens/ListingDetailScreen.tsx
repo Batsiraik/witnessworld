@@ -45,7 +45,7 @@ type Listing = {
 
 export function ListingDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user, stackNavigation } = useDashboardContext();
+  const { user, stackNavigation, isGuest, showGuestPrompt } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +68,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           setLoading(true);
           setErr(null);
           try {
-            const data = await apiGet(`listing-public-detail.php?id=${id}`, true);
+            const data = await apiGet(`listing-public-detail.php?id=${id}`, false);
             if (cancelled) return;
             const L = data.listing as Listing | undefined;
             if (!L) {
@@ -87,7 +87,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           }
         } else {
           try {
-            const data = await apiGet(`listing-public-detail.php?id=${id}`, true);
+            const data = await apiGet(`listing-public-detail.php?id=${id}`, false);
             if (cancelled) return;
             const L = data.listing as Listing | undefined;
             if (L) {
@@ -108,6 +108,10 @@ export function ListingDetailScreen({ navigation, route }: Props) {
 
   const contact = async () => {
     if (!listing) return;
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
     if (listing.seller.user_id === myId) {
       Alert.alert('Yours', 'This is your own listing.');
       return;
@@ -233,14 +237,24 @@ export function ListingDetailScreen({ navigation, route }: Props) {
             <PrimaryButton
               label={`Hire (${listing.seller.username})`}
               variant="outline"
-              onPress={() =>
-                stackNavigation.navigate('HireComingSoon', { username: listing.seller.username })
-              }
+              onPress={() => {
+                if (isGuest) {
+                  showGuestPrompt();
+                  return;
+                }
+                stackNavigation.navigate('HireComingSoon', { username: listing.seller.username });
+              }}
             />
           ) : null}
           <PrimaryButton
             label="Report this listing"
-            onPress={() => setReportOpen(true)}
+            onPress={() => {
+              if (isGuest) {
+                showGuestPrompt();
+                return;
+              }
+              setReportOpen(true);
+            }}
             variant="outline"
             style={styles.reportBtn}
           />

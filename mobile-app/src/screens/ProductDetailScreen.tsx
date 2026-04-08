@@ -49,7 +49,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const rawId = route.params?.id;
   const id =
     typeof rawId === 'number' && Number.isFinite(rawId) ? Math.floor(rawId) : Math.floor(Number(rawId));
-  const { user } = useDashboardContext();
+  const { user, isGuest, showGuestPrompt } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [row, setRow] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +67,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     (async () => {
       setLoading(true);
       try {
-        const j = await apiGet(`product-public-detail.php?id=${id}`, true);
+        const j = await apiGet(`product-public-detail.php?id=${id}`, false);
         if (cancelled) return;
         const product = j.product as Payload['product'] | undefined;
         const store = j.store as Payload['store'] | undefined;
@@ -90,6 +90,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
 
   useLayoutEffect(() => {
     const canAddToCart =
+      !isGuest &&
       row != null &&
       row.seller.user_id !== myId &&
       row.product.moderation_status !== 'pending_approval';
@@ -109,10 +110,14 @@ export function ProductDetailScreen({ navigation, route }: Props) {
             )
           : undefined,
     });
-  }, [navigation, row, myId]);
+  }, [navigation, row, myId, isGuest]);
 
   const contact = async () => {
     if (!row) return;
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
     if (row.seller.user_id === myId) {
       Alert.alert('Yours', 'This is your product.');
       return;

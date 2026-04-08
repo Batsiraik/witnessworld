@@ -62,7 +62,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
     (async () => {
       setLoading(true);
       try {
-        const data = await apiGet(`store-public-detail.php?id=${id}&products_limit=60`, true);
+        const data = await apiGet(`store-public-detail.php?id=${id}&products_limit=60`, false);
         if (cancelled) return;
         const S = data.store as Store | undefined;
         if (!S) {

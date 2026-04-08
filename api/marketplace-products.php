@@ -11,21 +11,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
 }
 
 $tok = ww_bearer_token();
-if (!$tok) {
-    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
 $pdo = witnessworld_pdo();
-$user = ww_user_from_token($pdo, $tok);
-if (!$user) {
+$user = $tok ? ww_user_from_token($pdo, $tok) : null;
+if ($tok && !$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
 }
 
-if (($user['status'] ?? '') !== 'verified') {
-    ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
-}
-
-$viewerId = (int) $user['id'];
+$viewerId = $user ? (int) $user['id'] : 0;
 
 $country = strtoupper(trim((string) ($_GET['country'] ?? '')));
 $usState = trim((string) ($_GET['us_state'] ?? ''));
@@ -44,7 +36,19 @@ if (mb_strlen($q) > 80) {
 $limit = ww_marketplace_int_bounds((int) ($_GET['limit'] ?? 40), 1, 80, 40);
 $offset = ww_marketplace_int_bounds((int) ($_GET['offset'] ?? 0), 0, 100000, 0);
 
-$sql = 'SELECT p.id, p.store_id, p.name, p.description, p.price_amount, p.currency, p.image_url,
+if ($viewerId === 0) {
+    $sql = 'SELECT p.id, p.store_id, p.name, p.description, p.price_amount, p.currency, p.image_url,
+        p.moderation_status, p.created_at,
+        s.name AS store_name, s.logo_url AS store_logo_url, s.user_id AS seller_user_id,
+        s.location_country_code, s.location_country_name, s.location_us_state,
+        u.username, u.first_name, u.last_name, u.avatar_url
+        FROM store_products p
+        INNER JOIN stores s ON s.id = p.store_id
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.moderation_status = ? AND p.moderation_status = ?';
+    $params = ['approved', 'approved'];
+} else {
+    $sql = 'SELECT p.id, p.store_id, p.name, p.description, p.price_amount, p.currency, p.image_url,
         p.moderation_status, p.created_at,
         s.name AS store_name, s.logo_url AS store_logo_url, s.user_id AS seller_user_id,
         s.location_country_code, s.location_country_name, s.location_us_state,
@@ -57,7 +61,8 @@ $sql = 'SELECT p.id, p.store_id, p.name, p.description, p.price_amount, p.curren
             p.moderation_status = ?
             OR (p.moderation_status = ? AND s.user_id = ?)
           )';
-$params = ['approved', 'approved', 'pending_approval', $viewerId];
+    $params = ['approved', 'approved', 'pending_approval', $viewerId];
+}
 
 if ($country !== '' && strlen($country) === 2) {
     $sql .= ' AND s.location_country_code = ?';

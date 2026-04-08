@@ -37,7 +37,7 @@ export function RootNavigator() {
       try {
         const token = await getStoredToken();
         if (!token) {
-          if (!cancelled) setInitialRoute('Welcome');
+          if (!cancelled) setInitialRoute('Dashboard');
           return;
         }
         const data = await apiGet('me.php', true);
