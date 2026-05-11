@@ -23,7 +23,14 @@ export type HomeStackParamList = {
 
 export type InboxStackParamList = {
   Inbox: undefined;
-  Chat: { conversationId: number; peerName?: string; peerUserId?: number; peerUsername?: string };
+  Chat: {
+    conversationId: number;
+    peerName?: string;
+    peerUserId?: number;
+    peerUsername?: string;
+    /** false for marketplace / store / product threads; omit or true for services & directory */
+    showHire?: boolean;
+  };
   MemberPublicProfile: { userId: number; listingViaHomeTab?: boolean };
 };
 
@@ -59,12 +66,8 @@ export type MainTabParamList = {
   OfficeTab: NavigatorScreenParams<OfficeStackParamList>;
 };
 
-/** Single drawer screen wrapping the tab shell */
-export type MainDrawerParamList = {
-  Main: NavigatorScreenParams<MainTabParamList>;
-};
-
 export type RootStackParamList = {
+  Walkthrough: undefined;
   Welcome: undefined;
   Login: undefined;
   ForgotPasswordEmail: undefined;
@@ -72,9 +75,10 @@ export type RootStackParamList = {
   RecoverPassword: { email: string; resetToken: string };
   Register: undefined;
   RegisterOtp: { email: string };
-  Questionnaire: undefined;
   PrivacyPolicy: undefined;
-  Dashboard: undefined;
+  TermsOfService: undefined;
+  /** Tab shell lives under Dashboard; use nested navigate for tab routes (e.g. OfficeTab, HomeTab). */
+  Dashboard: NavigatorScreenParams<MainTabParamList> | undefined;
   SupportChat: { conversationId?: number };
   HireComingSoon: { username?: string };
 };

@@ -13,7 +13,6 @@ $filter = (string) ($_GET['status'] ?? 'all');
 $allowed = [
     'all',
     'pending_otp',
-    'pending_questions',
     'pending_verification',
     'verified',
     'declined',
@@ -49,7 +48,6 @@ function ww_status_badge(string $s): string
 {
     $map = [
         'pending_otp' => 'bg-slate-100 text-slate-700 ring-slate-600/10',
-        'pending_questions' => 'bg-blue-50 text-blue-800 ring-blue-600/15',
         'pending_verification' => 'bg-amber-50 text-amber-900 ring-amber-600/20',
         'verified' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
         'declined' => 'bg-red-50 text-red-800 ring-red-600/20',
@@ -67,12 +65,11 @@ require __DIR__ . '/partials/shell_open.php';
   <div class="border-b border-slate-100 px-6 py-4 space-y-4">
     <div>
       <h2 class="text-base font-semibold text-slate-900">App users</h2>
-      <p class="text-sm text-slate-500">Open a user to review questionnaire answers and approve or decline.</p>
+      <p class="text-sm text-slate-500">Open a user to review signup details and approve or decline.</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <?= $userChip('all', 'All', $filter) ?>
       <?= $userChip('pending_verification', 'Pending verification', $filter) ?>
-      <?= $userChip('pending_questions', 'Pending questions', $filter) ?>
       <?= $userChip('verified', 'Verified', $filter) ?>
       <?= $userChip('declined', 'Declined', $filter) ?>
       <?= $userChip('pending_otp', 'Pending OTP', $filter) ?>

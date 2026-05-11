@@ -7,11 +7,12 @@ export function openInboxChat(
   conversationId: number,
   peerName?: string,
   peerUserId?: number,
-  peerUsername?: string
+  peerUsername?: string,
+  showHire?: boolean
 ): void {
   const tab = navigation.getParent();
   tab?.navigate('InboxTab', {
     screen: 'Chat',
-    params: { conversationId, peerName, peerUserId, peerUsername },
+    params: { conversationId, peerName, peerUserId, peerUsername, showHire },
   });
 }

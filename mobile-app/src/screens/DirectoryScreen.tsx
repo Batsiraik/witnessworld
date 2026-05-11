@@ -19,6 +19,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Directory'>;
 
@@ -42,6 +43,7 @@ type EntryRow = {
 };
 
 export function DirectoryScreen({ navigation }: Props) {
+  const tileW = useGridTileWidth();
   const [countries, setCountries] = useState<LocCountry[]>([]);
   const [usStates, setUsStates] = useState<LocState[]>([]);
   const [usCountryCode, setUsCountryCode] = useState('US');
@@ -222,8 +224,11 @@ export function DirectoryScreen({ navigation }: Props) {
           </View>
         ) : (
           <FlatList
+            style={styles.listFlex}
             data={rows}
             keyExtractor={(item) => String(item.id)}
+            numColumns={2}
+            columnWrapperStyle={styles.gridRow}
             contentContainerStyle={rows.length === 0 ? styles.emptyGrow : styles.listPad}
             refreshControl={
               <RefreshControl
@@ -233,43 +238,60 @@ export function DirectoryScreen({ navigation }: Props) {
                 colors={[colors.primary]}
               />
             }
+            ListHeaderComponent={
+              rows.length > 0 ? (
+                <Text style={styles.resultCount}>
+                  {rows.length} {rows.length === 1 ? 'result' : 'results'}
+                </Text>
+              ) : null
+            }
             ListEmptyComponent={
               !listError && country ? (
                 <Text style={styles.empty}>No businesses match these filters yet.</Text>
               ) : null
             }
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => navigation.push('DirectoryDetail', { id: item.id })}
-                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-              >
-                <View style={styles.cardRow}>
-                  {item.logo_url ? (
-                    <RemoteImage url={item.logo_url} style={styles.logo} contentFit="cover" />
-                  ) : (
-                    <View style={styles.logoPh}>
-                      <Ionicons name="business-outline" size={22} color={colors.textMuted} />
-                    </View>
-                  )}
-                  <View style={styles.cardBody}>
-                    <Text style={styles.cardTitle} numberOfLines={2}>
+            renderItem={({ item }) => {
+              const loc = [item.city, item.location_us_state].filter(Boolean).join(', ');
+              return (
+                <Pressable
+                  onPress={() => navigation.push('DirectoryDetail', { id: item.id })}
+                  style={({ pressed }) => [
+                    styles.gridTile,
+                    { width: tileW },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.gridImgWrap}>
+                    {item.logo_url ? (
+                      <RemoteImage url={item.logo_url} style={styles.gridImg} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.gridImg, styles.logoPh]}>
+                        <Ionicons name="business-outline" size={36} color={colors.textMuted} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.gridBody}>
+                    <Text style={styles.gridTitle} numberOfLines={2}>
                       {item.business_name}
                     </Text>
-                    <Text style={styles.cardMeta} numberOfLines={1}>
+                    <Text style={styles.gridMeta} numberOfLines={1}>
                       {item.category_label}
-                      {item.city ? ` · ${item.city}` : ''}
-                      {item.location_us_state ? `, ${item.location_us_state}` : ''}
                     </Text>
                     {item.tagline ? (
                       <Text style={styles.tagline} numberOfLines={2}>
                         {item.tagline}
                       </Text>
                     ) : null}
+                    <View style={styles.gridLocRow}>
+                      <Ionicons name="location-outline" size={12} color={colors.textMuted} />
+                      <Text style={styles.gridLoc} numberOfLines={1}>
+                        {loc || '—'}
+                      </Text>
+                    </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                </View>
-              </Pressable>
-            )}
+                </Pressable>
+              );
+            }}
           />
         )}
 
@@ -429,31 +451,38 @@ const styles = StyleSheet.create({
   },
   applyBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   error: { paddingHorizontal: 20, color: '#b91c1c', fontSize: 13, fontWeight: '600' },
-  listPad: { paddingHorizontal: 20, paddingBottom: 24, gap: 10 },
+  listFlex: { flex: 1 },
+  listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
+  gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
+  resultCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 12 },
   emptyGrow: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 24 },
   empty: { textAlign: 'center', color: colors.textMuted, fontSize: 15 },
-  card: {
+  gridTile: {
+    backgroundColor: colors.white,
     borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: 12,
-    marginBottom: 8,
+    overflow: 'hidden',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logo: { width: 52, height: 52, borderRadius: 12, backgroundColor: colors.primarySoft },
-  logoPh: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
+  gridImgWrap: { overflow: 'hidden', borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  gridImg: {
+    width: '100%',
+    aspectRatio: GRID_IMAGE_ASPECT,
     backgroundColor: colors.primarySoft,
+  },
+  logoPh: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardBody: { flex: 1, minWidth: 0 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
-  cardMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
-  tagline: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
+  gridBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12 },
+  gridTitle: { fontSize: 14, fontWeight: '800', color: colors.text, lineHeight: 18, minHeight: 36 },
+  gridMeta: { fontSize: 11, fontWeight: '700', color: colors.textMuted, marginTop: 4 },
+  tagline: { fontSize: 12, color: colors.textMuted, marginTop: 4, lineHeight: 16, fontWeight: '500' },
+  gridLocRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  gridLoc: { flex: 1, fontSize: 11, fontWeight: '600', color: colors.textMuted },
   pressed: { opacity: 0.92 },
   modalSafe: { flex: 1, backgroundColor: colors.white },
   modalHeader: {

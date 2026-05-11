@@ -17,6 +17,7 @@
       "fallbackToCacheTimeout": 0
     },
     "ios": {
+      "buildNumber": "3",
       "supportsTablet": true,
       "bundleIdentifier": "com.witnessworldconnect.app",
       "googleServicesFile": "./GoogleService-Info.plist",
@@ -63,7 +64,8 @@
         }
       ],
       "expo-image",
-      "expo-video"
+      "expo-video",
+      "expo-font"
     ],
     "extra": {
       "eas": {

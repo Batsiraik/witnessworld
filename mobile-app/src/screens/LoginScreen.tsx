@@ -43,14 +43,9 @@ export function LoginScreen({ navigation }: Props) {
         false
       );
       const token = data.token as string | undefined;
-      const user = data.user as { status?: string } | undefined;
       if (!token) throw new Error('No token returned');
       await setStoredToken(token);
-      if (user?.status === 'pending_questions') {
-        navigation.reset({ index: 0, routes: [{ name: 'Questionnaire' }] });
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
-      }
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
     } catch (e) {
       Alert.alert('Log in', e instanceof Error ? e.message : 'Login failed');
     } finally {
@@ -61,7 +56,13 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <ScreenHeader title="Log in" onBack={() => navigation.goBack()} />
+        <ScreenHeader
+          title="Log in"
+          onBack={() => {
+            if (navigation.canGoBack()) navigation.goBack();
+            else navigation.navigate('Welcome');
+          }}
+        />
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

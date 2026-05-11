@@ -129,13 +129,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
         context_type: 'product',
         context_id: row.product.id,
       });
-      openInboxChat(
-        navigation,
-        conversation_id,
-        row.seller.label,
-        row.seller.user_id,
-        row.seller.username
-      );
+      openInboxChat(navigation, conversation_id, row.seller.label, row.seller.user_id, row.seller.username, false);
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');
     } finally {

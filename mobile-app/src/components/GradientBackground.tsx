@@ -14,8 +14,6 @@ export function GradientBackground({ children }: Props) {
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
       />
-      {/* soft brand glow */}
-      <View style={styles.glowOrb} pointerEvents="none" />
       {children}
     </View>
   );
@@ -23,14 +21,4 @@ export function GradientBackground({ children }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  glowOrb: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: colors.primary,
-    opacity: 0.08,
-    top: -80,
-    right: -100,
-  },
 });

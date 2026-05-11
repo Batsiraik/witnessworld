@@ -1,10 +1,13 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { setStoredToken } from '../api/client';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { GradientBackground } from '../components/GradientBackground';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { clearWalkthroughProgress } from '../utils/walkthroughStorage';
 
 const LOGO = require('../../assets/logo.jpg');
 
@@ -37,6 +40,25 @@ export function WelcomeScreen({ navigation }: Props) {
             variant="outline"
             onPress={() => navigation.navigate('Register')}
           />
+          {__DEV__ ? (
+            <>
+              <View style={styles.devGap} />
+              <Pressable
+                onPress={() => {
+                  void (async () => {
+                    await setStoredToken(null);
+                    await clearWalkthroughProgress();
+                    navigation.dispatch(
+                      CommonActions.reset({ index: 0, routes: [{ name: 'Walkthrough' }] })
+                    );
+                  })();
+                }}
+                style={({ pressed }) => [styles.devWalkthroughBtn, pressed && styles.devPressed]}
+              >
+                <Text style={styles.devWalkthroughText}>Show walkthrough again (dev only)</Text>
+              </Pressable>
+            </>
+          ) : null}
         </View>
       </SafeAreaView>
     </GradientBackground>
@@ -91,4 +113,18 @@ const styles = StyleSheet.create({
   },
   actions: { paddingBottom: 12 },
   gap: { height: 14 },
+  devGap: { height: 20 },
+  devWalkthroughBtn: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  devWalkthroughText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textDecorationLine: 'underline',
+    textAlign: 'center',
+  },
+  devPressed: { opacity: 0.75 },
 });

@@ -37,12 +37,7 @@ export function RecoverPasswordScreen({ navigation, route }: Props) {
       const token = data.token as string | undefined;
       if (!token) throw new Error('No session token returned');
       await setStoredToken(token);
-      const user = data.user as { status?: string } | undefined;
-      if (user?.status === 'pending_questions') {
-        navigation.reset({ index: 0, routes: [{ name: 'Questionnaire' }] });
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
-      }
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
     } catch (e) {
       Alert.alert('New password', e instanceof Error ? e.message : 'Could not reset');
     } finally {

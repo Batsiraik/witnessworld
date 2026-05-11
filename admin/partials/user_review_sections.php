@@ -1,6 +1,5 @@
 <?php
 /** @var array<string,mixed> $user */
-/** @var array<int,array{question_text:string,answer_text:string}> $answers */
 /** @var string $support */
 /** @var int $id */
 /** @var string $formReturn '' = stay on user.php after POST; 'users' = back to users list */
@@ -12,24 +11,12 @@ $showOpenFullPageLink = $showOpenFullPageLink ?? false;
   <h3 class="text-sm font-semibold text-slate-900">Profile</h3>
   <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
     <div><dt class="text-slate-500">Phone</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $user['phone'], ENT_QUOTES, 'UTF-8') ?></dd></div>
+    <div><dt class="text-slate-500">Date of birth</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['date_of_birth'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
+    <div><dt class="text-slate-500">I am a</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['member_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
+    <div><dt class="text-slate-500">Baptism date</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['baptism_date'] ?? 'Not provided'), ENT_QUOTES, 'UTF-8') ?></dd></div>
+    <div><dt class="text-slate-500">Congregation</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['congregation'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
     <div><dt class="text-slate-500">Joined</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $user['created_at'], ENT_QUOTES, 'UTF-8') ?></dd></div>
   </dl>
-</div>
-
-<div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-panel">
-  <h3 class="text-sm font-semibold text-slate-900">Questionnaire answers</h3>
-  <?php if ($answers === []): ?>
-    <p class="mt-3 text-sm text-slate-500">No answers submitted yet.</p>
-  <?php else: ?>
-    <ul class="mt-4 space-y-3 max-h-[40vh] overflow-y-auto pr-1">
-      <?php foreach ($answers as $a): ?>
-        <li class="rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500"><?= htmlspecialchars((string) $a['question_text'], ENT_QUOTES, 'UTF-8') ?></p>
-          <p class="mt-2 text-sm text-slate-800 whitespace-pre-wrap"><?= htmlspecialchars((string) $a['answer_text'], ENT_QUOTES, 'UTF-8') ?></p>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
 </div>
 
 <?php if (($user['status'] ?? '') === 'pending_verification'): ?>

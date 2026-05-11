@@ -69,7 +69,7 @@ require __DIR__ . '/partials/shell_open.php';
         Review new signups under <a class="font-semibold text-brand" href="users.php?status=pending_verification">App users</a> and approve gigs under
         <a class="font-semibold text-brand" href="listings.php?status=pending_approval">Listings &amp; gigs</a>. Handle reports in
         <a class="font-semibold text-brand" href="moderation.php">Content reports</a>. Metrics live in
-        <a class="font-semibold text-brand" href="analytics.php">Analytics</a>; questionnaire and email in
+        <a class="font-semibold text-brand" href="analytics.php">Analytics</a>; email settings live in
         <a class="font-semibold text-brand" href="settings.php">Settings</a>.
       </p>
     </div>

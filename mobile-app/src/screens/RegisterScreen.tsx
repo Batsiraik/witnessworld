@@ -25,6 +25,33 @@ import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
+function parseDate(value: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}
+
+function isAtLeast18(date: Date): boolean {
+  const now = new Date();
+  let age = now.getFullYear() - date.getUTCFullYear();
+  const monthDiff = now.getMonth() - date.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < date.getUTCDate())) {
+    age -= 1;
+  }
+  return age >= 18;
+}
+
 export function RegisterScreen({ navigation }: Props) {
   useEffect(() => {
     void setStoredToken(null);
@@ -36,6 +63,10 @@ export function RegisterScreen({ navigation }: Props) {
   const [dialCountry, setDialCountry] = useState<DialCountry>(DEFAULT_DIAL);
   const [phoneLocal, setPhoneLocal] = useState('');
   const [username, setUsername] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [memberType, setMemberType] = useState('');
+  const [baptismDate, setBaptismDate] = useState('');
+  const [congregation, setCongregation] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [agreed, setAgreed] = useState(false);
@@ -50,9 +81,20 @@ export function RegisterScreen({ navigation }: Props) {
     if (!email.trim()) next.email = 'Enter your email';
     if (!phoneLocal.trim()) next.phone = 'Enter your phone number';
     if (!username.trim()) next.username = 'Choose a username';
+    const dob = parseDate(dateOfBirth);
+    if (!dateOfBirth.trim()) next.dateOfBirth = 'Enter your date of birth';
+    else if (!dob) next.dateOfBirth = 'Use YYYY-MM-DD format';
+    else if (!isAtLeast18(dob)) next.dateOfBirth = 'You must be at least 18 to sign up';
+    if (!memberType.trim()) next.memberType = 'Tell us who you are';
+    if (baptismDate.trim() && !parseDate(baptismDate)) {
+      next.baptismDate = 'Use YYYY-MM-DD format';
+    }
+    if (!congregation.trim()) next.congregation = 'Enter your congregation';
     if (password.length < 8) next.password = 'Use at least 8 characters';
     if (password !== confirm) next.confirm = 'Passwords do not match';
-    if (!agreed) next.agree = 'Please accept the Privacy Policy to continue';
+    if (!agreed) {
+      next.agree = 'Please confirm you have read and agree to the Privacy Policy and Terms and Conditions.';
+    }
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -69,6 +111,10 @@ export function RegisterScreen({ navigation }: Props) {
           last_name: lastName.trim(),
           username: username.trim().toLowerCase(),
           phone,
+          date_of_birth: dateOfBirth.trim(),
+          member_type: memberType.trim(),
+          baptism_date: baptismDate.trim() || null,
+          congregation: congregation.trim(),
         },
         false
       );
@@ -84,7 +130,13 @@ export function RegisterScreen({ navigation }: Props) {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <ScreenHeader title="Create account" onBack={() => navigation.goBack()} />
+        <ScreenHeader
+          title="Create account"
+          onBack={() => {
+            if (navigation.canGoBack()) navigation.goBack();
+            else navigation.navigate('Welcome');
+          }}
+        />
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -146,6 +198,43 @@ export function RegisterScreen({ navigation }: Props) {
                 error={errors.username}
               />
 
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Personal information</Text>
+                <Text style={styles.sectionHint}>Date of birth is required and the minimum age to sign up is 18.</Text>
+              </View>
+
+              <AppTextField
+                label="Date of birth"
+                value={dateOfBirth}
+                onChangeText={setDateOfBirth}
+                placeholder="YYYY-MM-DD"
+                keyboardType="numbers-and-punctuation"
+                error={errors.dateOfBirth}
+              />
+              <AppTextField
+                label="I am a ..."
+                value={memberType}
+                onChangeText={setMemberType}
+                autoCapitalize="words"
+                placeholder="Brother, sister, or other"
+                error={errors.memberType}
+              />
+              <AppTextField
+                label="Baptism date"
+                value={baptismDate}
+                onChangeText={setBaptismDate}
+                placeholder="YYYY-MM-DD (optional)"
+                keyboardType="numbers-and-punctuation"
+                error={errors.baptismDate}
+              />
+              <AppTextField
+                label="Congregation"
+                value={congregation}
+                onChangeText={setCongregation}
+                autoCapitalize="words"
+                error={errors.congregation}
+              />
+
               <AppPasswordField
                 label="Password"
                 value={password}
@@ -171,14 +260,15 @@ export function RegisterScreen({ navigation }: Props) {
                   </View>
                 </Pressable>
                 <Text style={styles.agreeText}>
-                  I understand and agree that my information will be used in accordance with the{' '}
-                  <Text
-                    style={styles.link}
-                    onPress={() => navigation.navigate('PrivacyPolicy')}
-                  >
+                  I understand and agree to the{' '}
+                  <Text style={styles.link} onPress={() => navigation.navigate('PrivacyPolicy')}>
                     Privacy Policy
-                  </Text>{' '}
-                  to process my order securely.
+                  </Text>
+                  {' '}and{' '}
+                  <Text style={styles.link} onPress={() => navigation.navigate('TermsOfService')}>
+                    Terms and Conditions
+                  </Text>
+                  .
                 </Text>
               </View>
               {errors.agree ? <Text style={styles.agreeError}>{errors.agree}</Text> : null}
@@ -209,6 +299,9 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   phoneRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 16 },
+  section: { marginTop: 2, marginBottom: 14 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
+  sectionHint: { fontSize: 13, lineHeight: 19, color: colors.textMuted, fontWeight: '500' },
   agreeRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8, marginBottom: 20 },
   checkbox: {
     width: 22,

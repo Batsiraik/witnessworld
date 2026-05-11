@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
-import { apiPost, apiUploadAvatar, setStoredToken } from '../api/client';
+import { apiLogout, apiPost, apiUploadAvatar, setStoredToken } from '../api/client';
 import { AppPasswordField } from '../components/AppPasswordField';
 import { GlassCard } from '../components/GlassCard';
 import { GradientBackground } from '../components/GradientBackground';
@@ -24,6 +24,16 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, ProfileStackParamList } from '../navigation/types';
+
+type ExploreKey = 'Classifieds' | 'Services' | 'ProductsBrowse' | 'Stores' | 'Directory';
+
+const BROWSE_LINKS: { route: ExploreKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { route: 'Classifieds', label: 'Classified marketplace', icon: 'grid-outline' },
+  { route: 'Services', label: 'Service marketplace', icon: 'briefcase-outline' },
+  { route: 'ProductsBrowse', label: 'Shop products', icon: 'pricetag-outline' },
+  { route: 'Stores', label: 'Online stores', icon: 'storefront-outline' },
+  { route: 'Directory', label: 'Business directory', icon: 'business-outline' },
+];
 import { colors } from '../theme/colors';
 
 type Props =
@@ -31,7 +41,7 @@ type Props =
   | NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
 
 export function ProfileSettingsScreen(_props: Props) {
-  const { user, refreshProfile, stackNavigation, supportAvailable } = useDashboardContext();
+  const { user, refreshProfile, stackNavigation, supportAvailable, supportEmail } = useDashboardContext();
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarUploadPct, setAvatarUploadPct] = useState<number | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -47,6 +57,36 @@ export function ProfileSettingsScreen(_props: Props) {
     user?.avatar_url && String(user.avatar_url).trim() !== '' ? String(user.avatar_url) : null;
   const displayName =
     [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() || 'Member';
+
+  const goExplore = (screen: ExploreKey) => {
+    stackNavigation.navigate('Dashboard', {
+      screen: 'HomeTab',
+      params: { screen },
+    });
+  };
+
+  const goOffice = () => {
+    stackNavigation.navigate('Dashboard', {
+      screen: 'OfficeTab',
+      params: { screen: 'MyOffice' },
+    });
+  };
+
+  const signOut = async () => {
+    await apiLogout();
+    stackNavigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Welcome' }] }));
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: () => void signOut(),
+      },
+    ]);
+  };
 
   const pickAvatar = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -146,9 +186,56 @@ export function ProfileSettingsScreen(_props: Props) {
             <Text style={styles.pageTitle}>Profile & settings</Text>
             <Text style={styles.pageSub}>{displayName}</Text>
 
+            <View style={styles.nbBox}>
+              <Text style={styles.nbLabel}>NB</Text>
+              <Text style={styles.nbText}>
+                To change your name, email, or phone on the WWC App, Please contact the administrator
+                {supportEmail ? ` at ${supportEmail}` : ''}. Or send a message to the Support in App Chat. These details cannot be updated from the app.
+              </Text>
+            </View>
+
+            <GlassCard style={styles.card}>
+              <Text style={styles.sectionTitle}>Browse marketplace</Text>
+              <Text style={styles.sectionHint}>Jump to a marketplace from your profile.</Text>
+              {BROWSE_LINKS.map((item, i) => (
+                <Pressable
+                  key={item.route}
+                  onPress={() => goExplore(item.route)}
+                  style={({ pressed }) => [
+                    styles.linkRow,
+                    i === BROWSE_LINKS.length - 1 && styles.linkRowLast,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Ionicons name={item.icon} size={22} color={colors.primaryDark} />
+                  <Text style={styles.linkRowLabel}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </Pressable>
+              ))}
+            </GlassCard>
+
+            <GlassCard style={styles.card}>
+              <Text style={styles.sectionTitle}>Account</Text>
+              <Pressable
+                onPress={goOffice}
+                style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
+              >
+                <Ionicons name="briefcase-outline" size={22} color={colors.primaryDark} />
+                <Text style={styles.linkRowLabel}>My office</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                onPress={confirmSignOut}
+                style={({ pressed }) => [styles.logoutRow, pressed && styles.pressed]}
+              >
+                <Ionicons name="log-out-outline" size={22} color={colors.danger} />
+                <Text style={styles.logoutRowText}>Log out</Text>
+              </Pressable>
+            </GlassCard>
+
             <GlassCard style={styles.card}>
               <Text style={styles.sectionTitle}>Profile photo</Text>
-              <Text style={styles.sectionHint}>Shown on Home and in the side menu.</Text>
+              <Text style={styles.sectionHint}>Shown on Home and on your profile.</Text>
               <Pressable
                 onPress={() => void pickAvatar()}
                 disabled={avatarBusy}
@@ -302,7 +389,64 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 },
   pageTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
-  pageSub: { fontSize: 14, color: colors.textMuted, marginTop: 4, marginBottom: 16, fontWeight: '500' },
+  pageSub: { fontSize: 14, color: colors.textMuted, marginTop: 4, marginBottom: 8, fontWeight: '500' },
+  nbBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(217, 119, 6, 0.35)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  nbLabel: { fontSize: 12, fontWeight: '900', color: '#B45309', letterSpacing: 0.5 },
+  nbText: { flex: 1, fontSize: 13, lineHeight: 20, color: colors.text, fontWeight: '600' },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(11, 18, 32, 0.08)',
+  },
+  linkRowLast: { borderBottomWidth: 0 },
+  linkRowLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  logoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(220, 38, 38, 0.08)',
+  },
+  logoutRowText: { fontSize: 16, fontWeight: '700', color: colors.danger },
+  accountRowPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(31, 170, 242, 0.1)',
+    marginBottom: 10,
+  },
+  accountRowPrimaryText: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.primaryDark },
+  accountRowSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(31, 170, 242, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(31, 170, 242, 0.35)',
+  },
+  accountRowSecondaryText: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.primaryDark },
   card: { marginBottom: 16 },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
   sectionHint: { fontSize: 13, color: colors.textMuted, marginBottom: 14, fontWeight: '500' },

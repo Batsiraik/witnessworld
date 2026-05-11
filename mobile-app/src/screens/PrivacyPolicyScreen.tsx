@@ -53,9 +53,9 @@ const SECTIONS: { title: string; body: string[] }[] = [
     ],
   },
   {
-    title: "7. Children's Privacy",
+    title: "7. Children's Policy",
     body: [
-      'The platform is not intended for children under 13. If we learn that a child’s information has been collected without parental consent, we will delete it promptly.',
+      'Children under 18 need parental consent to use the platform.',
     ],
   },
   {

@@ -19,6 +19,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Stores'>;
 
@@ -32,6 +33,7 @@ type Row = {
 };
 
 export function BrowseStoresScreen({ navigation }: Props) {
+  const tileW = useGridTileWidth();
   const [selectedCountry, setSelectedCountry] = useState<LocCountry | null>(null);
   const [selectedUsState, setSelectedUsState] = useState<LocState | null>(null);
   const [q, setQ] = useState('');
@@ -116,8 +118,11 @@ export function BrowseStoresScreen({ navigation }: Props) {
           </ScrollView>
         ) : (
           <FlatList
+            style={styles.listFlex}
             data={rows}
             keyExtractor={(it) => String(it.id)}
+            numColumns={2}
+            columnWrapperStyle={styles.gridRow}
             contentContainerStyle={styles.listPad}
             refreshControl={
               <RefreshControl
@@ -127,27 +132,51 @@ export function BrowseStoresScreen({ navigation }: Props) {
                 colors={[colors.primary]}
               />
             }
+            ListHeaderComponent={
+              rows.length > 0 ? (
+                <Text style={styles.resultCount}>
+                  {rows.length} {rows.length === 1 ? 'result' : 'results'}
+                </Text>
+              ) : null
+            }
             ListEmptyComponent={<Text style={styles.empty}>No stores match.</Text>}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-                onPress={() => navigation.push('StoreDetailPublic', { id: item.id })}
-              >
-                <RemoteImage url={item.logo_url} style={styles.logo} contentFit="cover" />
-                <View style={styles.cardText}>
-                  <Text style={styles.cardTitle} numberOfLines={2}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.cardSub} numberOfLines={2}>
-                    {item.sells_summary}
-                  </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {[item.location_country_name, item.location_us_state].filter(Boolean).join(' · ')}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-              </Pressable>
-            )}
+            renderItem={({ item }) => {
+              const loc = [item.location_us_state, item.location_country_name].filter(Boolean).join(', ');
+              return (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.gridTile,
+                    { width: tileW },
+                    pressed && styles.cardPressed,
+                  ]}
+                  onPress={() => navigation.push('StoreDetailPublic', { id: item.id })}
+                >
+                  <View style={styles.gridImgWrap}>
+                    {item.logo_url ? (
+                      <RemoteImage url={item.logo_url} style={styles.gridImg} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.gridImg, styles.thumbPh]}>
+                        <Ionicons name="storefront-outline" size={36} color={colors.textMuted} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.gridBody}>
+                    <Text style={styles.gridTitle} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.gridSub} numberOfLines={2}>
+                      {item.sells_summary || 'Store'}
+                    </Text>
+                    <View style={styles.gridLocRow}>
+                      <Ionicons name="location-outline" size={12} color={colors.textMuted} />
+                      <Text style={styles.gridLoc} numberOfLines={1}>
+                        {loc || '—'}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            }}
           />
         )}
       </SafeAreaView>
@@ -181,25 +210,34 @@ const styles = StyleSheet.create({
   },
   applyText: { fontSize: 15, fontWeight: '800', color: colors.primaryDark },
   center: { padding: 40, alignItems: 'center' },
-  listPad: { paddingHorizontal: 16, paddingBottom: 24 },
+  listFlex: { flex: 1 },
+  listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
+  gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
+  resultCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 12 },
   errScroll: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 8 },
   err: { color: '#b91c1c', padding: 16, fontWeight: '600' },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 24, fontWeight: '600' },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
+  gridTile: {
+    backgroundColor: colors.white,
     borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    marginBottom: 10,
+    overflow: 'hidden',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cardPressed: { opacity: 0.92 },
-  logo: { width: 56, height: 56, borderRadius: 12, backgroundColor: colors.primarySoft },
-  cardText: { flex: 1, minWidth: 0 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
-  cardSub: { fontSize: 13, color: colors.textMuted, marginTop: 4, fontWeight: '500' },
-  meta: { fontSize: 12, fontWeight: '600', color: colors.textMuted, marginTop: 6 },
+  gridImgWrap: { overflow: 'hidden', borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  gridImg: {
+    width: '100%',
+    aspectRatio: GRID_IMAGE_ASPECT,
+    backgroundColor: colors.primarySoft,
+  },
+  thumbPh: { alignItems: 'center', justifyContent: 'center' },
+  gridBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12 },
+  gridTitle: { fontSize: 14, fontWeight: '800', color: colors.text, lineHeight: 18, minHeight: 36 },
+  gridSub: { fontSize: 12, fontWeight: '600', color: colors.textMuted, marginTop: 4, lineHeight: 16 },
+  gridLocRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  gridLoc: { flex: 1, fontSize: 11, fontWeight: '600', color: colors.textMuted },
 });

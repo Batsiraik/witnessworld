@@ -1,15 +1,15 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, type AppStateStatus, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, type AppStateStatus, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, getStoredToken } from '../api/client';
+import { PrimaryButton } from '../components/PrimaryButton';
 import { GradientBackground } from '../components/GradientBackground';
-import { GuestRequiredModal } from '../components/GuestRequiredModal';
 import { VerificationLockOverlay } from '../components/VerificationLockOverlay';
 import { DashboardProvider, type DashboardUser } from '../context/DashboardContext';
 import { usePushRegistration } from '../hooks/usePushRegistration';
-import { MainDrawerNavigator } from '../navigation/MainDrawerNavigator';
+import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -18,33 +18,38 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 export function DashboardScreen({ navigation }: Props) {
   const isDashboardFocused = useIsFocused();
   const [loading, setLoading] = useState(true);
+  const [sessionLoadError, setSessionLoadError] = useState(false);
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [supportEmail, setSupportEmail] = useState('info@witnessworldconnect.com');
   const [supportAvailable, setSupportAvailable] = useState(false);
-  const [guestModalVisible, setGuestModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setSessionLoadError(false);
+    const token = await getStoredToken();
+    if (!token) {
+      setLoading(false);
+      navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+      return;
+    }
     try {
-      const token = await getStoredToken();
-      if (!token) {
-        setUser(null);
-        setSupportAvailable(false);
-        return;
-      }
       const data = await apiGet('me.php', true);
       const u = (data.user as DashboardUser) || null;
+      if (!u) {
+        navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+        return;
+      }
       setUser(u);
       if (typeof data.support_email === 'string' && data.support_email) {
         setSupportEmail(data.support_email);
       }
       setSupportAvailable(data.support_available === true);
-      if (u?.status === 'pending_questions') {
-        navigation.reset({ index: 0, routes: [{ name: 'Questionnaire' }] });
+    } catch {
+      if (!(await getStoredToken())) {
+        navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
         return;
       }
-    } catch {
-      setUser(null);
+      setSessionLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -59,6 +64,7 @@ export function DashboardScreen({ navigation }: Props) {
         setSupportEmail(data.support_email);
       }
       setSupportAvailable(data.support_available === true);
+      setSessionLoadError(false);
     } catch {
       /* keep existing user on transient errors */
     }
@@ -71,11 +77,10 @@ export function DashboardScreen({ navigation }: Props) {
   );
 
   const status = user?.status ?? '';
-  const isGuest = !user;
-  const lockUnverified = !isGuest && (status === 'pending_verification' || status === 'declined');
+  const lockUnverified = status === 'pending_verification' || status === 'declined';
   const overlayVariant = status === 'declined' ? 'declined' : 'pending';
 
-  usePushRegistration(!loading && !!user);
+  usePushRegistration(!loading && !!user && !sessionLoadError);
 
   useEffect(() => {
     if (!lockUnverified) return undefined;
@@ -89,6 +94,20 @@ export function DashboardScreen({ navigation }: Props) {
     return () => sub.remove();
   }, [lockUnverified, refreshProfile]);
 
+  if (sessionLoadError && !loading) {
+    return (
+      <GradientBackground>
+        <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+          <View style={styles.center}>
+            <Text style={styles.errTitle}>Couldn&apos;t load your account</Text>
+            <Text style={styles.errHint}>Check your connection and try again. You stay signed in — we won&apos;t log you out.</Text>
+            <PrimaryButton label="Try again" onPress={() => void load()} />
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
+    );
+  }
+
   return (
     <GradientBackground>
       {loading ? (
@@ -97,30 +116,18 @@ export function DashboardScreen({ navigation }: Props) {
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         </SafeAreaView>
-      ) : (
+      ) : user ? (
         <DashboardProvider
           user={user}
-          isGuest={isGuest}
-          showGuestPrompt={() => setGuestModalVisible(true)}
+          isGuest={false}
+          showGuestPrompt={() => {}}
           supportEmail={supportEmail}
           supportAvailable={supportAvailable}
           refreshProfile={refreshProfile}
           stackNavigation={navigation}
         >
           <View style={styles.fill}>
-            <MainDrawerNavigator parentNavigation={navigation} />
-            <GuestRequiredModal
-              visible={guestModalVisible}
-              onDismiss={() => setGuestModalVisible(false)}
-              onSignIn={() => {
-                setGuestModalVisible(false);
-                navigation.navigate('Login');
-              }}
-              onCreateAccount={() => {
-                setGuestModalVisible(false);
-                navigation.navigate('Register');
-              }}
-            />
+            <MainTabNavigator />
             <VerificationLockOverlay
               visible={lockUnverified && isDashboardFocused}
               variant={overlayVariant}
@@ -131,6 +138,12 @@ export function DashboardScreen({ navigation }: Props) {
             />
           </View>
         </DashboardProvider>
+      ) : (
+        <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        </SafeAreaView>
       )}
     </GradientBackground>
   );
@@ -139,5 +152,15 @@ export function DashboardScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   fill: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  errTitle: { fontSize: 18, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 10 },
+  errHint: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 24,
+    maxWidth: 320,
+    fontWeight: '500',
+  },
 });

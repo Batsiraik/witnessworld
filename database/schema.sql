@@ -60,10 +60,13 @@ CREATE TABLE users (
   last_name VARCHAR(100) NOT NULL,
   username VARCHAR(64) NOT NULL UNIQUE,
   phone VARCHAR(40) NOT NULL,
+  date_of_birth DATE NOT NULL,
+  member_type VARCHAR(120) NOT NULL,
+  baptism_date DATE NULL,
+  congregation VARCHAR(180) NOT NULL,
   avatar_url VARCHAR(512) NULL,
   status ENUM(
     'pending_otp',
-    'pending_questions',
     'pending_verification',
     'verified',
     'declined'
@@ -140,32 +143,6 @@ CREATE TABLE admin_push_opens (
   CONSTRAINT fk_apo_log FOREIGN KEY (log_id) REFERENCES admin_push_logs(id) ON DELETE CASCADE,
   CONSTRAINT fk_apo_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE questionnaire_questions (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  question_text TEXT NOT NULL,
-  sort_order INT NOT NULL DEFAULT 0,
-  is_active TINYINT(1) NOT NULL DEFAULT 1,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_qq_sort (is_active, sort_order)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE questionnaire_answers (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  user_id INT UNSIGNED NOT NULL,
-  question_id INT UNSIGNED NOT NULL,
-  answer_text TEXT NOT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_user_question (user_id, question_id),
-  CONSTRAINT fk_qa_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_qa_question FOREIGN KEY (question_id) REFERENCES questionnaire_questions(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Starter questions (admin can edit in panel)
-INSERT INTO questionnaire_questions (question_text, sort_order, is_active) VALUES
-  ('What brings you to Witness World Connect?', 1, 1),
-  ('How do you plan to use the platform with friends or your community?', 2, 1),
-  ('Is there anything else you would like us to know about you?', 3, 1);
 
 -- Gigs / listings (require admin approval before public visibility in the app)
 CREATE TABLE listings (
@@ -289,6 +266,12 @@ CREATE TABLE conversations (
   last_message_at DATETIME NULL,
   member_last_read_at DATETIME NULL,
   support_last_read_at DATETIME NULL,
+  user_low_last_read_at DATETIME NULL,
+  user_high_last_read_at DATETIME NULL,
+  user_low_archived_at DATETIME NULL,
+  user_high_archived_at DATETIME NULL,
+  user_low_deleted_at DATETIME NULL,
+  user_high_deleted_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_conv_ul FOREIGN KEY (user_low_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -302,6 +285,7 @@ CREATE TABLE messages (
   conversation_id INT UNSIGNED NOT NULL,
   sender_user_id INT UNSIGNED NOT NULL,
   body TEXT NOT NULL,
+  delivered_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_msg_conv FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
   CONSTRAINT fk_msg_sender FOREIGN KEY (sender_user_id) REFERENCES users(id) ON DELETE CASCADE,

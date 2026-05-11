@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { DrawerActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet } from 'react-native';
 import { homeStackSafeGoBack, type HomeStackBackNavigation } from './homeStackSafeBack';
@@ -24,14 +23,6 @@ import type { HomeStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
-function MenuIcon({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={styles.iconBtn} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
-      <Ionicons name="menu-outline" size={26} color={colors.text} />
-    </Pressable>
-  );
-}
-
 function BackIcon({ navigation }: { navigation: HomeStackBackNavigation }) {
   return (
     <Pressable
@@ -55,19 +46,10 @@ export function HomeStackNavigator() {
         headerShadowVisible: false,
         headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: '800', fontSize: 17, color: colors.text },
-        headerLeft:
-          route.name === 'Home'
-            ? () => (
-                <MenuIcon
-                  onPress={() => {
-                    navigation.dispatch(DrawerActions.openDrawer());
-                  }}
-                />
-              )
-            : () => <BackIcon navigation={navigation} />,
+        headerLeft: route.name === 'Home' ? () => null : () => <BackIcon navigation={navigation} />,
       })}
     >
-      <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Witness World' }} />
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="Classifieds"
         component={BrowseClassifiedsScreen}
@@ -78,7 +60,7 @@ export function HomeStackNavigator() {
       <Stack.Screen name="ProductsBrowse" component={BrowseProductsScreen} options={{ title: 'Shop products' }} />
       <Stack.Screen name="Directory" component={DirectoryScreen} options={{ title: 'Business directory' }} />
       <Stack.Screen name="DirectoryDetail" component={DirectoryDetailScreen} options={{ title: 'Business' }} />
-      <Stack.Screen name="ListingDetail" component={ListingDetailScreen} options={{ title: 'Listing' }} />
+      <Stack.Screen name="ListingDetail" component={ListingDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="MemberPublicProfile"
         component={MemberPublicProfileScreen}
@@ -92,7 +74,7 @@ export function HomeStackNavigator() {
         name="ProviderHub"
         component={ProviderHubScreen}
         options={({ navigation }) => ({
-          title: 'Become a service provider',
+          title: 'Create listing',
           headerLeft: () => <BackIcon navigation={navigation} />,
         })}
       />

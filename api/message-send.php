@@ -88,7 +88,7 @@ if ($hasFile) {
 
 try {
     $st = $pdo->prepare(
-        'SELECT id, context_key FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
+        'SELECT id, user_low_id, user_high_id, context_key FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
     );
     $st->execute([$conversationId, $userId, $userId]);
     $convAccess = $st->fetch(PDO::FETCH_ASSOC);
@@ -153,7 +153,14 @@ try {
         ];
     }
 
-    $pdo->prepare('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$conversationId]);
+    $prefix = ((int) $convAccess['user_low_id'] === $userId) ? 'user_low' : 'user_high';
+    $pdo->prepare(
+        "UPDATE conversations
+         SET last_message_at = CURRENT_TIMESTAMP,
+             {$prefix}_archived_at = NULL,
+             {$prefix}_deleted_at = NULL
+         WHERE id = ?"
+    )->execute([$conversationId]);
     $pdo->commit();
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {

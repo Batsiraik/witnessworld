@@ -7,15 +7,15 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { ListingVideoBlock } from '../components/ListingVideoBlock';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { useDashboardContext } from '../context/DashboardContext';
@@ -40,18 +40,47 @@ type Listing = {
   soft_skills: string[];
   location_country_name: string | null;
   location_us_state: string | null;
+  created_at?: string;
   seller: { user_id: number; username: string; label: string; avatar_url: string | null };
 };
+
+const PAGE_BG = '#F4F5F7';
+const CTA_PURPLE = '#5A5FE1';
+const PRICE_PURPLE = '#5A5FE1';
+
+function formatRelativeTime(iso: string | undefined): string {
+  if (!iso) return '';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '';
+  const diff = Date.now() - t;
+  if (diff < 0) return '';
+  const days = Math.floor(diff / (86400 * 1000));
+  if (days < 1) return 'Today';
+  if (days === 1) return '1 day ago';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} mo ago`;
+  return `${Math.floor(days / 365)} yr ago`;
+}
+
+function humanizeListingType(t: string): string {
+  const s = String(t || '').toLowerCase();
+  if (s === 'classified') return 'Classified';
+  if (s === 'service') return 'Service';
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+}
 
 export function ListingDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
   const { user, stackNavigation, isGuest, showGuestPrompt } = useDashboardContext();
   const myId = user?.id ?? 0;
+  const insets = useSafeAreaInsets();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [contactBusy, setContactBusy] = useState(false);
+  const [heartOn, setHeartOn] = useState(false);
 
   const loadedIdRef = useRef<number | null>(null);
 
@@ -128,7 +157,8 @@ export function ListingDetailScreen({ navigation, route }: Props) {
         conversation_id,
         listing.seller.label || listing.seller.username,
         listing.seller.user_id,
-        listing.seller.username
+        listing.seller.username,
+        listing.listing_type === 'service'
       );
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');
@@ -137,10 +167,29 @@ export function ListingDetailScreen({ navigation, route }: Props) {
     }
   };
 
+  const goProfile = () => {
+    if (!listing) return;
+    navigation.push('MemberPublicProfile', { userId: listing.seller.user_id });
+  };
+
+  const onShare = async () => {
+    if (!listing) return;
+    try {
+      const desc = listing.description ?? '';
+      const body = desc.slice(0, 400) + (desc.length > 400 ? '…' : '');
+      await Share.share({
+        message: `${listing.title}\n\n${body}`,
+        title: listing.title,
+      });
+    } catch {
+      /* dismissed */
+    }
+  };
+
   if (loading) {
     return (
       <GradientBackground>
-        <SafeAreaView style={styles.center} edges={['bottom']}>
+        <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
           <ActivityIndicator size="large" color={colors.primary} />
         </SafeAreaView>
       </GradientBackground>
@@ -150,181 +199,367 @@ export function ListingDetailScreen({ navigation, route }: Props) {
   if (err || !listing) {
     return (
       <GradientBackground>
-        <SafeAreaView style={styles.center} edges={['bottom']}>
+        <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
           <Text style={styles.err}>{err || 'Not found'}</Text>
+          <Pressable onPress={() => navigation.goBack()} style={styles.errBack}>
+            <Text style={styles.errBackText}>Go back</Text>
+          </Pressable>
         </SafeAreaView>
       </GradientBackground>
     );
   }
 
-  const contactLabel =
-    listing.listing_type === 'classified' ? 'Contact seller' : 'Contact provider';
-  const loc = [listing.location_country_name, listing.location_us_state].filter(Boolean).join(' · ');
+  const softSkills = Array.isArray(listing.soft_skills) ? listing.soft_skills : [];
+  const portfolioUrls = Array.isArray(listing.portfolio_urls) ? listing.portfolio_urls : [];
+  const descriptionText = listing.description ?? '';
 
+  const contactLabel =
+    listing.listing_type === 'classified' ? 'Message seller' : 'Message provider';
+  const loc = [listing.location_country_name, listing.location_us_state].filter(Boolean).join(', ');
   const videoUri = resolvePublicMediaUrl(listing.video_url?.trim() || '') ?? '';
   const hasVideo = videoUri.length > 0;
+  const isOwn = listing.seller.user_id === myId;
+  const showFooter = !isOwn;
+  const footerPad = showFooter ? 140 + insets.bottom : 24 + insets.bottom;
+  const postedAgo = formatRelativeTime(listing.created_at);
+  const typeLabel = humanizeListingType(listing.listing_type);
+  const skillTag = softSkills[0];
 
   return (
-    <GradientBackground>
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.scroll}>
+    <View style={styles.root}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scroll, { paddingBottom: footerPad }]}
+      >
+        <View style={styles.heroWrap}>
           {listing.media_url ? (
             <RemoteImage url={listing.media_url} style={styles.hero} contentFit="cover" />
-          ) : null}
+          ) : (
+            <View style={[styles.hero, styles.heroPh]}>
+              <Ionicons name="image-outline" size={48} color={colors.textMuted} />
+            </View>
+          )}
+          <SafeAreaView edges={['top']} style={styles.heroOverlay}>
+            <View style={styles.heroBar}>
+              <Pressable
+                onPress={() => navigation.goBack()}
+                style={({ pressed }) => [styles.heroIconBtn, pressed && styles.pressed]}
+                accessibilityLabel="Go back"
+              >
+                <Ionicons name="arrow-back" size={22} color={colors.white} />
+              </Pressable>
+              <View style={styles.heroBarEnd}>
+                <Pressable
+                  onPress={() => void onShare()}
+                  style={({ pressed }) => [styles.heroIconBtn, pressed && styles.pressed]}
+                  accessibilityLabel="Share"
+                >
+                  <Ionicons name="share-outline" size={20} color={colors.white} />
+                </Pressable>
+                <Pressable
+                  onPress={() => setHeartOn((v) => !v)}
+                  style={({ pressed }) => [styles.heroIconBtn, pressed && styles.pressed]}
+                  accessibilityLabel="Favorite"
+                >
+                  <Ionicons name={heartOn ? 'heart' : 'heart-outline'} size={20} color={colors.white} />
+                </Pressable>
+              </View>
+            </View>
+          </SafeAreaView>
+        </View>
+
+        <View style={[styles.sheet, { backgroundColor: PAGE_BG }]}>
           {hasVideo ? (
-            <>
-              <Text style={styles.section}>Video</Text>
+            <View style={styles.videoBlock}>
               <ListingVideoBlock uri={videoUri} style={styles.heroVideo} />
-            </>
+            </View>
           ) : null}
+
+          <View style={styles.tags}>
+            {typeLabel ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{typeLabel}</Text>
+              </View>
+            ) : null}
+            {skillTag ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{skillTag}</Text>
+              </View>
+            ) : null}
+          </View>
+
           <Text style={styles.title}>{listing.title}</Text>
-          {loc ? <Text style={styles.loc}>{loc}</Text> : null}
+
           {listing.price_amount ? (
             <Text style={styles.price}>
               {listing.currency} {listing.price_amount}
-              {listing.pricing_type === 'hourly' ? ' / hr' : ''}
+              {listing.pricing_type === 'hourly' ? '/hr' : ''}
             </Text>
           ) : null}
-          {listing.soft_skills.length > 0 ? (
-            <View style={styles.chips}>
-              {listing.soft_skills.slice(0, 12).map((s) => (
-                <View key={s} style={styles.chip}>
-                  <Text style={styles.chipText}>{s}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-          <Text style={styles.body}>{listing.description}</Text>
 
-          {listing.portfolio_urls.length > 0 ? (
+          <View style={styles.metaRow}>
+            {loc ? (
+              <View style={styles.metaItem}>
+                <Ionicons name="location-outline" size={16} color={colors.textMuted} />
+                <Text style={styles.metaText}>{loc}</Text>
+              </View>
+            ) : null}
+            {postedAgo ? (
+              <View style={styles.metaItem}>
+                <Ionicons name="time-outline" size={16} color={colors.textMuted} />
+                <Text style={styles.metaText}>{postedAgo}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <Text style={styles.subHeading}>Description</Text>
+          <Text style={styles.body}>{descriptionText}</Text>
+
+          {portfolioUrls.length > 0 ? (
             <>
-              <Text style={styles.section}>Portfolio</Text>
+              <Text style={styles.subHeading}>Portfolio</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.portRow}>
-                {listing.portfolio_urls.map((u) => (
+                {portfolioUrls.map((u) => (
                   <RemoteImage key={u} url={u} style={styles.portImg} contentFit="cover" />
                 ))}
               </ScrollView>
             </>
           ) : null}
 
-          <Text style={styles.section}>Posted by</Text>
-          <View style={styles.sellerRow}>
+          <Text style={styles.subHeading}>Posted by</Text>
+          <Pressable
+            onPress={goProfile}
+            style={({ pressed }) => [styles.sellerCard, pressed && styles.pressed]}
+          >
             {listing.seller.avatar_url ? (
               <RemoteImage url={listing.seller.avatar_url} style={styles.avatar} contentFit="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarPh]}>
-                <Ionicons name="person" size={22} color={colors.primaryDark} />
+                <Text style={styles.avatarLetter}>
+                  {(listing.seller.label || listing.seller.username || '?').trim().charAt(0).toUpperCase()}
+                </Text>
               </View>
             )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sellerName}>{listing.seller.label}</Text>
+            <View style={styles.sellerInfo}>
+              <Text style={styles.sellerName}>{listing.seller.label || listing.seller.username}</Text>
               <Text style={styles.sellerUser}>@{listing.seller.username}</Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
 
-          {listing.seller.user_id !== myId ? (
-            <PrimaryButton
-              label="View profile"
-              variant="outline"
-              onPress={() => navigation.push('MemberPublicProfile', { userId: listing.seller.user_id })}
-              style={styles.viewProfileBtn}
-            />
+          {isOwn ? (
+            <Text style={styles.ownNote}>This is your listing.</Text>
           ) : null}
-          {listing.seller.user_id !== myId ? (
-            <PrimaryButton label={contactLabel} onPress={() => void contact()} loading={contactBusy} />
-          ) : null}
-          {listing.seller.user_id !== myId ? (
-            <PrimaryButton
-              label={`Hire (${listing.seller.username})`}
-              variant="outline"
+        </View>
+      </ScrollView>
+
+      {showFooter ? (
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <Pressable
+            onPress={() => void contact()}
+            disabled={contactBusy}
+            style={({ pressed }) => [styles.ctaPrimary, pressed && styles.pressed, contactBusy && styles.ctaDisabled]}
+          >
+            {contactBusy ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <>
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.white} />
+                <Text style={styles.ctaPrimaryText}>{contactLabel}</Text>
+              </>
+            )}
+          </Pressable>
+          <View style={styles.footerLinks}>
+            <Pressable onPress={goProfile} style={({ pressed }) => [styles.footerLinkHit, pressed && styles.pressed]}>
+              <Text style={styles.footerLinkText}>View profile</Text>
+            </Pressable>
+            {listing.listing_type === 'service' ? (
+              <>
+                <Text style={styles.footerDot}>·</Text>
+                <Pressable
+                  onPress={() => {
+                    if (isGuest) {
+                      showGuestPrompt();
+                      return;
+                    }
+                    stackNavigation.navigate('HireComingSoon', { username: listing.seller.username });
+                  }}
+                  style={({ pressed }) => [styles.footerLinkHit, pressed && styles.pressed]}
+                >
+                  <Text style={styles.footerLinkText}>Hire</Text>
+                </Pressable>
+              </>
+            ) : null}
+            <Text style={styles.footerDot}>·</Text>
+            <Pressable
               onPress={() => {
                 if (isGuest) {
                   showGuestPrompt();
                   return;
                 }
-                stackNavigation.navigate('HireComingSoon', { username: listing.seller.username });
+                setReportOpen(true);
               }}
-            />
-          ) : null}
-          <PrimaryButton
-            label="Report this listing"
-            onPress={() => {
-              if (isGuest) {
-                showGuestPrompt();
-                return;
-              }
-              setReportOpen(true);
-            }}
-            variant="outline"
-            style={styles.reportBtn}
-          />
-        </ScrollView>
-        <ReportSheet
-          visible={reportOpen}
-          title="Report listing"
-          onClose={() => setReportOpen(false)}
-          onSubmit={async (reason) => {
-            await apiSubmitReport({ subject_type: 'listing', subject_id: listing.id, reason });
-            Alert.alert('Thanks', 'Your report was sent to moderation.');
-          }}
-        />
-      </SafeAreaView>
-    </GradientBackground>
+              style={({ pressed }) => [styles.footerLinkHit, pressed && styles.pressed]}
+            >
+              <Text style={styles.footerLinkReport}>Report</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      <ReportSheet
+        visible={reportOpen}
+        title="Report listing"
+        onClose={() => setReportOpen(false)}
+        onSubmit={async (reason) => {
+          await apiSubmitReport({ subject_type: 'listing', subject_id: listing.id, reason });
+          Alert.alert('Thanks', 'Your report was sent to moderation.');
+        }}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  root: { flex: 1, backgroundColor: PAGE_BG },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   err: { color: '#b91c1c', fontWeight: '700' },
-  scroll: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 },
+  errBack: { marginTop: 16, paddingVertical: 12, paddingHorizontal: 20 },
+  errBackText: { fontSize: 16, fontWeight: '800', color: colors.primaryDark },
+  scroll: { flexGrow: 1 },
+  heroWrap: { position: 'relative' },
   hero: {
     width: '100%',
-    aspectRatio: 1.2,
-    borderRadius: 16,
+    aspectRatio: 16 / 9,
     backgroundColor: colors.primarySoft,
-    marginBottom: 16,
+  },
+  heroPh: { alignItems: 'center', justifyContent: 'center' },
+  heroOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+  },
+  heroBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingTop: 4,
+  },
+  heroBarEnd: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  heroIconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(11, 18, 32, 0.42)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheet: {
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    marginTop: -18,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  videoBlock: {
+    marginBottom: 8,
+    marginTop: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#0f172a',
   },
   heroVideo: {
     width: '100%',
     aspectRatio: 16 / 9,
-    borderRadius: 16,
     backgroundColor: '#0f172a',
-    marginBottom: 16,
   },
-  title: { fontSize: 22, fontWeight: '800', color: colors.text },
-  loc: { fontSize: 13, color: colors.textMuted, marginTop: 8, fontWeight: '600' },
-  price: { fontSize: 20, fontWeight: '800', color: colors.primaryDark, marginTop: 10 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
-  chip: {
-    paddingHorizontal: 10,
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  tag: {
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: 'rgba(11, 18, 32, 0.06)',
   },
-  chipText: { fontSize: 12, fontWeight: '700', color: colors.primaryDark },
-  body: { fontSize: 15, color: colors.textMuted, marginTop: 16, lineHeight: 22, fontWeight: '500' },
-  section: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.text,
-    marginTop: 22,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  portRow: { marginTop: 10, marginHorizontal: -4 },
+  tagText: { fontSize: 12, fontWeight: '700', color: colors.text },
+  title: { fontSize: 24, fontWeight: '800', color: colors.text, lineHeight: 30 },
+  price: { fontSize: 20, fontWeight: '800', color: PRICE_PURPLE, marginTop: 10 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 12 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
+  subHeading: { fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 22, marginBottom: 8 },
+  body: { fontSize: 15, color: colors.textMuted, lineHeight: 23, fontWeight: '500' },
+  portRow: { marginTop: 4, marginHorizontal: -4 },
   portImg: {
     width: 120,
     height: 120,
-    borderRadius: 12,
+    borderRadius: 14,
     marginRight: 10,
     backgroundColor: colors.primarySoft,
   },
-  sellerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primarySoft },
+  sellerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 4,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(90, 95, 225, 0.15)' },
   avatarPh: { alignItems: 'center', justifyContent: 'center' },
+  avatarLetter: { fontSize: 20, fontWeight: '800', color: CTA_PURPLE },
+  sellerInfo: { flex: 1 },
   sellerName: { fontSize: 16, fontWeight: '800', color: colors.text },
   sellerUser: { fontSize: 13, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
-  viewProfileBtn: { marginTop: 12 },
-  reportBtn: { marginTop: 10 },
+  ownNote: { marginTop: 16, fontSize: 14, color: colors.textMuted, fontWeight: '600', textAlign: 'center' },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.white,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 12,
+  },
+  ctaPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: CTA_PURPLE,
+    borderRadius: 999,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  ctaPrimaryText: { fontSize: 16, fontWeight: '800', color: colors.white },
+  ctaDisabled: { opacity: 0.75 },
+  footerLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 12,
+    paddingBottom: 4,
+  },
+  footerLinkHit: { paddingVertical: 6, paddingHorizontal: 8 },
+  footerLinkText: { fontSize: 14, fontWeight: '800', color: CTA_PURPLE },
+  footerLinkReport: { fontSize: 14, fontWeight: '700', color: colors.danger },
+  footerDot: { fontSize: 14, color: colors.textMuted, fontWeight: '700', marginHorizontal: 2 },
+  pressed: { opacity: 0.88 },
 });

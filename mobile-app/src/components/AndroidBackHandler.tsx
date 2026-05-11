@@ -11,7 +11,7 @@ import { navigationRef } from '../navigation/navigationRef';
 
 /**
  * Whether any navigator in the tree can pop (nested stacks, tabs with stack history, etc.).
- * Root `navigationRef.canGoBack()` alone is often wrong for drawer + tabs + stacks.
+ * Root `navigationRef.canGoBack()` alone is often wrong for tabs + stacks.
  */
 function navTreeCanGoBack(state: NavigationState | PartialState<NavigationState> | undefined): boolean {
   if (!state || typeof state.index !== 'number' || !state.routes?.length) {

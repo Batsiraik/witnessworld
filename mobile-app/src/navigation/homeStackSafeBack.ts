@@ -30,7 +30,7 @@ export type HomeStackBackNavigation = {
 
 /**
  * Header back on the Home tab stack. Walks up to the real stack navigator so we
- * do not read Tab/Drawer state by mistake, and pops when the focused route is a
+ * do not read Tab state by mistake, and pops when the focused route is a
  * detail screen even if `index` is wrongly reported as 0 (RN Screens quirk).
  */
 export function homeStackSafeGoBack(navigation: HomeStackBackNavigation): void {

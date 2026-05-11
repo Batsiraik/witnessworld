@@ -102,7 +102,8 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
         conversation_id,
         entry.owner_label,
         entry.owner_user_id,
-        entry.owner_username
+        entry.owner_username,
+        true
       );
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');

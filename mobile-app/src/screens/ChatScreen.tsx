@@ -22,6 +22,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   apiGet,
+  apiConversationAction,
+  apiMarkConversationRead,
   apiSendMessage,
   apiSendMessageWithFile,
   downloadMessageAttachment,
@@ -48,13 +50,14 @@ type Msg = {
   body: string;
   created_at: string;
   mine: boolean;
+  delivery_status?: 'sent' | 'delivered' | 'seen' | null;
   attachment?: Attachment | null;
 };
 
 type PendingFile = { uri: string; name: string; mime: string };
 
 export function ChatScreen({ route, navigation }: Props) {
-  const { conversationId, peerName, peerUserId, peerUsername } = route.params;
+  const { conversationId, peerName, peerUserId, peerUsername, showHire = true } = route.params;
   const { stackNavigation } = useDashboardContext();
   const hireDisplay = peerUsername?.trim() || peerName?.trim() || 'member';
   const hireLabel = `Hire (${hireDisplay})`;
@@ -92,6 +95,7 @@ export function ChatScreen({ route, navigation }: Props) {
         const data = await apiGet(`messages.php?conversation_id=${conversationId}`, true);
         const M = data.messages;
         setMessages(Array.isArray(M) ? (M as Msg[]) : []);
+        void apiMarkConversationRead(conversationId).catch(() => {});
       } catch {
         setMessages([]);
       } finally {
@@ -194,6 +198,22 @@ export function ChatScreen({ route, navigation }: Props) {
 
   const canSend = text.trim().length > 0 || pendingFile != null;
 
+  const hideConversation = async (action: 'archive' | 'delete') => {
+    try {
+      await apiConversationAction(conversationId, action);
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert('Conversation', e instanceof Error ? e.message : 'Could not update conversation');
+    }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert('Delete conversation?', 'This hides the thread for you. New messages can make it appear again.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => void hideConversation('delete') },
+    ]);
+  };
+
   const keyboardVerticalOffset = headerHeight;
 
   return (
@@ -279,6 +299,7 @@ export function ChatScreen({ route, navigation }: Props) {
                   ) : null}
                   <Text style={[styles.time, item.mine && styles.timeMine]}>
                     {item.created_at.slice(11, 16)}
+                    {item.mine && item.delivery_status ? ` · ${item.delivery_status}` : ''}
                   </Text>
                 </View>
               )}
@@ -293,10 +314,24 @@ export function ChatScreen({ route, navigation }: Props) {
                 style={styles.peerBarBtn}
               />
             ) : null}
+            {showHire ? (
+              <PrimaryButton
+                label={hireLabel}
+                variant="outline"
+                onPress={openHire}
+                style={styles.peerBarBtn}
+              />
+            ) : null}
             <PrimaryButton
-              label={hireLabel}
+              label="Archive"
               variant="outline"
-              onPress={openHire}
+              onPress={() => void hideConversation('archive')}
+              style={styles.peerBarBtn}
+            />
+            <PrimaryButton
+              label="Delete"
+              variant="outline"
+              onPress={confirmDelete}
               style={styles.peerBarBtn}
             />
           </View>

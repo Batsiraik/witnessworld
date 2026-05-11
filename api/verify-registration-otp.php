@@ -38,7 +38,7 @@ if ($exp && strtotime((string) $exp) < time()) {
 $up = $pdo->prepare(
     'UPDATE users SET status = ?, registration_otp = NULL, registration_otp_expires_at = NULL WHERE id = ?'
 );
-$up->execute(['pending_questions', (int) $user['id']]);
+$up->execute(['pending_verification', (int) $user['id']]);
 
 $token = ww_issue_user_token($pdo, (int) $user['id']);
 $st2 = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');

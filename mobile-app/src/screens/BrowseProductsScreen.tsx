@@ -19,6 +19,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ProductsBrowse'>;
 
@@ -35,6 +36,7 @@ type Row = {
 };
 
 export function BrowseProductsScreen({ navigation }: Props) {
+  const tileW = useGridTileWidth();
   const [selectedCountry, setSelectedCountry] = useState<LocCountry | null>(null);
   const [selectedUsState, setSelectedUsState] = useState<LocState | null>(null);
   const [priceMin, setPriceMin] = useState('');
@@ -141,8 +143,11 @@ export function BrowseProductsScreen({ navigation }: Props) {
           </ScrollView>
         ) : (
           <FlatList
+            style={styles.listFlex}
             data={rows}
             keyExtractor={(it) => String(it.id)}
+            numColumns={2}
+            columnWrapperStyle={styles.gridRow}
             contentContainerStyle={styles.listPad}
             refreshControl={
               <RefreshControl
@@ -152,39 +157,59 @@ export function BrowseProductsScreen({ navigation }: Props) {
                 colors={[colors.primary]}
               />
             }
+            ListHeaderComponent={
+              rows.length > 0 ? (
+                <Text style={styles.resultCount}>
+                  {rows.length} {rows.length === 1 ? 'result' : 'results'}
+                </Text>
+              ) : null
+            }
             ListEmptyComponent={<Text style={styles.empty}>No products match.</Text>}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-                onPress={() => navigation.push('ProductDetail', { id: item.id })}
-              >
-                {item.image_url ? (
-                  <RemoteImage url={item.image_url} style={styles.thumb} contentFit="cover" />
-                ) : (
-                  <View style={[styles.thumb, styles.thumbPh]}>
-                    <Ionicons name="image-outline" size={24} color={colors.textMuted} />
+            renderItem={({ item }) => {
+              const loc = [item.location_us_state, item.location_country_name].filter(Boolean).join(', ');
+              return (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.gridTile,
+                    { width: tileW },
+                    pressed && styles.cardPressed,
+                  ]}
+                  onPress={() => navigation.push('ProductDetail', { id: item.id })}
+                >
+                  <View style={styles.gridImgWrap}>
+                    {item.image_url ? (
+                      <RemoteImage url={item.image_url} style={styles.gridImg} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.gridImg, styles.thumbPh]}>
+                        <Ionicons name="image-outline" size={32} color={colors.textMuted} />
+                      </View>
+                    )}
                   </View>
-                )}
-                <View style={styles.cardText}>
-                  <Text style={styles.cardTitle} numberOfLines={2}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.storeName} numberOfLines={1}>
-                    {item.store_name}
-                  </Text>
-                  {item.moderation_status === 'pending_approval' ? (
-                    <Text style={styles.pendingHint}>Awaiting approval — only you see this in the catalog for now.</Text>
-                  ) : null}
-                  <Text style={styles.price}>
-                    {item.currency} {item.price_amount}
-                  </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {[item.location_country_name, item.location_us_state].filter(Boolean).join(' · ')}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-              </Pressable>
-            )}
+                  <View style={styles.gridBody}>
+                    <Text style={styles.gridTitle} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.gridStore} numberOfLines={1}>
+                      {item.store_name}
+                    </Text>
+                    {item.moderation_status === 'pending_approval' ? (
+                      <Text style={styles.pendingHint} numberOfLines={2}>
+                        Pending approval
+                      </Text>
+                    ) : null}
+                    <Text style={styles.gridPrice}>
+                      {item.currency} {item.price_amount}
+                    </Text>
+                    <View style={styles.gridLocRow}>
+                      <Ionicons name="location-outline" size={12} color={colors.textMuted} />
+                      <Text style={styles.gridLoc} numberOfLines={1}>
+                        {loc || '—'}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            }}
           />
         )}
       </SafeAreaView>
@@ -220,34 +245,36 @@ const styles = StyleSheet.create({
   },
   applyText: { fontSize: 15, fontWeight: '800', color: colors.primaryDark },
   center: { padding: 40, alignItems: 'center' },
-  listPad: { paddingHorizontal: 16, paddingBottom: 24 },
+  listFlex: { flex: 1 },
+  listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
+  gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
+  resultCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 12 },
   errScroll: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 8 },
   err: { color: '#b91c1c', padding: 16, fontWeight: '600' },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 24, fontWeight: '600' },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
+  gridTile: {
+    backgroundColor: colors.white,
     borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    marginBottom: 10,
+    overflow: 'hidden',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cardPressed: { opacity: 0.92 },
-  thumb: { width: 72, height: 72, borderRadius: 12, backgroundColor: colors.primarySoft },
-  thumbPh: { alignItems: 'center', justifyContent: 'center' },
-  cardText: { flex: 1, minWidth: 0 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
-  storeName: { fontSize: 12, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
-  pendingHint: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#c2410c',
-    marginTop: 6,
-    lineHeight: 15,
+  gridImgWrap: { overflow: 'hidden', borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  gridImg: {
+    width: '100%',
+    aspectRatio: GRID_IMAGE_ASPECT,
+    backgroundColor: colors.primarySoft,
   },
-  price: { fontSize: 14, fontWeight: '800', color: colors.primaryDark, marginTop: 6 },
-  meta: { fontSize: 12, fontWeight: '600', color: colors.textMuted, marginTop: 4 },
+  thumbPh: { alignItems: 'center', justifyContent: 'center' },
+  gridBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12 },
+  gridTitle: { fontSize: 14, fontWeight: '800', color: colors.text, lineHeight: 18, minHeight: 36 },
+  gridStore: { fontSize: 11, fontWeight: '600', color: colors.textMuted, marginTop: 4 },
+  pendingHint: { fontSize: 10, fontWeight: '700', color: '#c2410c', marginTop: 4, lineHeight: 13 },
+  gridPrice: { fontSize: 15, fontWeight: '800', color: '#2563EB', marginTop: 6 },
+  gridLocRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  gridLoc: { flex: 1, fontSize: 11, fontWeight: '600', color: colors.textMuted },
 });

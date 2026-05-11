@@ -29,7 +29,9 @@ if ($conversationId <= 0) {
 
 try {
     $st = $pdo->prepare(
-        'SELECT id, context_key FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
+        'SELECT id, user_low_id, user_high_id, context_key, member_last_read_at, support_last_read_at,
+                user_low_last_read_at, user_high_last_read_at, user_low_deleted_at, user_high_deleted_at
+         FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
     );
     $st->execute([$conversationId, $userId, $userId]);
     $convRow = $st->fetch(PDO::FETCH_ASSOC);
@@ -41,13 +43,28 @@ try {
         ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
     }
 
+    $isLowUser = (int) $convRow['user_low_id'] === $userId;
+    $myDeletedAt = $isLowUser ? ($convRow['user_low_deleted_at'] ?? null) : ($convRow['user_high_deleted_at'] ?? null);
+    $peerReadAt = $isSupport
+        ? ((int) $convRow['user_low_id'] === $userId ? ($convRow['support_last_read_at'] ?? null) : ($convRow['member_last_read_at'] ?? null))
+        : ($isLowUser ? ($convRow['user_high_last_read_at'] ?? null) : ($convRow['user_low_last_read_at'] ?? null));
+
+    $pdo->prepare(
+        'UPDATE messages SET delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP)
+         WHERE conversation_id = ? AND sender_user_id <> ?'
+    )->execute([$conversationId, $userId]);
+
     $afterId = (int) ($_GET['after_id'] ?? 0);
-    $sql = 'SELECT m.id, m.sender_user_id, m.body, m.created_at,
+    $sql = 'SELECT m.id, m.sender_user_id, m.body, m.delivered_at, m.created_at,
             ma.id AS att_id, ma.file_name AS att_file_name, ma.mime_type AS att_mime, ma.file_size AS att_size
             FROM messages m
             LEFT JOIN message_attachments ma ON ma.message_id = m.id
             WHERE m.conversation_id = ?';
     $params = [$conversationId];
+    if ($myDeletedAt) {
+        $sql .= ' AND m.created_at > ?';
+        $params[] = (string) $myDeletedAt;
+    }
     if ($afterId > 0) {
         $sql .= ' AND m.id > ?';
         $params[] = $afterId;
@@ -58,7 +75,38 @@ try {
     $st->execute($params);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable) {
-    ww_json(['ok' => false, 'error' => 'Messages unavailable'], 500);
+    try {
+        $st = $pdo->prepare(
+            'SELECT id, context_key FROM conversations WHERE id = ? AND (user_low_id = ? OR user_high_id = ?) LIMIT 1'
+        );
+        $st->execute([$conversationId, $userId, $userId]);
+        $convRow = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$convRow) {
+            ww_json(['ok' => false, 'error' => 'Conversation not found'], 404);
+        }
+        $isSupport = ww_is_support_context($convRow);
+        if (($user['status'] ?? '') !== 'verified' && !$isSupport) {
+            ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
+        }
+        $afterId = (int) ($_GET['after_id'] ?? 0);
+        $sql = 'SELECT m.id, m.sender_user_id, m.body, m.created_at,
+                ma.id AS att_id, ma.file_name AS att_file_name, ma.mime_type AS att_mime, ma.file_size AS att_size
+                FROM messages m
+                LEFT JOIN message_attachments ma ON ma.message_id = m.id
+                WHERE m.conversation_id = ?';
+        $params = [$conversationId];
+        if ($afterId > 0) {
+            $sql .= ' AND m.id > ?';
+            $params[] = $afterId;
+        }
+        $sql .= ' ORDER BY m.id ASC LIMIT 200';
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+        $peerReadAt = null;
+    } catch (Throwable) {
+        ww_json(['ok' => false, 'error' => 'Messages unavailable'], 500);
+    }
 }
 
 $list = [];
@@ -73,12 +121,25 @@ foreach ($rows as $r) {
             'file_size' => (int) $r['att_size'],
         ];
     }
+    $mine = (int) $r['sender_user_id'] === $userId;
+    $status = null;
+    if ($mine) {
+        $status = 'sent';
+        if (!empty($r['delivered_at'])) {
+            $status = 'delivered';
+        }
+        if ($peerReadAt && strtotime((string) $peerReadAt) >= strtotime((string) $r['created_at'])) {
+            $status = 'seen';
+        }
+    }
     $list[] = [
         'id' => (int) $r['id'],
         'sender_user_id' => (int) $r['sender_user_id'],
         'body' => (string) $r['body'],
         'created_at' => (string) $r['created_at'],
-        'mine' => (int) $r['sender_user_id'] === $userId,
+        'mine' => $mine,
+        'delivery_status' => $status,
+        'delivered_at' => isset($r['delivered_at']) && $r['delivered_at'] ? (string) $r['delivered_at'] : null,
         'attachment' => $attachment,
     ];
 }

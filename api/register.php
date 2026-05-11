@@ -18,6 +18,21 @@ $first = trim((string) ($in['first_name'] ?? ''));
 $last = trim((string) ($in['last_name'] ?? ''));
 $username = strtolower(preg_replace('/\s+/', '', (string) ($in['username'] ?? '')));
 $phone = trim((string) ($in['phone'] ?? ''));
+$dateOfBirth = trim((string) ($in['date_of_birth'] ?? ''));
+$memberType = trim((string) ($in['member_type'] ?? ''));
+$baptismDate = trim((string) ($in['baptism_date'] ?? ''));
+$congregation = trim((string) ($in['congregation'] ?? ''));
+
+$parseDate = static function (string $value): ?DateTimeImmutable {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+        return null;
+    }
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+    if (!$date || $date->format('Y-m-d') !== $value) {
+        return null;
+    }
+    return $date;
+};
 
 if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     ww_json(['ok' => false, 'error' => 'Valid email is required'], 422);
@@ -33,6 +48,23 @@ if ($username === '' || strlen($username) < 2) {
 }
 if ($phone === '') {
     ww_json(['ok' => false, 'error' => 'Phone is required'], 422);
+}
+$dob = $parseDate($dateOfBirth);
+if (!$dob) {
+    ww_json(['ok' => false, 'error' => 'Valid date of birth is required'], 422);
+}
+$today = new DateTimeImmutable('today');
+if ($dob->diff($today)->y < 18) {
+    ww_json(['ok' => false, 'error' => 'You must be at least 18 to sign up'], 422);
+}
+if ($memberType === '') {
+    ww_json(['ok' => false, 'error' => 'I am a field is required'], 422);
+}
+if ($baptismDate !== '' && !$parseDate($baptismDate)) {
+    ww_json(['ok' => false, 'error' => 'Baptism date must be a valid date'], 422);
+}
+if ($congregation === '') {
+    ww_json(['ok' => false, 'error' => 'Congregation is required'], 422);
 }
 
 $pdo = witnessworld_pdo();
@@ -58,8 +90,8 @@ $otpExpires = (new DateTimeImmutable())->modify('+30 minutes')->format('Y-m-d H:
 $hash = password_hash($password, PASSWORD_DEFAULT);
 
 $ins = $pdo->prepare(
-    'INSERT INTO users (email, password_hash, first_name, last_name, username, phone, status, registration_otp, registration_otp_expires_at)
-     VALUES (?,?,?,?,?,?,?,?,?)'
+    'INSERT INTO users (email, password_hash, first_name, last_name, username, phone, date_of_birth, member_type, baptism_date, congregation, status, registration_otp, registration_otp_expires_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
 );
 $ins->execute([
     $email,
@@ -68,6 +100,10 @@ $ins->execute([
     $last,
     $username,
     $phone,
+    $dateOfBirth,
+    $memberType,
+    $baptismDate !== '' ? $baptismDate : null,
+    $congregation,
     'pending_otp',
     $otp,
     $otpExpires,

@@ -27,25 +27,62 @@ if (($user['status'] ?? '') !== 'verified') {
 $userId = (int) $user['id'];
 
 try {
+    $uidSql = (string) $userId;
+    $readCol = '(CASE WHEN c.user_low_id = ' . $uidSql . ' THEN c.user_low_last_read_at ELSE c.user_high_last_read_at END)';
+    $archivedCol = '(CASE WHEN c.user_low_id = ' . $uidSql . ' THEN c.user_low_archived_at ELSE c.user_high_archived_at END)';
+    $deletedCol = '(CASE WHEN c.user_low_id = ' . $uidSql . ' THEN c.user_low_deleted_at ELSE c.user_high_deleted_at END)';
+
     $sql = 'SELECT c.id, c.context_key, c.last_message_at, c.created_at,
             up.id AS peer_user_id, up.username AS peer_username,
             up.first_name AS peer_first, up.last_name AS peer_last, up.avatar_url AS peer_avatar,
             (SELECT IF(TRIM(COALESCE(m.body, \'\')) <> \'\', TRIM(m.body), CONCAT(\'📎 \', COALESCE(ma.file_name, \'File\')))
              FROM messages m
              LEFT JOIN message_attachments ma ON ma.message_id = m.id
-             WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body,
-            (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_created
+             WHERE m.conversation_id = c.id
+               AND (' . $deletedCol . ' IS NULL OR m.created_at > ' . $deletedCol . ')
+             ORDER BY m.id DESC LIMIT 1) AS last_body,
+            (SELECT m.created_at FROM messages m
+             WHERE m.conversation_id = c.id
+               AND (' . $deletedCol . ' IS NULL OR m.created_at > ' . $deletedCol . ')
+             ORDER BY m.id DESC LIMIT 1) AS last_created,
+            (SELECT COUNT(*) FROM messages m
+             WHERE m.conversation_id = c.id
+               AND m.sender_user_id <> ?
+               AND (' . $readCol . ' IS NULL OR m.created_at > ' . $readCol . ')
+               AND (' . $deletedCol . ' IS NULL OR m.created_at > ' . $deletedCol . ')) AS unread_count
             FROM conversations c
             INNER JOIN users up ON up.id = CASE WHEN c.user_low_id = ? THEN c.user_high_id ELSE c.user_low_id END
             WHERE (c.user_low_id = ? OR c.user_high_id = ?)
+              AND (' . $archivedCol . ' IS NULL OR c.last_message_at > ' . $archivedCol . ')
+              AND (' . $deletedCol . ' IS NULL OR c.last_message_at > ' . $deletedCol . ')
             ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
             LIMIT 120';
 
     $st = $pdo->prepare($sql);
-    $st->execute([$userId, $userId, $userId]);
+    $st->execute([$userId, $userId, $userId, $userId]);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable) {
+    try {
+        $sql = 'SELECT c.id, c.context_key, c.last_message_at, c.created_at,
+                up.id AS peer_user_id, up.username AS peer_username,
+                up.first_name AS peer_first, up.last_name AS peer_last, up.avatar_url AS peer_avatar,
+                (SELECT IF(TRIM(COALESCE(m.body, \'\')) <> \'\', TRIM(m.body), CONCAT(\'📎 \', COALESCE(ma.file_name, \'File\')))
+                 FROM messages m
+                 LEFT JOIN message_attachments ma ON ma.message_id = m.id
+                 WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body,
+                (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_created,
+                0 AS unread_count
+                FROM conversations c
+                INNER JOIN users up ON up.id = CASE WHEN c.user_low_id = ? THEN c.user_high_id ELSE c.user_low_id END
+                WHERE (c.user_low_id = ? OR c.user_high_id = ?)
+                ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
+                LIMIT 120';
+        $st = $pdo->prepare($sql);
+        $st->execute([$userId, $userId, $userId]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Inbox unavailable'], 500);
+    }
 }
 
 $list = [];
@@ -62,6 +99,7 @@ foreach ($rows as $r) {
         'last_message' => $r['last_body'] ? (string) $r['last_body'] : null,
         'last_message_at' => $r['last_created'] ? (string) $r['last_created'] : null,
         'updated_at' => $r['last_message_at'] ? (string) $r['last_message_at'] : (string) $r['created_at'],
+        'unread_count' => (int) ($r['unread_count'] ?? 0),
     ];
 }
 

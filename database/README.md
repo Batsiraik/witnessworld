@@ -12,8 +12,6 @@ If your MySQL database already has the tables below (for example the **Mar 26, 2
 | `users` | Members |
 | `user_api_tokens` | Mobile/API auth |
 | `settings` | Site + SMTP keys |
-| `questionnaire_questions` | Registration questionnaire |
-| `questionnaire_answers` | User answers |
 | `listings` | Classified + service listings |
 | `stores` | Seller storefronts |
 | `store_products` | Products |
@@ -23,7 +21,7 @@ If your MySQL database already has the tables below (for example the **Mar 26, 2
 | `conversations` | Inbox threads |
 | `messages` | Chat messages |
 
-**Removed / replaced:** older installs used `listing_reports`. That is **not** required anymore; reports live in `content_reports`.
+**Removed / replaced:** older installs used `listing_reports`; reports live in `content_reports`. The registration questionnaire tables are also replaced by profile fields stored directly on `users`.
 
 **Verdict for the dump you shared:** all of the above are present — **no missing tables** for the codebase as of this README.
 

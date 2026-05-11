@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -18,7 +19,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
-import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import type { LocCountry, LocState } from '../components/BrowseLocationFilters';
@@ -26,6 +26,7 @@ import type { LocCountry, LocState } from '../components/BrowseLocationFilters';
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
 const SCREEN_W = Dimensions.get('window').width;
+const HOME_LOGO = require('../../assets/logo.jpg');
 const FEATURED_CARD_W = Math.min(SCREEN_W * 0.74, 300);
 
 type Feed = {
@@ -140,8 +141,6 @@ function formatDirLocation(row: Record<string, unknown>): string {
 }
 
 export function HomeScreen({ navigation }: Props) {
-  const { isGuest, showGuestPrompt } = useDashboardContext();
-
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
   const [locModal, setLocModal] = useState(false);
@@ -204,7 +203,7 @@ export function HomeScreen({ navigation }: Props) {
         qs.set('limit', '12');
         if (country?.code) qs.set('country', country.code);
         if (usState?.name) qs.set('us_state', usState.name);
-        const data = await apiGet(`marketplace-home-feed.php?${qs.toString()}`, false);
+        const data = await apiGet(`marketplace-home-feed.php?${qs.toString()}`, true);
         setFeed(normalizeFeed(data.feed));
       } catch (e) {
         setFeedErr(e instanceof Error ? e.message : 'Could not load feed');
@@ -489,7 +488,7 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
@@ -502,12 +501,20 @@ export function HomeScreen({ navigation }: Props) {
             />
           }
         >
-          <View style={styles.topRow}>
-            <Text style={styles.brandTitle}>WitnessWorld Connect</Text>
+          <View style={styles.topRow} accessibilityRole="header">
+            <View style={styles.brandBlock}>
+              <Image
+                source={HOME_LOGO}
+                style={styles.brandLogo}
+                resizeMode="contain"
+                accessibilityLabel="WWC logo"
+              />
+              <Text style={styles.brandTitle}>WWC</Text>
+            </View>
             <Pressable
               accessibilityLabel="Notifications"
               onPress={() => {
-                if (isGuest) showGuestPrompt();
+                /* Reserved for future push / notification center */
               }}
               style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
             >
@@ -518,7 +525,6 @@ export function HomeScreen({ navigation }: Props) {
           <Pressable onPress={() => setLocModal(true)} style={({ pressed }) => [styles.locLine, pressed && styles.pressed]}>
             <Ionicons name="location-outline" size={16} color={colors.primaryDark} />
             <Text style={styles.locLineText}>{locationLabel}</Text>
-            <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
           </Pressable>
 
           <View style={styles.searchPill}>
@@ -560,7 +566,12 @@ export function HomeScreen({ navigation }: Props) {
               <ActivityIndicator color={colors.primary} />
             </View>
           ) : feedErr ? (
-            <Text style={styles.feedErr}>{feedErr}</Text>
+            <View style={styles.feedErrBox}>
+              <Text style={styles.feedErr}>{feedErr}</Text>
+              <Pressable onPress={() => void loadFeed('full')} style={({ pressed }) => [styles.feedRetry, pressed && styles.pressed]}>
+                <Text style={styles.feedRetryText}>Try again</Text>
+              </Pressable>
+            </View>
           ) : feed ? (
             <View style={styles.feedBox}>
               {feed.featured?.length
@@ -593,9 +604,7 @@ export function HomeScreen({ navigation }: Props) {
           ) : null}
 
           <Text style={styles.footnote}>
-            {isGuest
-              ? 'Sign in to message sellers, hire providers, and manage your office.'
-              : 'Message sellers from listing and product screens — threads appear in Messages.'}
+            Message sellers from listing and product screens — threads appear in Messages.
           </Text>
         </ScrollView>
 
@@ -676,14 +685,33 @@ export function HomeScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingBottom: 36, paddingTop: 8 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 36, paddingTop: 4 },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  brandTitle: { fontSize: 22, fontWeight: '800', color: colors.text, letterSpacing: -0.4, flex: 1, paddingRight: 12 },
+  brandBlock: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingRight: 12,
+    minHeight: 44,
+  },
+  brandLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.white,
+  },
+  brandTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: 2,
+  },
   bellBtn: {
     width: 44,
     height: 44,
@@ -694,7 +722,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(11, 18, 32, 0.08)',
   },
-  locLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
+  locLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   locLineText: { fontSize: 14, fontWeight: '600', color: colors.textMuted, flex: 1 },
   searchPill: {
     flexDirection: 'row',
@@ -721,7 +749,18 @@ const styles = StyleSheet.create({
   },
   catLabel: { fontSize: 11, fontWeight: '700', color: colors.text, textAlign: 'center' },
   feedLoad: { paddingVertical: 28, alignItems: 'center' },
-  feedErr: { color: '#b91c1c', fontWeight: '600', marginBottom: 12 },
+  feedErrBox: { marginBottom: 12 },
+  feedErr: { color: '#b91c1c', fontWeight: '600', marginBottom: 10, lineHeight: 20 },
+  feedRetry: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.white,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(11, 18, 32, 0.12)',
+  },
+  feedRetryText: { fontSize: 15, fontWeight: '800', color: colors.primaryDark },
   feedBox: { marginBottom: 8 },
   rail: { marginBottom: 22 },
   railHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -730,18 +769,23 @@ const styles = StyleSheet.create({
   hScroll: { gap: 14, paddingRight: 8 },
   fCard: {
     marginRight: 0,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    overflow: 'hidden',
     shadowColor: '#0B1220',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 3,
-    paddingBottom: 4,
+    paddingBottom: 12,
   },
-  fImgWrap: { position: 'relative', marginBottom: 10 },
+  fImgWrap: { position: 'relative', overflow: 'hidden' },
+  /** Landscape hero (~16:9): shorter than the old 1.25 ratio; top corners only, flat bottom against text */
   fImg: {
     width: '100%',
-    aspectRatio: 1.25,
-    borderRadius: 16,
+    aspectRatio: 16 / 9,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     backgroundColor: colors.primarySoft,
   },
   featuredBadge: {
@@ -755,10 +799,29 @@ const styles = StyleSheet.create({
   },
   featuredBadgeText: { color: colors.white, fontSize: 11, fontWeight: '800' },
   hPh: { alignItems: 'center', justifyContent: 'center' },
-  fTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
-  fPrice: { fontSize: 15, fontWeight: '800', color: '#2563EB', marginBottom: 4 },
-  fPriceMuted: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 4 },
-  locRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  fTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+    marginTop: 10,
+  },
+  fPrice: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#2563EB',
+    marginBottom: 4,
+    paddingHorizontal: 12,
+  },
+  fPriceMuted: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+  },
+  locRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12 },
   fLoc: { fontSize: 12, color: colors.textMuted, fontWeight: '600', flex: 1 },
   pressed: { opacity: 0.9 },
   footnote: {

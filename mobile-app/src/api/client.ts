@@ -3,6 +3,7 @@ import { File as ExpoFile, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { API_BASE } from '../config/api';
 
+/** Persists across app updates (AsyncStorage). Cleared only on logout, token rotation, or OS/data wipe. Server honours ~365d expiry (WW_TOKEN_DAYS). */
 const TOKEN_KEY = 'ww_token';
 
 /** Avoid hung splash: RN fetch has no built-in timeout. */
@@ -31,6 +32,24 @@ export async function setStoredToken(token: string | null): Promise<void> {
 type Json = Record<string, unknown>;
 
 export type UploadProgressHandler = (percent: number) => void;
+
+/** True when the body looks like HTML (404 pages, PHP fatals, etc.) rather than JSON. */
+function isProbablyHtmlResponse(body: string): boolean {
+  const s = body.trimStart().slice(0, 800).toLowerCase();
+  return (
+    s.startsWith('<!doctype') ||
+    s.startsWith('<html') ||
+    (s.startsWith('<') && (s.includes('<head') || s.includes('<meta ')))
+  );
+}
+
+function errorFromInvalidJsonBody(body: string, httpStatus: number): Error {
+  const html = isProbablyHtmlResponse(body);
+  const msg = html
+    ? 'The server returned a web page instead of data. Check that API endpoints are deployed and the app points to the correct host.'
+    : 'The server sent a response this app could not read. Please try again.';
+  return new Error(__DEV__ ? `${msg} (HTTP ${httpStatus})` : msg);
+}
 
 /** Apache/XAMPP often strips Authorization; X-Auth-Token is read by the PHP API as a fallback. */
 function attachAuthHeaders(headers: Record<string, string>, token: string): void {
@@ -64,7 +83,7 @@ function multipartPostWithProgress(
       try {
         data = JSON.parse(text) as Json;
       } catch {
-        reject(new Error(text.slice(0, 160) || 'Invalid server response'));
+        reject(errorFromInvalidJsonBody(text, xhr.status));
         return;
       }
       if (xhr.status < 200 || xhr.status >= 300) {
@@ -84,7 +103,7 @@ async function parseJson(res: Response): Promise<Json> {
     const data = JSON.parse(text) as Json;
     return data;
   } catch {
-    throw new Error(text.slice(0, 200) || 'Invalid server response');
+    throw errorFromInvalidJsonBody(text, res.status);
   }
 }
 
@@ -285,6 +304,17 @@ export async function apiSubmitReport(body: {
 
 export async function apiSendMessage(conversationId: number, text: string): Promise<void> {
   await apiPost('message-send.php', { conversation_id: conversationId, body: text } as Json, true);
+}
+
+export async function apiMarkConversationRead(conversationId: number): Promise<void> {
+  await apiPost('conversation-mark-read.php', { conversation_id: conversationId } as Json, true);
+}
+
+export async function apiConversationAction(
+  conversationId: number,
+  action: 'archive' | 'delete'
+): Promise<void> {
+  await apiPost('conversation-action.php', { conversation_id: conversationId, action } as Json, true);
 }
 
 /** Send a text message with one attachment (image, PDF, Word, etc.). */

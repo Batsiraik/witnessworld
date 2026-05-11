@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -12,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet } from '../api/client';
+import { apiConversationAction, apiGet } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { InboxStackParamList } from '../navigation/types';
@@ -26,6 +27,7 @@ type Row = {
   peer: { user_id: number; label: string; username: string; avatar_url: string | null };
   last_message: string | null;
   updated_at: string;
+  unread_count?: number;
 };
 
 export function InboxListScreen({ navigation }: Props) {
@@ -55,6 +57,32 @@ export function InboxListScreen({ navigation }: Props) {
     useCallback(() => {
       void load('full');
     }, [load])
+  );
+
+  const hideConversation = useCallback(
+    async (conversationId: number, action: 'archive' | 'delete') => {
+      try {
+        await apiConversationAction(conversationId, action);
+        setRows((cur) => cur.filter((row) => row.id !== conversationId));
+      } catch (e) {
+        Alert.alert('Conversation', e instanceof Error ? e.message : 'Could not update conversation');
+      }
+    },
+    []
+  );
+
+  const confirmDelete = useCallback(
+    (conversationId: number) => {
+      Alert.alert('Delete conversation?', 'This hides the thread for you. New messages can make it appear again.', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => void hideConversation(conversationId, 'delete'),
+        },
+      ]);
+    },
+    [hideConversation]
   );
 
   return (
@@ -95,36 +123,53 @@ export function InboxListScreen({ navigation }: Props) {
               <Text style={styles.empty}>No conversations yet. Contact a seller from a listing or product.</Text>
             }
             renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-                onPress={() =>
-                  navigation.navigate('Chat', {
-                    conversationId: item.id,
-                    peerName: item.peer.label?.trim() || item.peer.username,
-                    peerUserId: item.peer.user_id,
-                    peerUsername: item.peer.username,
-                  })
-                }
-              >
-                {item.peer.avatar_url && String(item.peer.avatar_url).trim() !== '' ? (
-                  <RemoteImage url={item.peer.avatar_url} style={styles.avatar} contentFit="cover" />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarPh]}>
-                    <Text style={styles.avatarLetter}>{item.peer.label.slice(0, 1).toUpperCase()}</Text>
+              <View style={styles.rowWrap}>
+                <Pressable
+                  style={({ pressed }) => [styles.row, (item.unread_count ?? 0) > 0 && styles.rowUnread, pressed && styles.rowPressed]}
+                  onPress={() =>
+                    navigation.navigate('Chat', {
+                      conversationId: item.id,
+                      peerName: item.peer.label?.trim() || item.peer.username,
+                      peerUserId: item.peer.user_id,
+                      peerUsername: item.peer.username,
+                    })
+                  }
+                >
+                  {item.peer.avatar_url && String(item.peer.avatar_url).trim() !== '' ? (
+                    <RemoteImage url={item.peer.avatar_url} style={styles.avatar} contentFit="cover" />
+                  ) : (
+                    <View style={[styles.avatar, styles.avatarPh]}>
+                      <Text style={styles.avatarLetter}>{item.peer.label.slice(0, 1).toUpperCase()}</Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={styles.nameRow}>
+                      <Text style={[styles.name, (item.unread_count ?? 0) > 0 && styles.nameUnread]} numberOfLines={1}>
+                        {item.peer.label || item.peer.username}
+                      </Text>
+                      {(item.unread_count ?? 0) > 0 ? (
+                        <View style={styles.unreadBadge}>
+                          <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={[styles.preview, (item.unread_count ?? 0) > 0 && styles.previewUnread]} numberOfLines={2}>
+                      {item.last_message || 'Tap to open thread'}
+                    </Text>
                   </View>
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {item.peer.label || item.peer.username}
+                  <Text style={styles.time} numberOfLines={1}>
+                    {item.updated_at.slice(5, 16).replace('T', ' ')}
                   </Text>
-                  <Text style={styles.preview} numberOfLines={2}>
-                    {item.last_message || 'Tap to open thread'}
-                  </Text>
+                </Pressable>
+                <View style={styles.actions}>
+                  <Pressable onPress={() => void hideConversation(item.id, 'archive')} style={styles.actionBtn}>
+                    <Text style={styles.actionText}>Archive</Text>
+                  </Pressable>
+                  <Pressable onPress={() => confirmDelete(item.id)} style={[styles.actionBtn, styles.deleteBtn]}>
+                    <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+                  </Pressable>
                 </View>
-                <Text style={styles.time} numberOfLines={1}>
-                  {item.updated_at.slice(5, 16).replace('T', ' ')}
-                </Text>
-              </Pressable>
+              </View>
             )}
           />
         )}
@@ -140,6 +185,7 @@ const styles = StyleSheet.create({
   err: { color: '#b91c1c', textAlign: 'center', margin: 20, fontWeight: '600' },
   list: { padding: 16, paddingBottom: 32 },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40, paddingHorizontal: 24, fontWeight: '600' },
+  rowWrap: { marginBottom: 10 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -149,13 +195,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    marginBottom: 10,
   },
+  rowUnread: { borderColor: colors.primary, backgroundColor: 'rgba(255,255,255,0.98)' },
   rowPressed: { opacity: 0.92 },
   avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primarySoft },
   avatarPh: { alignItems: 'center', justifyContent: 'center' },
   avatarLetter: { fontSize: 20, fontWeight: '800', color: colors.primaryDark },
-  name: { fontSize: 16, fontWeight: '800', color: colors.text },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  name: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.text },
+  nameUnread: { color: colors.primaryDark },
   preview: { fontSize: 13, color: colors.textMuted, marginTop: 4, fontWeight: '500' },
+  previewUnread: { color: colors.text, fontWeight: '800' },
   time: { fontSize: 11, color: colors.textMuted, fontWeight: '600', maxWidth: 72, textAlign: 'right' },
+  unreadBadge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  unreadBadgeText: { color: colors.white, fontSize: 11, fontWeight: '900' },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 6, paddingRight: 4 },
+  actionBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: colors.primarySoft },
+  deleteBtn: { backgroundColor: 'rgba(239, 68, 68, 0.12)' },
+  actionText: { fontSize: 12, fontWeight: '800', color: colors.primaryDark },
+  deleteText: { color: colors.danger },
 });

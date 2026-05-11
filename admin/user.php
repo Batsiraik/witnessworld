@@ -45,14 +45,6 @@ if (!$user) {
     exit;
 }
 
-$ans = $pdo->prepare(
-    'SELECT q.question_text, a.answer_text FROM questionnaire_answers a
-     INNER JOIN questionnaire_questions q ON q.id = a.question_id
-     WHERE a.user_id = ? ORDER BY q.sort_order ASC, q.id ASC'
-);
-$ans->execute([$id]);
-$answers = $ans->fetchAll(PDO::FETCH_ASSOC);
-
 $support = ww_get_setting($pdo, 'support_email', 'info@witnessworldconnect.com');
 $formReturn = '';
 $showOpenFullPageLink = false;

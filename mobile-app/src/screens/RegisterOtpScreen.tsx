@@ -33,7 +33,7 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
       const token = data.token as string | undefined;
       if (!token) throw new Error('No token returned');
       await setStoredToken(token);
-      navigation.reset({ index: 0, routes: [{ name: 'Questionnaire' }] });
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Verification failed';
       setError(msg);

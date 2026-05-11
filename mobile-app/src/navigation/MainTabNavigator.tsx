@@ -10,7 +10,6 @@ import {
 import type { ViewStyle } from 'react-native';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDashboardContext } from '../context/DashboardContext';
 import { colors } from '../theme/colors';
 import { HOME_STACK_DETAIL_ROUTES } from './homeStackSafeBack';
 import { HomeStackNavigator } from './HomeStackNavigator';
@@ -42,7 +41,6 @@ const HIDDEN_TAB_ITEM: ViewStyle = {
 
 function PostTabButton(props: BottomTabBarButtonProps) {
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
-  const { isGuest, showGuestPrompt } = useDashboardContext();
   const { onLongPress, accessibilityState } = props;
 
   return (
@@ -52,10 +50,6 @@ function PostTabButton(props: BottomTabBarButtonProps) {
         accessibilityLabel="Create post or listing"
         accessibilityState={accessibilityState}
         onPress={() => {
-          if (isGuest) {
-            showGuestPrompt();
-            return;
-          }
           navigation.navigate('HomeTab', { screen: 'ProviderHub' });
         }}
         onLongPress={onLongPress}
@@ -63,7 +57,7 @@ function PostTabButton(props: BottomTabBarButtonProps) {
       >
         <View style={styles.fabSquircle}>
           <View style={styles.fabInnerRing}>
-            <Ionicons name="add" size={26} color={colors.white} />
+            <Ionicons name="add" size={22} color={colors.white} />
           </View>
         </View>
       </Pressable>
@@ -73,7 +67,6 @@ function PostTabButton(props: BottomTabBarButtonProps) {
 
 export function MainTabNavigator() {
   const insets = useSafeAreaInsets();
-  const { isGuest, showGuestPrompt } = useDashboardContext();
   const bottomPad = Math.max(insets.bottom, 10);
   const tabBarHeight = 56 + bottomPad;
 
@@ -159,16 +152,6 @@ export function MainTabNavigator() {
           title: 'Messages',
           tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-outline" size={size} color={color} />,
         }}
-        listeners={
-          isGuest
-            ? {
-                tabPress: (e) => {
-                  e.preventDefault();
-                  showGuestPrompt();
-                },
-              }
-            : undefined
-        }
       />
       <Tab.Screen
         name="ProfileTab"
@@ -177,16 +160,6 @@ export function MainTabNavigator() {
           title: 'Profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
-        listeners={
-          isGuest
-            ? {
-                tabPress: (e) => {
-                  e.preventDefault();
-                  showGuestPrompt();
-                },
-              }
-            : undefined
-        }
       />
       <Tab.Screen
         name="OfficeTab"
@@ -209,28 +182,29 @@ const styles = StyleSheet.create({
     overflow: 'visible',
     paddingBottom: Platform.OS === 'ios' ? 2 : 4,
   },
-  /** Lifted above the bar + soft purple glow (iOS shadow; Android uses elevation). */
+  /** Offset only — shadow lives on `fabSquircle` so it paints correctly on iOS/Android. */
   fabOuter: {
-    transform: [{ translateY: -26 }],
-    shadowColor: '#5A5FE1',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.42,
-    shadowRadius: 16,
-    elevation: 14,
+    zIndex: 20,
+    transform: [{ translateY: -4 }],
   },
-  /** Squircle: large corner radius but not half of width, so it stays square-based. */
+  /** Slightly smaller squircle (was 56); shadow on this view so it isn’t clipped by Pressable. */
   fabSquircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     backgroundColor: FAB_FILL,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.28 : 0.4,
+    shadowRadius: 8,
+    elevation: Platform.OS === 'android' ? 10 : 0,
   },
   fabInnerRing: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.95)',
     alignItems: 'center',

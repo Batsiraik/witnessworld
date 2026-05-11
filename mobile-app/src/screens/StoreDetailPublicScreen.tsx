@@ -49,7 +49,7 @@ type Store = {
 
 export function StoreDetailPublicScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user, stackNavigation } = useDashboardContext();
+  const { user } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,13 +94,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
         context_type: 'store',
         context_id: store.id,
       });
-      openInboxChat(
-        navigation,
-        conversation_id,
-        store.seller.label,
-        store.seller.user_id,
-        store.seller.username
-      );
+      openInboxChat(navigation, conversation_id, store.seller.label, store.seller.user_id, store.seller.username, false);
     } catch (e) {
       Alert.alert('Could not start chat', e instanceof Error ? e.message : 'Error');
     } finally {
@@ -221,15 +215,6 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
             ) : null}
             {store.seller.user_id !== myId ? (
               <PrimaryButton label="Contact shop owner" onPress={() => void contact()} loading={busy} />
-            ) : null}
-            {store.seller.user_id !== myId ? (
-              <PrimaryButton
-                label={`Hire (${store.seller.username})`}
-                variant="outline"
-                onPress={() =>
-                  stackNavigation.navigate('HireComingSoon', { username: store.seller.username })
-                }
-              />
             ) : null}
             <PrimaryButton
               label="Report this store"
