@@ -60,8 +60,8 @@ if ($dob->diff($today)->y < 18) {
 if ($memberType === '') {
     ww_json(['ok' => false, 'error' => 'I am a field is required'], 422);
 }
-if ($baptismDate !== '' && !$parseDate($baptismDate)) {
-    ww_json(['ok' => false, 'error' => 'Baptism date must be a valid date'], 422);
+if (!$parseDate($baptismDate)) {
+    ww_json(['ok' => false, 'error' => 'Valid baptism date is required'], 422);
 }
 if ($congregation === '') {
     ww_json(['ok' => false, 'error' => 'Congregation is required'], 422);
@@ -102,7 +102,7 @@ $ins->execute([
     $phone,
     $dateOfBirth,
     $memberType,
-    $baptismDate !== '' ? $baptismDate : null,
+    $baptismDate,
     $congregation,
     'pending_otp',
     $otp,

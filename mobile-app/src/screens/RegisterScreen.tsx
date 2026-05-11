@@ -86,9 +86,8 @@ export function RegisterScreen({ navigation }: Props) {
     else if (!dob) next.dateOfBirth = 'Use YYYY-MM-DD format';
     else if (!isAtLeast18(dob)) next.dateOfBirth = 'You must be at least 18 to sign up';
     if (!memberType.trim()) next.memberType = 'Tell us who you are';
-    if (baptismDate.trim() && !parseDate(baptismDate)) {
-      next.baptismDate = 'Use YYYY-MM-DD format';
-    }
+    if (!baptismDate.trim()) next.baptismDate = 'Enter your baptism date';
+    else if (!parseDate(baptismDate)) next.baptismDate = 'Use YYYY-MM-DD format';
     if (!congregation.trim()) next.congregation = 'Enter your congregation';
     if (password.length < 8) next.password = 'Use at least 8 characters';
     if (password !== confirm) next.confirm = 'Passwords do not match';
@@ -113,7 +112,7 @@ export function RegisterScreen({ navigation }: Props) {
           phone,
           date_of_birth: dateOfBirth.trim(),
           member_type: memberType.trim(),
-          baptism_date: baptismDate.trim() || null,
+          baptism_date: baptismDate.trim(),
           congregation: congregation.trim(),
         },
         false
@@ -223,7 +222,7 @@ export function RegisterScreen({ navigation }: Props) {
                 label="Baptism date"
                 value={baptismDate}
                 onChangeText={setBaptismDate}
-                placeholder="YYYY-MM-DD (optional)"
+                placeholder="YYYY-MM-DD"
                 keyboardType="numbers-and-punctuation"
                 error={errors.baptismDate}
               />

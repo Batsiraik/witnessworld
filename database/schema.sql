@@ -62,7 +62,7 @@ CREATE TABLE users (
   phone VARCHAR(40) NOT NULL,
   date_of_birth DATE NOT NULL,
   member_type VARCHAR(120) NOT NULL,
-  baptism_date DATE NULL,
+  baptism_date DATE NOT NULL,
   congregation VARCHAR(180) NOT NULL,
   avatar_url VARCHAR(512) NULL,
   status ENUM(
