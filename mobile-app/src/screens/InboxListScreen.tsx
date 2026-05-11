@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -30,18 +31,21 @@ type Row = {
   unread_count?: number;
 };
 
+type InboxFilter = 'all' | 'unread' | 'archived';
+
 export function InboxListScreen({ navigation }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InboxFilter>('all');
 
-  const load = useCallback(async (mode: 'full' | 'refresh' = 'full') => {
+  const load = useCallback(async (mode: 'full' | 'refresh' = 'full', nextFilter: InboxFilter = filter) => {
     if (mode === 'refresh') setRefreshing(true);
     else setLoading(true);
     setErr(null);
     try {
-      const data = await apiGet('conversations-list.php', true);
+      const data = await apiGet(`conversations-list.php?view=${nextFilter}`, true);
       const L = data.conversations;
       setRows(Array.isArray(L) ? (L as Row[]) : []);
     } catch (e) {
@@ -51,7 +55,7 @@ export function InboxListScreen({ navigation }: Props) {
       if (mode === 'refresh') setRefreshing(false);
       else setLoading(false);
     }
-  }, []);
+  }, [filter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,6 +73,14 @@ export function InboxListScreen({ navigation }: Props) {
       }
     },
     []
+  );
+
+  const changeFilter = useCallback(
+    (next: InboxFilter) => {
+      setFilter(next);
+      void load('full', next);
+    },
+    [load]
   );
 
   const confirmDelete = useCallback(
@@ -111,6 +123,21 @@ export function InboxListScreen({ navigation }: Props) {
             data={rows}
             keyExtractor={(it) => String(it.id)}
             contentContainerStyle={styles.list}
+            ListHeaderComponent={
+              <View style={styles.filters}>
+                {(['all', 'unread', 'archived'] as InboxFilter[]).map((key) => (
+                  <Pressable
+                    key={key}
+                    onPress={() => changeFilter(key)}
+                    style={[styles.filterPill, filter === key && styles.filterPillOn]}
+                  >
+                    <Text style={[styles.filterText, filter === key && styles.filterTextOn]}>
+                      {key === 'all' ? 'All' : key === 'unread' ? 'Unread' : 'Archived'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            }
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -160,15 +187,10 @@ export function InboxListScreen({ navigation }: Props) {
                   <Text style={styles.time} numberOfLines={1}>
                     {item.updated_at.slice(5, 16).replace('T', ' ')}
                   </Text>
+                  <Pressable onPress={() => confirmDelete(item.id)} hitSlop={10} style={styles.deleteIcon}>
+                    <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
+                  </Pressable>
                 </Pressable>
-                <View style={styles.actions}>
-                  <Pressable onPress={() => void hideConversation(item.id, 'archive')} style={styles.actionBtn}>
-                    <Text style={styles.actionText}>Archive</Text>
-                  </Pressable>
-                  <Pressable onPress={() => confirmDelete(item.id)} style={[styles.actionBtn, styles.deleteBtn]}>
-                    <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
-                  </Pressable>
-                </View>
               </View>
             )}
           />
@@ -183,20 +205,30 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errScroll: { flexGrow: 1, padding: 20 },
   err: { color: '#b91c1c', textAlign: 'center', margin: 20, fontWeight: '600' },
-  list: { padding: 16, paddingBottom: 32 },
+  list: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32 },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40, paddingHorizontal: 24, fontWeight: '600' },
-  rowWrap: { marginBottom: 10 },
+  filters: { flexDirection: 'row', gap: 10, paddingVertical: 12 },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(11,18,32,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.36)',
+  },
+  filterPillOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
+  filterText: { fontSize: 13, fontWeight: '800', color: colors.textMuted },
+  filterTextOn: { color: colors.white },
+  rowWrap: {},
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    paddingVertical: 15,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(11,18,32,0.16)',
   },
-  rowUnread: { borderColor: colors.primary, backgroundColor: 'rgba(255,255,255,0.98)' },
+  rowUnread: { borderBottomColor: 'rgba(31, 170, 242, 0.42)' },
   rowPressed: { opacity: 0.92 },
   avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primarySoft },
   avatarPh: { alignItems: 'center', justifyContent: 'center' },
@@ -206,7 +238,8 @@ const styles = StyleSheet.create({
   nameUnread: { color: colors.primaryDark },
   preview: { fontSize: 13, color: colors.textMuted, marginTop: 4, fontWeight: '500' },
   previewUnread: { color: colors.text, fontWeight: '800' },
-  time: { fontSize: 11, color: colors.textMuted, fontWeight: '600', maxWidth: 72, textAlign: 'right' },
+  time: { fontSize: 11, color: colors.textMuted, fontWeight: '600', maxWidth: 62, textAlign: 'right' },
+  deleteIcon: { padding: 4, marginLeft: -4 },
   unreadBadge: {
     minWidth: 22,
     height: 22,
@@ -217,9 +250,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   unreadBadgeText: { color: colors.white, fontSize: 11, fontWeight: '900' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 6, paddingRight: 4 },
-  actionBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: colors.primarySoft },
-  deleteBtn: { backgroundColor: 'rgba(239, 68, 68, 0.12)' },
-  actionText: { fontSize: 12, fontWeight: '800', color: colors.primaryDark },
-  deleteText: { color: colors.danger },
 });

@@ -25,12 +25,28 @@ if (($user['status'] ?? '') !== 'verified') {
 }
 
 $userId = (int) $user['id'];
+$view = (string) ($_GET['view'] ?? 'all');
+if (!in_array($view, ['all', 'unread', 'archived'], true)) {
+    $view = 'all';
+}
 
 try {
     $uidSql = (string) $userId;
     $readCol = '(CASE WHEN c.user_low_id = ' . $uidSql . ' THEN c.user_low_last_read_at ELSE c.user_high_last_read_at END)';
     $archivedCol = '(CASE WHEN c.user_low_id = ' . $uidSql . ' THEN c.user_low_archived_at ELSE c.user_high_archived_at END)';
     $deletedCol = '(CASE WHEN c.user_low_id = ' . $uidSql . ' THEN c.user_low_deleted_at ELSE c.user_high_deleted_at END)';
+
+    $visibilityWhere = $view === 'archived'
+        ? ' AND ' . $archivedCol . ' IS NOT NULL AND (' . $deletedCol . ' IS NULL OR c.last_message_at > ' . $deletedCol . ')'
+        : ' AND (' . $archivedCol . ' IS NULL OR c.last_message_at > ' . $archivedCol . ')
+              AND (' . $deletedCol . ' IS NULL OR c.last_message_at > ' . $deletedCol . ')';
+    $unreadWhere = $view === 'unread'
+        ? ' AND EXISTS (SELECT 1 FROM messages mu
+             WHERE mu.conversation_id = c.id
+               AND mu.sender_user_id <> ' . $uidSql . '
+               AND (' . $readCol . ' IS NULL OR mu.created_at > ' . $readCol . ')
+               AND (' . $deletedCol . ' IS NULL OR mu.created_at > ' . $deletedCol . '))'
+        : '';
 
     $sql = 'SELECT c.id, c.context_key, c.last_message_at, c.created_at,
             up.id AS peer_user_id, up.username AS peer_username,
@@ -53,8 +69,7 @@ try {
             FROM conversations c
             INNER JOIN users up ON up.id = CASE WHEN c.user_low_id = ? THEN c.user_high_id ELSE c.user_low_id END
             WHERE (c.user_low_id = ? OR c.user_high_id = ?)
-              AND (' . $archivedCol . ' IS NULL OR c.last_message_at > ' . $archivedCol . ')
-              AND (' . $deletedCol . ' IS NULL OR c.last_message_at > ' . $deletedCol . ')
+              ' . $visibilityWhere . $unreadWhere . '
             ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
             LIMIT 120';
 
