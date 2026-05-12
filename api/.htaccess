@@ -1,4 +1,4 @@
-# Disable ModSecurity for API endpoints (hosting firewalls block mobile-app requests).
+# Disable security filters for API (Hostinger LiteSpeed / ModSecurity).
 <IfModule mod_security.c>
   SecFilterEngine Off
   SecFilterScanPOST Off
@@ -6,21 +6,33 @@
 <IfModule mod_security2.c>
   SecRuleEngine Off
 </IfModule>
+<IfModule LiteSpeed>
+  SecRuleEngine Off
+  RewriteRule .* - [E=noabort:1]
+</IfModule>
 
-# Allow all HTTP methods for API
+# Satisfy any — prevent IP/auth blocks from denying API access.
+<IfModule mod_authz_core.c>
+  Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order Allow,Deny
+  Allow from all
+  Satisfy Any
+</IfModule>
+
+# CORS + allow all methods for mobile app.
 <IfModule mod_headers.c>
   Header always set Access-Control-Allow-Origin "*"
   Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
-  Header always set Access-Control-Allow-Headers "Authorization, X-Auth-Token, Content-Type, Accept, User-Agent"
+  Header always set Access-Control-Allow-Headers "Authorization, X-Auth-Token, Content-Type, Accept"
 </IfModule>
 
-# Handle preflight OPTIONS requests
-RewriteEngine On
-RewriteCond %{REQUEST_METHOD} OPTIONS
-RewriteRule ^(.*)$ $1 [R=200,L]
-
-# Pass Authorization to PHP (Apache often drops it; breaks Bearer tokens on XAMPP).
+# Pass Authorization to PHP (hosting often strips it; breaks Bearer tokens).
 <IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_METHOD} OPTIONS
+  RewriteRule ^ - [R=200,L]
   RewriteCond %{HTTP:Authorization} .
   RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </IfModule>
