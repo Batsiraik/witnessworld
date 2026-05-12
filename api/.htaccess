@@ -1,6 +1,26 @@
+# Disable ModSecurity for API endpoints (hosting firewalls block mobile-app requests).
+<IfModule mod_security.c>
+  SecFilterEngine Off
+  SecFilterScanPOST Off
+</IfModule>
+<IfModule mod_security2.c>
+  SecRuleEngine Off
+</IfModule>
+
+# Allow all HTTP methods for API
+<IfModule mod_headers.c>
+  Header always set Access-Control-Allow-Origin "*"
+  Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+  Header always set Access-Control-Allow-Headers "Authorization, X-Auth-Token, Content-Type, Accept, User-Agent"
+</IfModule>
+
+# Handle preflight OPTIONS requests
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
+
 # Pass Authorization to PHP (Apache often drops it; breaks Bearer tokens on XAMPP).
 <IfModule mod_rewrite.c>
-  RewriteEngine On
   RewriteCond %{HTTP:Authorization} .
   RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </IfModule>
