@@ -172,6 +172,28 @@ INSERT INTO marketplace_categories (name, slug, sort_order, is_active) VALUES
   ('Health & Beauty', 'health_beauty', 14, 1),
   ('Other', 'other', 15, 1);
 
+-- Service categories (admin-managed, seeded with defaults)
+CREATE TABLE service_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_sc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO service_categories (name, slug, sort_order, is_active) VALUES
+  ('Graphic Design & Branding', 'graphic_design_branding', 1, 1),
+  ('Web & Tech Development', 'web_tech_development', 2, 1),
+  ('Digital Marketing', 'digital_marketing', 3, 1),
+  ('Writing & Translation', 'writing_translation', 4, 1),
+  ('Virtual Assistance', 'virtual_assistance', 5, 1),
+  ('Business Consulting', 'business_consulting', 6, 1),
+  ('Financial & Legal', 'financial_legal', 7, 1),
+  ('Multimedia', 'multimedia', 8, 1),
+  ('Other', 'other', 9, 1);
+
 -- Gigs / listings (require admin approval before public visibility in the app)
 CREATE TABLE listings (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -199,7 +221,7 @@ CREATE TABLE listings (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_listings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_listings_admin FOREIGN KEY (reviewed_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
-  CONSTRAINT fk_listings_category FOREIGN KEY (category_id) REFERENCES marketplace_categories(id) ON DELETE SET NULL,
+  -- category_id references marketplace_categories (classified) or service_categories (service) based on listing_type; validated in PHP.
   INDEX idx_listings_moderation (moderation_status),
   INDEX idx_listings_user (user_id),
   INDEX idx_listings_type (listing_type),

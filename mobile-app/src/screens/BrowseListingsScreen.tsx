@@ -71,11 +71,11 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
   }, [initialQuery]);
 
   useEffect(() => {
-    if (!isClassified) return;
     let cancelled = false;
+    const endpoint = isClassified ? 'marketplace-categories.php' : 'service-categories.php';
     (async () => {
       try {
-        const data = await apiGet('marketplace-categories.php', false);
+        const data = await apiGet(endpoint, false);
         const cats = data.categories;
         if (!cancelled && Array.isArray(cats)) setCategories(cats as MktCategory[]);
       } catch { /* optional */ }
@@ -128,7 +128,7 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <View style={styles.filters}>
-          {isClassified && categories.length > 0 ? (
+          {categories.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
               <Pressable
                 onPress={() => setSelectedCat(null)}

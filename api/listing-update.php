@@ -66,10 +66,11 @@ $priceAmount = null;
 $pricingType = 'none';
 $currency = 'USD';
 
-if ($listingType === 'classified') {
+if ($listingType === 'classified' || $listingType === 'service') {
+    $catTable = $listingType === 'classified' ? 'marketplace_categories' : 'service_categories';
     $catIn = isset($body['category_id']) ? (int) $body['category_id'] : 0;
     if ($catIn > 0) {
-        $catCheck = $pdo->prepare('SELECT id FROM marketplace_categories WHERE id = ? AND is_active = 1 LIMIT 1');
+        $catCheck = $pdo->prepare("SELECT id FROM {$catTable} WHERE id = ? AND is_active = 1 LIMIT 1");
         $catCheck->execute([$catIn]);
         if ($catCheck->fetchColumn()) {
             $categoryId = $catIn;
@@ -78,16 +79,18 @@ if ($listingType === 'classified') {
         }
     }
 
-    $isFree = !empty($body['is_free']) ? 1 : 0;
-    if (!$isFree) {
-        $priceIn = isset($body['price_amount']) ? trim((string) $body['price_amount']) : '';
-        if ($priceIn !== '' && is_numeric($priceIn) && (float) $priceIn >= 0) {
-            $priceAmount = number_format((float) $priceIn, 2, '.', '');
-            $pricingType = 'fixed';
+    if ($listingType === 'classified') {
+        $isFree = !empty($body['is_free']) ? 1 : 0;
+        if (!$isFree) {
+            $priceIn = isset($body['price_amount']) ? trim((string) $body['price_amount']) : '';
+            if ($priceIn !== '' && is_numeric($priceIn) && (float) $priceIn >= 0) {
+                $priceAmount = number_format((float) $priceIn, 2, '.', '');
+                $pricingType = 'fixed';
+            }
         }
+        $currIn = strtoupper(trim((string) ($body['currency'] ?? 'USD')));
+        if (strlen($currIn) === 3) $currency = $currIn;
     }
-    $currIn = strtoupper(trim((string) ($body['currency'] ?? 'USD')));
-    if (strlen($currIn) === 3) $currency = $currIn;
 }
 
 $title = trim((string) ($body['title'] ?? ''));

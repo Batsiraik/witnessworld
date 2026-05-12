@@ -67,7 +67,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
       navigation.setOptions({ title: 'Edit listing' });
     } else {
       navigation.setOptions({
-        title: listingType === 'service' ? 'New service listing' : 'Sell or Give Away an Item',
+        title: listingType === 'service' ? 'Offer a Professional Service' : 'Sell or Give Away an Item',
       });
     }
   }, [navigation, editId, listingType]);
@@ -113,7 +113,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
     const svc = listingType === 'service';
     if (editId) {
       return {
-        kindLabel: svc ? 'Service listing' : 'Classified ad',
+        kindLabel: svc ? 'Professional Service' : 'Classified ad',
         kindService: svc,
         hint: 'Saving changes requeues your listing for review if it was already approved or rejected. Removed listings cannot be edited.',
         titleLabel: svc ? 'Headline *' : 'Ad title *',
@@ -136,10 +136,10 @@ export function CreateListingScreen({ navigation, route }: Props) {
       };
     }
     return {
-      kindLabel: svc ? 'Service listing' : 'Sell or Give Away an Item',
+      kindLabel: svc ? 'Offer a Professional Service' : 'Sell or Give Away an Item',
       kindService: svc,
       hint: svc
-        ? 'Post as a provider people can hire. Say what you do, how you work, and what clients can expect. Everything is reviewed before it goes public.'
+        ? 'Showcase your expertise to a global network of entrepreneurs and businesses. This module is optimized for high-value digital and virtual services. Whether you are a creative, a technical expert, or a strategic consultant, this is your platform to find new clients and manage professional projects.'
         : 'Give your quality items a second home. This local marketplace is for members to buy, sell, or share household goods directly within their local community. Whether you are decluttering or offering something for free, keep it local and keep it simple.',
       titleLabel: svc ? 'Headline *' : 'Ad title *',
       titlePh: svc
@@ -179,11 +179,12 @@ export function CreateListingScreen({ navigation, route }: Props) {
   }, [hasAvatar, navigation, editId]);
 
   useEffect(() => {
-    if (listingType !== 'classified') return;
     let cancelled = false;
+    const endpoint =
+      listingType === 'classified' ? 'marketplace-categories.php' : 'service-categories.php';
     (async () => {
       try {
-        const data = await apiGet('marketplace-categories.php', false);
+        const data = await apiGet(endpoint, false);
         const cats = data.categories;
         if (!cancelled && Array.isArray(cats)) {
           setCategories(cats as MktCategory[]);
@@ -276,12 +277,12 @@ export function CreateListingScreen({ navigation, route }: Props) {
         setListingType(lt === 'service' ? 'service' : 'classified');
         setTitle(String(L.title || ''));
         setDescription(String(L.description || ''));
+        const catId = typeof L.category_id === 'number' ? L.category_id : null;
+        if (catId && categories.length) {
+          const cObj = categories.find((c) => c.id === catId) ?? null;
+          setCategory(cObj);
+        }
         if (lt === 'classified') {
-          const catId = typeof L.category_id === 'number' ? L.category_id : null;
-          if (catId && categories.length) {
-            const cObj = categories.find((c) => c.id === catId) ?? null;
-            setCategory(cObj);
-          }
           setIsFree(L.is_free === true);
           setPriceText(L.price_amount ? String(L.price_amount) : '');
         }
@@ -451,8 +452,8 @@ export function CreateListingScreen({ navigation, route }: Props) {
         body.location_us_state_code = usState.code;
       }
       if (videoUrl) body.video_url = videoUrl;
+      if (category) body.category_id = category.id;
       if (listingType === 'classified') {
-        if (category) body.category_id = category.id;
         body.is_free = isFree;
         if (!isFree && priceText.trim()) body.price_amount = priceText.trim();
       }
@@ -543,22 +544,22 @@ export function CreateListingScreen({ navigation, route }: Props) {
               multiline
             />
 
+            <Text style={styles.label}>Category</Text>
+            <Pressable
+              onPress={() => {
+                setCatQuery('');
+                setCatModal(true);
+              }}
+              style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
+            >
+              <Text style={category ? styles.pickerVal : styles.pickerPlaceholder}>
+                {category ? category.name : 'Tap to choose category'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+            </Pressable>
+
             {listingType === 'classified' ? (
               <>
-                <Text style={styles.label}>Category</Text>
-                <Pressable
-                  onPress={() => {
-                    setCatQuery('');
-                    setCatModal(true);
-                  }}
-                  style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
-                >
-                  <Text style={category ? styles.pickerVal : styles.pickerPlaceholder}>
-                    {category ? category.name : 'Tap to choose category'}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-                </Pressable>
-
                 <Text style={styles.label}>Price</Text>
                 <View style={styles.freeRow}>
                   <Pressable

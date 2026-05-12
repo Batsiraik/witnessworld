@@ -85,3 +85,30 @@ ALTER TABLE listings
   ADD COLUMN is_free TINYINT(1) NOT NULL DEFAULT 0 AFTER price_amount,
   ADD INDEX idx_listings_category (category_id),
   ADD CONSTRAINT fk_listings_category FOREIGN KEY (category_id) REFERENCES marketplace_categories(id) ON DELETE SET NULL;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-12: Service categories for Professional Services module
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS service_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_sc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO service_categories (name, slug, sort_order, is_active) VALUES
+  ('Graphic Design & Branding', 'graphic_design_branding', 1, 1),
+  ('Web & Tech Development', 'web_tech_development', 2, 1),
+  ('Digital Marketing', 'digital_marketing', 3, 1),
+  ('Writing & Translation', 'writing_translation', 4, 1),
+  ('Virtual Assistance', 'virtual_assistance', 5, 1),
+  ('Business Consulting', 'business_consulting', 6, 1),
+  ('Financial & Legal', 'financial_legal', 7, 1),
+  ('Multimedia', 'multimedia', 8, 1),
+  ('Other', 'other', 9, 1);
+
+-- Drop the marketplace-only FK so category_id can reference either table; validation is in PHP.
+ALTER TABLE listings DROP FOREIGN KEY fk_listings_category;

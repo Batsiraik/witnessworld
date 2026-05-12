@@ -21,6 +21,7 @@ $stores = $base === '' ? 'stores.php' : $base . '/stores.php';
 $storeProducts = $base === '' ? 'store_products.php' : $base . '/store_products.php';
 $directoryAdmin = $base === '' ? 'directory.php' : $base . '/directory.php';
 $marketplaceCategories = $base === '' ? 'marketplace_categories.php' : $base . '/marketplace_categories.php';
+$serviceCategories = $base === '' ? 'service_categories.php' : $base . '/service_categories.php';
 $moderation = $base === '' ? 'moderation.php' : $base . '/moderation.php';
 $analytics = $base === '' ? 'analytics.php' : $base . '/analytics.php';
 $admins = $base === '' ? 'admins.php' : $base . '/admins.php';
@@ -94,6 +95,13 @@ $isSuper = !empty($cu['is_super']);
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
       </span>
       Marketplace categories
+    </a>
+    <a href="<?= htmlspecialchars($serviceCategories, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('service_categories'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      </span>
+      Service categories
     </a>
     <a href="<?= htmlspecialchars($moderation, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('moderation'), ENT_QUOTES, 'UTF-8') ?>">

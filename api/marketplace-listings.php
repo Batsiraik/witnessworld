@@ -43,11 +43,12 @@ $categoryFilter = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
 
 $sql = 'SELECT l.id, l.title, l.description, l.price_amount, l.is_free, l.pricing_type, l.currency, l.media_url,
         l.location_country_code, l.location_country_name, l.location_us_state, l.created_at,
-        mc.name AS category_name,
+        COALESCE(mc.name, sc.name) AS category_name,
         u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
         FROM listings l
         INNER JOIN users u ON u.id = l.user_id
-        LEFT JOIN marketplace_categories mc ON mc.id = l.category_id
+        LEFT JOIN marketplace_categories mc ON mc.id = l.category_id AND l.listing_type = \'classified\'
+        LEFT JOIN service_categories sc ON sc.id = l.category_id AND l.listing_type = \'service\'
         WHERE l.moderation_status = ? AND l.listing_type = ?';
 $params = ['approved', $listingType];
 

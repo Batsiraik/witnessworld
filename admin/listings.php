@@ -17,11 +17,12 @@ if (!in_array($filter, $allowed, true)) {
 
 $sql = 'SELECT l.id, l.title, l.listing_type, l.moderation_status, l.pricing_type, l.price_amount, l.is_free, l.currency,
         l.location_country_code, l.location_country_name, l.location_us_state,
-        l.created_at, mc.name AS category_name,
+        l.created_at, COALESCE(mc.name, sc.name) AS category_name,
         u.email AS user_email, u.first_name, u.last_name, u.username
         FROM listings l
         INNER JOIN users u ON u.id = l.user_id
-        LEFT JOIN marketplace_categories mc ON mc.id = l.category_id';
+        LEFT JOIN marketplace_categories mc ON mc.id = l.category_id AND l.listing_type = \'classified\'
+        LEFT JOIN service_categories sc ON sc.id = l.category_id AND l.listing_type = \'service\'';
 $params = [];
 if ($filter !== 'all') {
     $sql .= ' WHERE l.moderation_status = ?';
