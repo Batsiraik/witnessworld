@@ -19,6 +19,7 @@ export function DashboardScreen({ navigation }: Props) {
   const isDashboardFocused = useIsFocused();
   const [loading, setLoading] = useState(true);
   const [sessionLoadError, setSessionLoadError] = useState(false);
+  const [debugError, setDebugError] = useState('');
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [supportEmail, setSupportEmail] = useState('info@witnessworldconnect.com');
   const [supportAvailable, setSupportAvailable] = useState(false);
@@ -44,7 +45,8 @@ export function DashboardScreen({ navigation }: Props) {
         setSupportEmail(data.support_email);
       }
       setSupportAvailable(data.support_available === true);
-    } catch {
+    } catch (err) {
+      setDebugError(err instanceof Error ? err.message : String(err));
       if (!(await getStoredToken())) {
         navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
         return;
@@ -101,6 +103,7 @@ export function DashboardScreen({ navigation }: Props) {
           <View style={styles.center}>
             <Text style={styles.errTitle}>Couldn&apos;t load your account</Text>
             <Text style={styles.errHint}>Check your connection and try again. You stay signed in — we won&apos;t log you out.</Text>
+            {debugError ? <Text style={styles.errHint} selectable>{debugError}</Text> : null}
             <PrimaryButton label="Try again" onPress={() => void load()} />
           </View>
         </SafeAreaView>
