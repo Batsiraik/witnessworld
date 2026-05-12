@@ -51,6 +51,8 @@ function errorFromInvalidJsonBody(body: string, httpStatus: number): Error {
   return new Error(__DEV__ ? `${msg} (HTTP ${httpStatus})` : msg);
 }
 
+const APP_USER_AGENT = 'WitnessWorldConnect/1.0 (Mobile App)';
+
 /** Apache/XAMPP often strips Authorization; X-Auth-Token is read by the PHP API as a fallback. */
 function attachAuthHeaders(headers: Record<string, string>, token: string): void {
   headers.Authorization = `Bearer ${token}`;
@@ -70,6 +72,7 @@ function multipartPostWithProgress(
     xhr.timeout = XHR_UPLOAD_TIMEOUT_MS;
     xhr.ontimeout = () => reject(new Error('Upload timed out'));
     xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader('User-Agent', APP_USER_AGENT);
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.setRequestHeader('X-Auth-Token', token);
     xhr.upload.onprogress = (ev) => {
@@ -111,6 +114,7 @@ export async function apiPost(path: string, body: Json, withAuth = false): Promi
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    'User-Agent': APP_USER_AGENT,
   };
   if (withAuth) {
     const t = await getStoredToken();
@@ -131,7 +135,7 @@ export async function apiPost(path: string, body: Json, withAuth = false): Promi
 }
 
 export async function apiGet(path: string, withAuth = true): Promise<Json> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+  const headers: Record<string, string> = { Accept: 'application/json', 'User-Agent': APP_USER_AGENT };
   if (withAuth) {
     const t = await getStoredToken();
     if (t) attachAuthHeaders(headers, t);
