@@ -39,13 +39,22 @@ if (mb_strlen($q) > 80) {
 $limit = ww_marketplace_int_bounds((int) ($_GET['limit'] ?? 40), 1, 80, 40);
 $offset = ww_marketplace_int_bounds((int) ($_GET['offset'] ?? 0), 0, 100000, 0);
 
-$sql = 'SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
+$categoryFilter = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
+
+$sql = 'SELECT l.id, l.title, l.description, l.price_amount, l.is_free, l.pricing_type, l.currency, l.media_url,
         l.location_country_code, l.location_country_name, l.location_us_state, l.created_at,
+        mc.name AS category_name,
         u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
         FROM listings l
         INNER JOIN users u ON u.id = l.user_id
+        LEFT JOIN marketplace_categories mc ON mc.id = l.category_id
         WHERE l.moderation_status = ? AND l.listing_type = ?';
 $params = ['approved', $listingType];
+
+if ($categoryFilter > 0) {
+    $sql .= ' AND l.category_id = ?';
+    $params[] = $categoryFilter;
+}
 
 if ($country !== '' && strlen($country) === 2) {
     $sql .= ' AND l.location_country_code = ?';
@@ -91,8 +100,10 @@ foreach ($rows as $r) {
         'title' => (string) $r['title'],
         'description' => (string) $r['description'],
         'price_amount' => $r['price_amount'] !== null ? (string) $r['price_amount'] : null,
+        'is_free' => (int) ($r['is_free'] ?? 0) === 1,
         'pricing_type' => (string) $r['pricing_type'],
         'currency' => (string) $r['currency'],
+        'category_name' => $r['category_name'] ? (string) $r['category_name'] : null,
         'media_url' => $r['media_url'] ? (string) $r['media_url'] : null,
         'location_country_code' => $r['location_country_code'] ? (string) $r['location_country_code'] : null,
         'location_country_name' => $r['location_country_name'] ? (string) $r['location_country_name'] : null,

@@ -29,9 +29,11 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'ListingDetail'>;
 type Listing = {
   id: number;
   listing_type: string;
+  category_name?: string | null;
   title: string;
   description: string;
   price_amount: string | null;
+  is_free?: boolean;
   pricing_type: string;
   currency: string;
   media_url: string;
@@ -281,6 +283,11 @@ export function ListingDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.tagText}>{typeLabel}</Text>
               </View>
             ) : null}
+            {listing.category_name ? (
+              <View style={[styles.tag, styles.tagCat]}>
+                <Text style={styles.tagText}>{listing.category_name}</Text>
+              </View>
+            ) : null}
             {skillTag ? (
               <View style={styles.tag}>
                 <Text style={styles.tagText}>{skillTag}</Text>
@@ -290,7 +297,9 @@ export function ListingDetailScreen({ navigation, route }: Props) {
 
           <Text style={styles.title}>{listing.title}</Text>
 
-          {listing.price_amount ? (
+          {listing.is_free ? (
+            <Text style={styles.priceFree}>FREE</Text>
+          ) : listing.price_amount ? (
             <Text style={styles.price}>
               {listing.currency} {listing.price_amount}
               {listing.pricing_type === 'hourly' ? '/hr' : ''}
@@ -484,8 +493,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11, 18, 32, 0.06)',
   },
   tagText: { fontSize: 12, fontWeight: '700', color: colors.text },
+  tagCat: { backgroundColor: 'rgba(5, 150, 105, 0.1)' },
   title: { fontSize: 24, fontWeight: '800', color: colors.text, lineHeight: 30 },
   price: { fontSize: 20, fontWeight: '800', color: PRICE_PURPLE, marginTop: 10 },
+  priceFree: { fontSize: 20, fontWeight: '800', color: '#059669', marginTop: 10 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 12 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },

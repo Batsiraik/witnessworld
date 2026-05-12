@@ -83,8 +83,13 @@ ww_json([
     'listing' => [
         'id' => (int) $row['id'],
         'listing_type' => (string) $row['listing_type'],
+        'category_id' => $row['category_id'] !== null ? (int) $row['category_id'] : null,
         'title' => (string) $row['title'],
         'description' => (string) $row['description'],
+        'price_amount' => $row['price_amount'] !== null ? (string) $row['price_amount'] : null,
+        'is_free' => (int) ($row['is_free'] ?? 0) === 1,
+        'pricing_type' => (string) ($row['pricing_type'] ?? 'none'),
+        'currency' => (string) ($row['currency'] ?? 'USD'),
         'moderation_status' => (string) $row['moderation_status'],
         'media_url' => $row['media_url'] ? (string) $row['media_url'] : '',
         'video_url' => $row['video_url'] ? (string) $row['video_url'] : '',

@@ -144,14 +144,44 @@ CREATE TABLE admin_push_opens (
   CONSTRAINT fk_apo_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Marketplace categories (admin-managed, seeded with defaults)
+CREATE TABLE marketplace_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_mc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO marketplace_categories (name, slug, sort_order, is_active) VALUES
+  ('Furniture', 'furniture', 1, 1),
+  ('Appliances', 'appliances', 2, 1),
+  ('Home Decor', 'home_decor', 3, 1),
+  ('Electronics', 'electronics', 4, 1),
+  ('Clothing & Accessories', 'clothing_accessories', 5, 1),
+  ('Baby & Kids', 'baby_kids', 6, 1),
+  ('Garden & Outdoor', 'garden_outdoor', 7, 1),
+  ('Home Improvement', 'home_improvement', 8, 1),
+  ('Sports & Fitness', 'sports_fitness', 9, 1),
+  ('Books, Media & Hobbies', 'books_media_hobbies', 10, 1),
+  ('Toys & Games', 'toys_games', 11, 1),
+  ('Pet Supplies', 'pet_supplies', 12, 1),
+  ('Office Supplies', 'office_supplies', 13, 1),
+  ('Health & Beauty', 'health_beauty', 14, 1),
+  ('Other', 'other', 15, 1);
+
 -- Gigs / listings (require admin approval before public visibility in the app)
 CREATE TABLE listings (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
   listing_type VARCHAR(32) NOT NULL DEFAULT 'service',
+  category_id INT UNSIGNED NULL,
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   price_amount DECIMAL(12,2) NULL,
+  is_free TINYINT(1) NOT NULL DEFAULT 0,
   pricing_type ENUM('fixed','hourly','none') NOT NULL DEFAULT 'fixed',
   currency CHAR(3) NOT NULL DEFAULT 'USD',
   media_url VARCHAR(500) NULL,
@@ -169,10 +199,12 @@ CREATE TABLE listings (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_listings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_listings_admin FOREIGN KEY (reviewed_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
+  CONSTRAINT fk_listings_category FOREIGN KEY (category_id) REFERENCES marketplace_categories(id) ON DELETE SET NULL,
   INDEX idx_listings_moderation (moderation_status),
   INDEX idx_listings_user (user_id),
   INDEX idx_listings_type (listing_type),
-  INDEX idx_listings_country (location_country_code)
+  INDEX idx_listings_country (location_country_code),
+  INDEX idx_listings_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Online stores (admin approves store before seller can publish products; products are moderated separately)

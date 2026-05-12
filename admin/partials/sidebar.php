@@ -20,6 +20,7 @@ $listings = $base === '' ? 'listings.php' : $base . '/listings.php';
 $stores = $base === '' ? 'stores.php' : $base . '/stores.php';
 $storeProducts = $base === '' ? 'store_products.php' : $base . '/store_products.php';
 $directoryAdmin = $base === '' ? 'directory.php' : $base . '/directory.php';
+$marketplaceCategories = $base === '' ? 'marketplace_categories.php' : $base . '/marketplace_categories.php';
 $moderation = $base === '' ? 'moderation.php' : $base . '/moderation.php';
 $analytics = $base === '' ? 'analytics.php' : $base . '/analytics.php';
 $admins = $base === '' ? 'admins.php' : $base . '/admins.php';
@@ -86,6 +87,13 @@ $isSuper = !empty($cu['is_super']);
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
       </span>
       Business directory
+    </a>
+    <a href="<?= htmlspecialchars($marketplaceCategories, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('marketplace_categories'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      </span>
+      Marketplace categories
     </a>
     <a href="<?= htmlspecialchars($moderation, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('moderation'), ENT_QUOTES, 'UTF-8') ?>">

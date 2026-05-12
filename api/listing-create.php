@@ -38,6 +38,36 @@ if (!in_array($listingType, ['classified', 'service'], true)) {
     ww_json(['ok' => false, 'error' => 'listing_type must be classified or service'], 422);
 }
 
+$categoryId = null;
+$isFree = 0;
+$priceAmount = null;
+$pricingType = 'none';
+$currency = 'USD';
+
+if ($listingType === 'classified') {
+    $catIn = isset($body['category_id']) ? (int) $body['category_id'] : 0;
+    if ($catIn > 0) {
+        $catCheck = $pdo->prepare('SELECT id FROM marketplace_categories WHERE id = ? AND is_active = 1 LIMIT 1');
+        $catCheck->execute([$catIn]);
+        if ($catCheck->fetchColumn()) {
+            $categoryId = $catIn;
+        } else {
+            ww_json(['ok' => false, 'error' => 'Invalid category'], 422);
+        }
+    }
+
+    $isFree = !empty($body['is_free']) ? 1 : 0;
+    if (!$isFree) {
+        $priceIn = isset($body['price_amount']) ? trim((string) $body['price_amount']) : '';
+        if ($priceIn !== '' && is_numeric($priceIn) && (float) $priceIn >= 0) {
+            $priceAmount = number_format((float) $priceIn, 2, '.', '');
+            $pricingType = 'fixed';
+        }
+    }
+    $currIn = strtoupper(trim((string) ($body['currency'] ?? 'USD')));
+    if (strlen($currIn) === 3) $currency = $currIn;
+}
+
 $title = trim((string) ($body['title'] ?? ''));
 if ($title === '' || mb_strlen($title) > 255) {
     ww_json(['ok' => false, 'error' => 'Title is required (max 255 characters)'], 422);
@@ -120,21 +150,23 @@ $videoDb = $videoUrl !== '' ? $videoUrl : null;
 try {
     $ins = $pdo->prepare(
         'INSERT INTO listings (
-            user_id, listing_type, title, description,
-            price_amount, pricing_type, currency,
+            user_id, listing_type, category_id, title, description,
+            price_amount, is_free, pricing_type, currency,
             media_url, video_url, portfolio_urls_json, soft_skills_json,
             location_country_code, location_country_name, location_us_state,
             moderation_status
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
     );
     $ins->execute([
         $userId,
         $listingType,
+        $categoryId,
         $title,
         $description,
-        null,
-        'none',
-        'USD',
+        $priceAmount,
+        $isFree,
+        $pricingType,
+        $currency,
         $mediaUrl,
         $videoDb,
         $portfolioJson,

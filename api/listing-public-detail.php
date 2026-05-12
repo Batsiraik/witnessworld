@@ -18,9 +18,11 @@ if ($id <= 0) {
 
 try {
     $st = $pdo->prepare(
-        'SELECT l.*, u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
+        'SELECT l.*, u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url,
+                mc.name AS category_name
          FROM listings l
          INNER JOIN users u ON u.id = l.user_id
+         LEFT JOIN marketplace_categories mc ON mc.id = l.category_id
          WHERE l.id = ? AND l.moderation_status = ?
          LIMIT 1'
     );
@@ -70,9 +72,11 @@ ww_json([
     'listing' => [
         'id' => (int) $row['id'],
         'listing_type' => (string) $row['listing_type'],
+        'category_name' => $row['category_name'] ? (string) $row['category_name'] : null,
         'title' => (string) $row['title'],
         'description' => (string) $row['description'],
         'price_amount' => $row['price_amount'] !== null ? (string) $row['price_amount'] : null,
+        'is_free' => (int) ($row['is_free'] ?? 0) === 1,
         'pricing_type' => (string) $row['pricing_type'],
         'currency' => (string) $row['currency'],
         'media_url' => $row['media_url'] ? (string) $row['media_url'] : '',

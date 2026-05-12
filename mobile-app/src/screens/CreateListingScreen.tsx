@@ -67,7 +67,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
       navigation.setOptions({ title: 'Edit listing' });
     } else {
       navigation.setOptions({
-        title: listingType === 'service' ? 'New service listing' : 'New classified ad',
+        title: listingType === 'service' ? 'New service listing' : 'Sell or Give Away an Item',
       });
     }
   }, [navigation, editId, listingType]);
@@ -76,6 +76,15 @@ export function CreateListingScreen({ navigation, route }: Props) {
   const [usStates, setUsStates] = useState<LocState[]>([]);
   const [usCountryCode, setUsCountryCode] = useState('US');
   const [locLoading, setLocLoading] = useState(true);
+
+  type MktCategory = { id: number; name: string; slug: string };
+  const [categories, setCategories] = useState<MktCategory[]>([]);
+  const [category, setCategory] = useState<MktCategory | null>(null);
+  const [catModal, setCatModal] = useState(false);
+  const [catQuery, setCatQuery] = useState('');
+
+  const [priceText, setPriceText] = useState('');
+  const [isFree, setIsFree] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -127,11 +136,11 @@ export function CreateListingScreen({ navigation, route }: Props) {
       };
     }
     return {
-      kindLabel: svc ? 'Service listing' : 'Classified ad',
+      kindLabel: svc ? 'Service listing' : 'Sell or Give Away an Item',
       kindService: svc,
       hint: svc
-        ? 'You’re posting as a provider people can hire. Say what you do, how you work, and what clients can expect. Everything is reviewed before it goes public.'
-        : 'You’re posting a classified-style ad—what you’re selling, a one-time offer, or what you’re looking for in the community. Everything is reviewed before it goes public.',
+        ? 'Post as a provider people can hire. Say what you do, how you work, and what clients can expect. Everything is reviewed before it goes public.'
+        : 'Give your quality items a second home. This local marketplace is for members to buy, sell, or share household goods directly within their local community. Whether you are decluttering or offering something for free, keep it local and keep it simple.',
       titleLabel: svc ? 'Headline *' : 'Ad title *',
       titlePh: svc
         ? 'e.g. Mobile notary · evenings & weekends — same-day appointments'
@@ -168,6 +177,21 @@ export function CreateListingScreen({ navigation, route }: Props) {
       );
     }
   }, [hasAvatar, navigation, editId]);
+
+  useEffect(() => {
+    if (listingType !== 'classified') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiGet('marketplace-categories.php', false);
+        const cats = data.categories;
+        if (!cancelled && Array.isArray(cats)) {
+          setCategories(cats as MktCategory[]);
+        }
+      } catch { /* categories optional */ }
+    })();
+    return () => { cancelled = true; };
+  }, [listingType]);
 
   useEffect(() => {
     let cancelled = false;
@@ -228,6 +252,9 @@ export function CreateListingScreen({ navigation, route }: Props) {
     setCountry(null);
     setUsState(null);
     setListingType(ltRoute);
+    setCategory(null);
+    setPriceText('');
+    setIsFree(false);
   }, [editId, seed, ltRoute]);
 
   useEffect(() => {
@@ -249,6 +276,15 @@ export function CreateListingScreen({ navigation, route }: Props) {
         setListingType(lt === 'service' ? 'service' : 'classified');
         setTitle(String(L.title || ''));
         setDescription(String(L.description || ''));
+        if (lt === 'classified') {
+          const catId = typeof L.category_id === 'number' ? L.category_id : null;
+          if (catId && categories.length) {
+            const cObj = categories.find((c) => c.id === catId) ?? null;
+            setCategory(cObj);
+          }
+          setIsFree(L.is_free === true);
+          setPriceText(L.price_amount ? String(L.price_amount) : '');
+        }
         setMainUrl(String(L.media_url || ''));
         setVideoUrl(L.video_url ? String(L.video_url) : null);
         const port = L.portfolio_urls;
@@ -281,6 +317,12 @@ export function CreateListingScreen({ navigation, route }: Props) {
       cancelled = true;
     };
   }, [editId, countries, usStates, navigation]);
+
+  const filteredCategories = useMemo(() => {
+    const cq = catQuery.trim().toLowerCase();
+    if (!cq) return categories;
+    return categories.filter((c) => c.name.toLowerCase().includes(cq));
+  }, [categories, catQuery]);
 
   const filteredCountries = useMemo(() => {
     const q = countryQuery.trim().toLowerCase();
@@ -409,6 +451,11 @@ export function CreateListingScreen({ navigation, route }: Props) {
         body.location_us_state_code = usState.code;
       }
       if (videoUrl) body.video_url = videoUrl;
+      if (listingType === 'classified') {
+        if (category) body.category_id = category.id;
+        body.is_free = isFree;
+        if (!isFree && priceText.trim()) body.price_amount = priceText.trim();
+      }
 
       if (editId) {
         body.listing_id = editId;
@@ -495,6 +542,52 @@ export function CreateListingScreen({ navigation, route }: Props) {
               style={[styles.input, styles.textArea]}
               multiline
             />
+
+            {listingType === 'classified' ? (
+              <>
+                <Text style={styles.label}>Category</Text>
+                <Pressable
+                  onPress={() => {
+                    setCatQuery('');
+                    setCatModal(true);
+                  }}
+                  style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
+                >
+                  <Text style={category ? styles.pickerVal : styles.pickerPlaceholder}>
+                    {category ? category.name : 'Tap to choose category'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+                </Pressable>
+
+                <Text style={styles.label}>Price</Text>
+                <View style={styles.freeRow}>
+                  <Pressable
+                    onPress={() => setIsFree((v) => !v)}
+                    style={styles.freeToggle}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isFree }}
+                  >
+                    <View style={[styles.freeBox, isFree && styles.freeBoxOn]}>
+                      {isFree ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
+                    </View>
+                    <Text style={styles.freeLabel}>FREE — giving it away</Text>
+                  </Pressable>
+                </View>
+                {!isFree ? (
+                  <TextInput
+                    value={priceText}
+                    onChangeText={setPriceText}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    keyboardType="decimal-pad"
+                  />
+                ) : null}
+                <Text style={styles.micro}>
+                  {isFree ? 'This item will be listed as free.' : 'Enter a price in your local currency, or toggle FREE above.'}
+                </Text>
+              </>
+            ) : null}
 
             <Text style={styles.label}>Country *</Text>
             <Pressable
@@ -712,6 +805,40 @@ export function CreateListingScreen({ navigation, route }: Props) {
           />
         </SafeAreaView>
       </Modal>
+
+      <Modal visible={catModal} animationType="slide" onRequestClose={() => setCatModal(false)}>
+        <SafeAreaView style={styles.modalSafe}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Category</Text>
+            <Pressable onPress={() => setCatModal(false)} hitSlop={12}>
+              <Text style={styles.modalDone}>Done</Text>
+            </Pressable>
+          </View>
+          <TextInput
+            value={catQuery}
+            onChangeText={setCatQuery}
+            placeholder="Search"
+            placeholderTextColor={colors.textMuted}
+            style={styles.modalSearch}
+          />
+          <FlatList
+            data={filteredCategories}
+            keyExtractor={(item) => String(item.id)}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => {
+                  setCategory(item);
+                  setCatModal(false);
+                }}
+                style={({ pressed }) => [styles.modalRow, pressed && styles.pickerRowPressed]}
+              >
+                <Text style={styles.modalRowText}>{item.name}</Text>
+              </Pressable>
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
     </GradientBackground>
   );
 }
@@ -793,6 +920,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(220, 38, 38, 0.06)',
   },
   videoRemoveLabel: { fontSize: 14, fontWeight: '800', color: colors.danger },
+  freeRow: { marginBottom: 8 },
+  freeToggle: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  freeBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+  },
+  freeBoxOn: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  freeLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
   micro: { marginTop: 6, fontSize: 12, color: colors.textMuted, fontWeight: '500' },
   uploadPctText: {
     marginTop: 8,

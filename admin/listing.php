@@ -69,10 +69,11 @@ $listing = null;
 try {
     $st = $pdo->prepare(
         'SELECT l.*, u.email, u.first_name, u.last_name, u.username, u.status AS user_status,
-                a.name AS reviewer_name
+                a.name AS reviewer_name, mc.name AS category_name
          FROM listings l
          INNER JOIN users u ON u.id = l.user_id
          LEFT JOIN admins a ON a.id = l.reviewed_by_admin_id
+         LEFT JOIN marketplace_categories mc ON mc.id = l.category_id
          WHERE l.id = ? LIMIT 1'
     );
     $st->execute([$id]);
@@ -165,9 +166,12 @@ require __DIR__ . '/partials/shell_open.php';
         <dt class="text-slate-500">Pricing</dt>
         <dd class="font-medium text-slate-900">
           <?php
+            $isFreeDetail = (int) ($listing['is_free'] ?? 0) === 1;
             $pt = (string) $listing['pricing_type'];
             $pa = $listing['price_amount'];
-            if ($pt === 'none' || $pa === null) {
+            if ($isFreeDetail) {
+                echo '<span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-600/20">FREE</span>';
+            } elseif ($pt === 'none' || $pa === null) {
                 echo '—';
             } else {
                 echo htmlspecialchars((string) $listing['currency'] . ' ' . number_format((float) $pa, 2), ENT_QUOTES, 'UTF-8');
@@ -176,6 +180,12 @@ require __DIR__ . '/partials/shell_open.php';
           ?>
         </dd>
       </div>
+      <?php if (!empty($listing['category_name'])): ?>
+      <div>
+        <dt class="text-slate-500">Category</dt>
+        <dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $listing['category_name'], ENT_QUOTES, 'UTF-8') ?></dd>
+      </div>
+      <?php endif; ?>
       <div><dt class="text-slate-500">Created</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $listing['created_at'], ENT_QUOTES, 'UTF-8') ?></dd></div>
       <?php if (!empty($listing['media_url'])): ?>
         <div class="sm:col-span-2">

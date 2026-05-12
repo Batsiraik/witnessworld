@@ -15,11 +15,13 @@ if (!in_array($filter, $allowed, true)) {
     $filter = 'all';
 }
 
-$sql = 'SELECT l.id, l.title, l.listing_type, l.moderation_status, l.pricing_type, l.price_amount, l.currency,
+$sql = 'SELECT l.id, l.title, l.listing_type, l.moderation_status, l.pricing_type, l.price_amount, l.is_free, l.currency,
         l.location_country_code, l.location_country_name, l.location_us_state,
-        l.created_at, u.email AS user_email, u.first_name, u.last_name, u.username
+        l.created_at, mc.name AS category_name,
+        u.email AS user_email, u.first_name, u.last_name, u.username
         FROM listings l
-        INNER JOIN users u ON u.id = l.user_id';
+        INNER JOIN users u ON u.id = l.user_id
+        LEFT JOIN marketplace_categories mc ON mc.id = l.category_id';
 $params = [];
 if ($filter !== 'all') {
     $sql .= ' WHERE l.moderation_status = ?';
@@ -94,6 +96,7 @@ require __DIR__ . '/partials/shell_open.php';
           <th class="px-6 py-3">Listing</th>
           <th class="px-6 py-3">Seller</th>
           <th class="px-6 py-3">Type</th>
+          <th class="px-6 py-3">Category</th>
           <th class="px-6 py-3">Location</th>
           <th class="px-6 py-3">Price</th>
           <th class="px-6 py-3">Status</th>
@@ -113,6 +116,7 @@ require __DIR__ . '/partials/shell_open.php';
               <div class="text-xs text-slate-500">@<?= htmlspecialchars((string) $r['username'], ENT_QUOTES, 'UTF-8') ?></div>
             </td>
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['listing_type'], ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) ($r['category_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-slate-600">
               <?php
                 $cn = trim((string) ($r['location_country_name'] ?? ''));
@@ -131,9 +135,12 @@ require __DIR__ . '/partials/shell_open.php';
             </td>
             <td class="px-6 py-4 text-slate-600">
               <?php
+                $isFreeRow = (int) ($r['is_free'] ?? 0) === 1;
                 $pt = (string) $r['pricing_type'];
                 $pa = $r['price_amount'];
-                if ($pt === 'none' || $pa === null) {
+                if ($isFreeRow) {
+                    echo '<span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-600/20">FREE</span>';
+                } elseif ($pt === 'none' || $pa === null) {
                     echo '—';
                 } else {
                     echo htmlspecialchars((string) $r['currency'] . ' ' . number_format((float) $pa, 2), ENT_QUOTES, 'UTF-8');
@@ -152,7 +159,7 @@ require __DIR__ . '/partials/shell_open.php';
           </tr>
         <?php endforeach; ?>
         <?php if ($rows === []): ?>
-          <tr><td colspan="8" class="px-6 py-8 text-center text-slate-500">No listings in this filter.</td></tr>
+          <tr><td colspan="9" class="px-6 py-8 text-center text-slate-500">No listings in this filter.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>
