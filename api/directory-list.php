@@ -18,11 +18,7 @@ if ($usStateFilter !== '' && strlen($usStateFilter) > 64) {
     ww_json(['ok' => false, 'error' => 'Invalid us_state filter'], 422);
 }
 
-require_once __DIR__ . '/lib/directory_helpers.php';
-$category = trim((string) ($_GET['category'] ?? ''));
-if ($category !== '' && !ww_directory_category_valid($category)) {
-    ww_json(['ok' => false, 'error' => 'Invalid category'], 422);
-}
+$categoryIdFilter = (int) ($_GET['category_id'] ?? 0);
 
 $q = trim((string) ($_GET['q'] ?? ''));
 if (mb_strlen($q) > 80) {
@@ -39,33 +35,36 @@ if ($limit > 120) {
 
 $pdo = witnessworld_pdo();
 
-$sql = 'SELECT id, business_name, tagline, category, city, location_us_state, location_country_name,
-        logo_url, phone, email, website, map_url
-        FROM directory_entries
-        WHERE moderation_status = ? AND location_country_code = ?';
+$sql = 'SELECT d.id, d.business_name, d.tagline, d.category, d.category_id,
+        d.city, d.location_us_state, d.location_country_name,
+        d.logo_url, d.phone, d.email, d.website, d.map_url,
+        dc.name AS category_name
+        FROM directory_entries d
+        LEFT JOIN directory_categories dc ON dc.id = d.category_id
+        WHERE d.moderation_status = ? AND d.location_country_code = ?';
 $params = ['approved', $country];
 
 if ($usStateFilter !== '') {
-    $sql .= ' AND location_us_state = ?';
+    $sql .= ' AND d.location_us_state = ?';
     $params[] = $usStateFilter;
 }
 
-if ($category !== '') {
-    $sql .= ' AND category = ?';
-    $params[] = $category;
+if ($categoryIdFilter > 0) {
+    $sql .= ' AND d.category_id = ?';
+    $params[] = $categoryIdFilter;
 }
 
 if ($q !== '') {
     $qEsc = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q);
     $like = '%' . $qEsc . '%';
-    $sql .= ' AND (business_name LIKE ? ESCAPE \'\\\\\' OR tagline LIKE ? ESCAPE \'\\\\\' OR city LIKE ? ESCAPE \'\\\\\' OR address_line LIKE ? ESCAPE \'\\\\\')';
+    $sql .= ' AND (d.business_name LIKE ? ESCAPE \'\\\\\' OR d.tagline LIKE ? ESCAPE \'\\\\\' OR d.city LIKE ? ESCAPE \'\\\\\' OR d.address_line LIKE ? ESCAPE \'\\\\\')';
     $params[] = $like;
     $params[] = $like;
     $params[] = $like;
     $params[] = $like;
 }
 
-$sql .= ' ORDER BY business_name ASC LIMIT ' . (int) $limit;
+$sql .= ' ORDER BY d.business_name ASC LIMIT ' . (int) $limit;
 
 try {
     $st = $pdo->prepare($sql);
@@ -76,15 +75,12 @@ try {
 }
 
 $out = [];
-$cats = ww_directory_categories();
 foreach ($rows as $r) {
-    $slug = (string) $r['category'];
     $out[] = [
         'id' => (int) $r['id'],
         'business_name' => (string) $r['business_name'],
         'tagline' => $r['tagline'] ? (string) $r['tagline'] : null,
-        'category' => $slug,
-        'category_label' => $cats[$slug] ?? $slug,
+        'category_name' => $r['category_name'] ? (string) $r['category_name'] : ($r['category'] ? (string) $r['category'] : null),
         'city' => (string) $r['city'],
         'location_us_state' => $r['location_us_state'] ? (string) $r['location_us_state'] : null,
         'location_country_name' => (string) $r['location_country_name'],

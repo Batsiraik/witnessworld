@@ -18,9 +18,11 @@ if (!in_array($filter, $allowed, true)) {
 
 $sql = 'SELECT d.id, d.business_name, d.city, d.category, d.moderation_status, d.created_at,
         d.location_country_name, d.location_us_state,
-        u.email AS user_email, u.username, u.first_name, u.last_name
+        u.email AS user_email, u.username, u.first_name, u.last_name,
+        dc.name AS category_name
         FROM directory_entries d
-        INNER JOIN users u ON u.id = d.user_id';
+        INNER JOIN users u ON u.id = d.user_id
+        LEFT JOIN directory_categories dc ON dc.id = d.category_id';
 $params = [];
 if ($filter !== 'all') {
     $sql .= ' WHERE d.moderation_status = ?';
@@ -117,8 +119,9 @@ require __DIR__ . '/partials/shell_open.php';
                 $loc .= ' · ' . htmlspecialchars((string) $r['location_us_state'], ENT_QUOTES, 'UTF-8');
             }
             $loc .= ' · ' . htmlspecialchars((string) $r['city'], ENT_QUOTES, 'UTF-8');
-            $catSlug = (string) ($r['category'] ?? '');
-            $catLabel = htmlspecialchars($cats[$catSlug] ?? $catSlug, ENT_QUOTES, 'UTF-8');
+            $catLabel = !empty($r['category_name'])
+                ? htmlspecialchars((string) $r['category_name'], ENT_QUOTES, 'UTF-8')
+                : htmlspecialchars($cats[(string) ($r['category'] ?? '')] ?? (string) ($r['category'] ?? ''), ENT_QUOTES, 'UTF-8');
           ?>
           <tr class="bg-white hover:bg-slate-50/80">
             <td class="px-6 py-4">

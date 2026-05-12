@@ -31,9 +31,11 @@ if ($limit > 80) {
 
 try {
     $st = $pdo->prepare(
-        'SELECT s.*, u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
+        'SELECT s.*, u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url,
+                stc.name AS category_name
          FROM stores s
          INNER JOIN users u ON u.id = s.user_id
+         LEFT JOIN store_categories stc ON stc.id = s.category_id
          WHERE s.id = ? AND s.moderation_status = ?
          LIMIT 1'
     );
@@ -94,6 +96,7 @@ ww_json([
     'ok' => true,
     'store' => [
         'id' => (int) $row['id'],
+        'category_name' => $row['category_name'] ? (string) $row['category_name'] : null,
         'name' => (string) $row['name'],
         'description' => (string) $row['description'],
         'sells_summary' => (string) $row['sells_summary'],

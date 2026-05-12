@@ -74,8 +74,23 @@ if (mb_strlen($description) > 8000) {
 $descDb = $description !== '' ? $description : null;
 
 $category = trim((string) ($body['category'] ?? ''));
-if (!ww_directory_category_valid($category)) {
-    ww_json(['ok' => false, 'error' => 'Select a valid category'], 422);
+
+$categoryId = isset($body['category_id']) ? (int) $body['category_id'] : 0;
+if ($categoryId > 0) {
+    if (!ww_directory_category_id_valid($pdo, $categoryId)) {
+        ww_json(['ok' => false, 'error' => 'Select a valid category'], 422);
+    }
+    $catRow = $pdo->prepare('SELECT slug FROM directory_categories WHERE id = ? LIMIT 1');
+    $catRow->execute([$categoryId]);
+    $catSlug = $catRow->fetchColumn();
+    if ($catSlug) {
+        $category = (string) $catSlug;
+    }
+} else {
+    $categoryId = null;
+    if (!ww_directory_category_valid($category)) {
+        ww_json(['ok' => false, 'error' => 'Select a valid category'], 422);
+    }
 }
 
 $countryCode = strtoupper(trim((string) ($body['location_country_code'] ?? '')));
@@ -165,7 +180,7 @@ $reviewedBy = $demote ? null : ($existing['reviewed_by_admin_id'] ?? null);
 try {
     $upd = $pdo->prepare(
         'UPDATE directory_entries SET
-            business_name = ?, tagline = ?, description = ?, category = ?,
+            business_name = ?, tagline = ?, description = ?, category = ?, category_id = ?,
             location_country_code = ?, location_country_name = ?, location_us_state = ?,
             address_line = ?, city = ?, postal_code = ?,
             phone = ?, email = ?, website = ?, map_url = ?, hours_text = ?, logo_url = ?,
@@ -177,6 +192,7 @@ try {
         $taglineDb,
         $descDb,
         $category,
+        $categoryId,
         $countryCode,
         $countryName,
         $usStateName,

@@ -26,14 +26,13 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Directory'>;
 type LocCountry = { code: string; name: string };
 type LocState = { code: string; name: string };
 
-type Cat = { slug: string; label: string };
+type Cat = { id: number; name: string; slug: string };
 
 type EntryRow = {
   id: number;
   business_name: string;
   tagline: string | null;
-  category: string;
-  category_label: string;
+  category_name: string | null;
   city: string;
   location_us_state: string | null;
   logo_url: string | null;
@@ -52,12 +51,11 @@ export function DirectoryScreen({ navigation }: Props) {
   const [categories, setCategories] = useState<Cat[]>([]);
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
-  const [categorySlug, setCategorySlug] = useState<string | null>(null);
+  const [selectedCat, setSelectedCat] = useState(0);
   const [search, setSearch] = useState('');
 
   const [countryModal, setCountryModal] = useState(false);
   const [stateModal, setStateModal] = useState(false);
-  const [catModal, setCatModal] = useState(false);
   const [countryQuery, setCountryQuery] = useState('');
   const [stateQuery, setStateQuery] = useState('');
 
@@ -97,7 +95,7 @@ export function DirectoryScreen({ navigation }: Props) {
         if (Array.isArray(raw)) {
           setCategories(
             raw.filter((x): x is Cat => {
-              return x != null && typeof x === 'object' && typeof (x as Cat).slug === 'string' && typeof (x as Cat).label === 'string';
+              return x != null && typeof x === 'object' && typeof x.id === 'number' && typeof x.name === 'string' && typeof x.slug === 'string';
             })
           );
         }
@@ -139,8 +137,8 @@ export function DirectoryScreen({ navigation }: Props) {
         if (country.code === usCountryCode && usState) {
           qs.set('us_state', usState.name);
         }
-        if (categorySlug) {
-          qs.set('category', categorySlug);
+        if (selectedCat > 0) {
+          qs.set('category_id', String(selectedCat));
         }
         const qVal = searchRef.current.trim();
         if (qVal) {
@@ -157,15 +155,13 @@ export function DirectoryScreen({ navigation }: Props) {
         else setListLoading(false);
       }
     },
-    [country, usCountryCode, usState, categorySlug]
+    [country, usCountryCode, usState, selectedCat]
   );
 
   useEffect(() => {
     if (!country) return;
     void fetchList('full');
-  }, [country, usState, categorySlug, fetchList]);
-
-  const categoryLabel = categorySlug ? categories.find((c) => c.slug === categorySlug)?.label ?? 'Category' : 'All categories';
+  }, [country, usState, selectedCat, fetchList]);
 
   if (locLoading) {
     return (
@@ -197,11 +193,6 @@ export function DirectoryScreen({ navigation }: Props) {
               </Pressable>
             </>
           ) : null}
-          <Text style={styles.filterLabel}>Category</Text>
-          <Pressable onPress={() => setCatModal(true)} style={styles.selectRow}>
-            <Text style={styles.selectVal}>{categoryLabel}</Text>
-            <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-          </Pressable>
           <Text style={styles.filterLabel}>Search</Text>
           <TextInput
             value={search}
@@ -239,11 +230,37 @@ export function DirectoryScreen({ navigation }: Props) {
               />
             }
             ListHeaderComponent={
-              rows.length > 0 ? (
-                <Text style={styles.resultCount}>
-                  {rows.length} {rows.length === 1 ? 'result' : 'results'}
-                </Text>
-              ) : null
+              <>
+                {categories.length > 0 ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.catRow}
+                    contentContainerStyle={{ paddingRight: 12 }}
+                  >
+                    <Pressable
+                      onPress={() => setSelectedCat(0)}
+                      style={[styles.catChip, selectedCat === 0 && styles.catChipOn]}
+                    >
+                      <Text style={[styles.catChipText, selectedCat === 0 && styles.catChipTextOn]}>All</Text>
+                    </Pressable>
+                    {categories.map((c) => (
+                      <Pressable
+                        key={c.id}
+                        onPress={() => setSelectedCat(c.id)}
+                        style={[styles.catChip, selectedCat === c.id && styles.catChipOn]}
+                      >
+                        <Text style={[styles.catChipText, selectedCat === c.id && styles.catChipTextOn]}>{c.name}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                ) : null}
+                {rows.length > 0 ? (
+                  <Text style={styles.resultCount}>
+                    {rows.length} {rows.length === 1 ? 'result' : 'results'}
+                  </Text>
+                ) : null}
+              </>
             }
             ListEmptyComponent={
               !listError && country ? (
@@ -274,9 +291,11 @@ export function DirectoryScreen({ navigation }: Props) {
                     <Text style={styles.gridTitle} numberOfLines={2}>
                       {item.business_name}
                     </Text>
-                    <Text style={styles.gridMeta} numberOfLines={1}>
-                      {item.category_label}
-                    </Text>
+                    {item.category_name ? (
+                      <Text style={styles.gridMeta} numberOfLines={1}>
+                        {item.category_name}
+                      </Text>
+                    ) : null}
                     {item.tagline ? (
                       <Text style={styles.tagline} numberOfLines={2}>
                         {item.tagline}
@@ -374,42 +393,6 @@ export function DirectoryScreen({ navigation }: Props) {
           </SafeAreaView>
         </Modal>
 
-        <Modal visible={catModal} animationType="slide" onRequestClose={() => setCatModal(false)}>
-          <SafeAreaView style={styles.modalSafe}>
-            <View style={styles.modalHeader}>
-              <Pressable
-                onPress={() => {
-                  setCategorySlug(null);
-                  setCatModal(false);
-                }}
-              >
-                <Text style={styles.modalDone}>All</Text>
-              </Pressable>
-              <Text style={styles.modalTitle}>Category</Text>
-              <Pressable onPress={() => setCatModal(false)}>
-                <Text style={styles.modalDone}>Done</Text>
-              </Pressable>
-            </View>
-            <FlatList
-              data={categories}
-              keyExtractor={(item) => item.slug}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    setCategorySlug(item.slug);
-                    setCatModal(false);
-                  }}
-                  style={styles.modalRow}
-                >
-                  <Text style={styles.modalRowText}>{item.label}</Text>
-                  {categorySlug === item.slug ? (
-                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                  ) : null}
-                </Pressable>
-              )}
-            />
-          </SafeAreaView>
-        </Modal>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -454,6 +437,19 @@ const styles = StyleSheet.create({
   listFlex: { flex: 1 },
   listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
   gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
+  catRow: { marginBottom: 10 },
+  catChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginRight: 8,
+  },
+  catChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  catChipText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
+  catChipTextOn: { color: '#fff' },
   resultCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 12 },
   emptyGrow: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 24 },
   empty: { textAlign: 'center', color: colors.textMuted, fontSize: 15 },

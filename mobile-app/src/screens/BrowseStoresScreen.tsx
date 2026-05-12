@@ -23,17 +23,22 @@ import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../util
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Stores'>;
 
+type StoreCategory = { id: number; name: string; slug: string };
+
 type Row = {
   id: number;
   name: string;
   sells_summary: string;
   logo_url: string;
+  category_name?: string | null;
   location_country_name: string;
   location_us_state: string | null;
 };
 
 export function BrowseStoresScreen({ navigation }: Props) {
   const tileW = useGridTileWidth();
+  const [categories, setCategories] = useState<StoreCategory[]>([]);
+  const [selectedCat, setSelectedCat] = useState<StoreCategory | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<LocCountry | null>(null);
   const [selectedUsState, setSelectedUsState] = useState<LocState | null>(null);
   const [q, setQ] = useState('');
@@ -43,14 +48,27 @@ export function BrowseStoresScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiGet('store-categories.php', false);
+        const cats = data.categories;
+        if (!cancelled && Array.isArray(cats)) setCategories(cats as StoreCategory[]);
+      } catch { /* optional */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const qs = useMemo(() => {
     const p = new URLSearchParams();
+    if (selectedCat) p.set('category_id', String(selectedCat.id));
     if (selectedCountry?.code) p.set('country', selectedCountry.code.toUpperCase());
     if (selectedUsState?.name) p.set('us_state', selectedUsState.name);
     if (appliedQ.trim()) p.set('q', appliedQ.trim());
     p.set('limit', '50');
     return p.toString();
-  }, [selectedCountry, selectedUsState, appliedQ]);
+  }, [selectedCat, selectedCountry, selectedUsState, appliedQ]);
 
   const load = useCallback(
     async (mode: 'full' | 'refresh' = 'full') => {
@@ -80,6 +98,25 @@ export function BrowseStoresScreen({ navigation }: Props) {
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <View style={styles.filters}>
+          {categories.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
+              <Pressable
+                onPress={() => setSelectedCat(null)}
+                style={[styles.catChip, !selectedCat && styles.catChipOn]}
+              >
+                <Text style={[styles.catChipText, !selectedCat && styles.catChipTextOn]}>All</Text>
+              </Pressable>
+              {categories.map((c) => (
+                <Pressable
+                  key={c.id}
+                  onPress={() => setSelectedCat(selectedCat?.id === c.id ? null : c)}
+                  style={[styles.catChip, selectedCat?.id === c.id && styles.catChipOn]}
+                >
+                  <Text style={[styles.catChipText, selectedCat?.id === c.id && styles.catChipTextOn]}>{c.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : null}
           <BrowseLocationFilters
             country={selectedCountry}
             usState={selectedUsState}
@@ -187,6 +224,21 @@ export function BrowseStoresScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   filters: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
+  catRow: { gap: 6, paddingBottom: 2 },
+  catChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(11,18,32,0.06)',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  catChipOn: {
+    backgroundColor: 'rgba(124,58,237,0.12)',
+    borderColor: 'rgba(124,58,237,0.35)',
+  },
+  catChipText: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
+  catChipTextOn: { color: '#7c3aed' },
   input: {
     borderWidth: 1,
     borderColor: 'rgba(11,18,32,0.1)',

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once __DIR__ . '/lib/directory_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -18,9 +17,10 @@ $pdo = witnessworld_pdo();
 
 try {
     $st = $pdo->prepare(
-        'SELECT d.*, u.username, u.first_name, u.last_name
+        'SELECT d.*, u.username, u.first_name, u.last_name, dc.name AS category_name
          FROM directory_entries d
          INNER JOIN users u ON u.id = d.user_id
+         LEFT JOIN directory_categories dc ON dc.id = d.category_id
          WHERE d.id = ? AND d.moderation_status = ?
          LIMIT 1'
     );
@@ -34,9 +34,6 @@ if (!$row) {
     ww_json(['ok' => false, 'error' => 'Business not found'], 404);
 }
 
-$slug = (string) $row['category'];
-$cats = ww_directory_categories();
-
 ww_json([
     'ok' => true,
     'entry' => [
@@ -44,8 +41,7 @@ ww_json([
         'business_name' => (string) $row['business_name'],
         'tagline' => $row['tagline'] ? (string) $row['tagline'] : null,
         'description' => $row['description'] ? (string) $row['description'] : null,
-        'category' => $slug,
-        'category_label' => $cats[$slug] ?? $slug,
+        'category_name' => $row['category_name'] ? (string) $row['category_name'] : ($row['category'] ? (string) $row['category'] : null),
         'location_country_code' => (string) $row['location_country_code'],
         'location_country_name' => (string) $row['location_country_name'],
         'location_us_state' => $row['location_us_state'] ? (string) $row['location_us_state'] : null,

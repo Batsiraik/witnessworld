@@ -67,10 +67,11 @@ $store = null;
 try {
     $st = $pdo->prepare(
         'SELECT s.*, u.email, u.first_name, u.last_name, u.username, u.status AS user_status,
-                a.name AS reviewer_name
+                a.name AS reviewer_name, stc.name AS category_name
          FROM stores s
          INNER JOIN users u ON u.id = s.user_id
          LEFT JOIN admins a ON a.id = s.reviewed_by_admin_id
+         LEFT JOIN store_categories stc ON stc.id = s.category_id
          WHERE s.id = ? LIMIT 1'
     );
     $st->execute([$id]);
@@ -156,6 +157,12 @@ require __DIR__ . '/partials/shell_open.php';
         <dt class="text-slate-500">What they sell (summary)</dt>
         <dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $store['sells_summary'], ENT_QUOTES, 'UTF-8') ?></dd>
       </div>
+      <?php if (!empty($store['category_name'])): ?>
+      <div>
+        <dt class="text-slate-500">Category</dt>
+        <dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $store['category_name'], ENT_QUOTES, 'UTF-8') ?></dd>
+      </div>
+      <?php endif; ?>
       <div>
         <dt class="text-slate-500">Location</dt>
         <dd class="font-medium text-slate-900"><?= $locLine !== '' ? htmlspecialchars($locLine, ENT_QUOTES, 'UTF-8') : '—' ?></dd>

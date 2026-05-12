@@ -22,6 +22,8 @@ $storeProducts = $base === '' ? 'store_products.php' : $base . '/store_products.
 $directoryAdmin = $base === '' ? 'directory.php' : $base . '/directory.php';
 $marketplaceCategories = $base === '' ? 'marketplace_categories.php' : $base . '/marketplace_categories.php';
 $serviceCategories = $base === '' ? 'service_categories.php' : $base . '/service_categories.php';
+$storeCategories = $base === '' ? 'store_categories.php' : $base . '/store_categories.php';
+$directoryCategories = $base === '' ? 'directory_categories.php' : $base . '/directory_categories.php';
 $moderation = $base === '' ? 'moderation.php' : $base . '/moderation.php';
 $analytics = $base === '' ? 'analytics.php' : $base . '/analytics.php';
 $admins = $base === '' ? 'admins.php' : $base . '/admins.php';
@@ -102,6 +104,20 @@ $isSuper = !empty($cu['is_super']);
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
       </span>
       Service categories
+    </a>
+    <a href="<?= htmlspecialchars($storeCategories, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('store_categories'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+      </span>
+      Store categories
+    </a>
+    <a href="<?= htmlspecialchars($directoryCategories, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('directory_categories'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      </span>
+      Directory categories
     </a>
     <a href="<?= htmlspecialchars($moderation, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('moderation'), ENT_QUOTES, 'UTF-8') ?>">

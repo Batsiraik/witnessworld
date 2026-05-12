@@ -39,6 +39,8 @@ const DELIVERY = [
   { value: 'custom', label: 'Custom / other', sub: 'Describe below' },
 ] as const;
 
+type StoreCategory = { id: number; name: string; slug: string };
+
 export function CreateStoreScreen({ navigation, route }: Props) {
   const { user, refreshProfile } = useDashboardContext();
   const seed = typeof route.params?.seed === 'number' ? route.params.seed : 0;
@@ -47,6 +49,11 @@ export function CreateStoreScreen({ navigation, route }: Props) {
   const [usStates, setUsStates] = useState<LocState[]>([]);
   const [usCountryCode, setUsCountryCode] = useState('US');
   const [locLoading, setLocLoading] = useState(true);
+
+  const [categories, setCategories] = useState<StoreCategory[]>([]);
+  const [category, setCategory] = useState<StoreCategory | null>(null);
+  const [catModal, setCatModal] = useState(false);
+  const [catQuery, setCatQuery] = useState('');
 
   const [name, setName] = useState('');
   const [sellsSummary, setSellsSummary] = useState('');
@@ -126,6 +133,18 @@ export function CreateStoreScreen({ navigation, route }: Props) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiGet('store-categories.php', false);
+        const cats = data.categories;
+        if (!cancelled && Array.isArray(cats)) setCategories(cats as StoreCategory[]);
+      } catch { /* optional */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     if (!seed) return;
     setName('');
     setSellsSummary('');
@@ -136,6 +155,7 @@ export function CreateStoreScreen({ navigation, route }: Props) {
     setBannerUrl(null);
     setCountry(null);
     setUsState(null);
+    setCategory(null);
   }, [seed]);
 
   const filteredCountries = useMemo(() => {
@@ -149,6 +169,12 @@ export function CreateStoreScreen({ navigation, route }: Props) {
     if (!q) return usStates;
     return usStates.filter((s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
   }, [usStates, stateQuery]);
+
+  const filteredCategories = useMemo(() => {
+    const cq = catQuery.trim().toLowerCase();
+    if (!cq) return categories;
+    return categories.filter((c) => c.name.toLowerCase().includes(cq));
+  }, [categories, catQuery]);
 
   const deliveryLabel = useMemo(() => {
     const d = DELIVERY.find((x) => x.value === deliveryType);
@@ -230,6 +256,7 @@ export function CreateStoreScreen({ navigation, route }: Props) {
       delivery_type: deliveryType,
       delivery_notes: deliveryNotes.trim(),
     };
+    if (category) body.category_id = category.id;
     if (country.code === usCountryCode && usState) {
       body.location_us_state_code = usState.code;
     }
@@ -261,10 +288,13 @@ export function CreateStoreScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+            <View style={styles.kindPill} accessibilityRole="text">
+              <Text style={styles.kindPillText}>Launch Your Storefront</Text>
+            </View>
             <Text style={styles.lead}>
-              Your storefront is reviewed before it goes live.{' '}
-              <Text style={styles.leadEm}>You cannot add products until an admin approves your store.</Text> After
-              approval, use My office → Manage store to list items. Product changes also go through review.
+              Establish a permanent retail presence within the WWC ecosystem. This premium module is built for brands,
+              makers, and retailers to sell new, consistent inventory. From handmade artisanal goods to professional
+              beauty lines, scale your business with a dedicated storefront.
             </Text>
 
             <Text style={styles.label}>Store name *</Text>
@@ -294,6 +324,17 @@ export function CreateStoreScreen({ navigation, route }: Props) {
               style={[styles.input, styles.multiline]}
               multiline
             />
+
+            <Text style={styles.label}>Category</Text>
+            <Pressable
+              onPress={() => { setCatQuery(''); setCatModal(true); }}
+              style={styles.selectRow}
+            >
+              <Text style={category ? styles.selectVal : styles.selectPh}>
+                {category ? category.name : 'Tap to choose category'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+            </Pressable>
 
             <Text style={styles.label}>Store logo *</Text>
             <MediaUploadZone
@@ -452,6 +493,38 @@ export function CreateStoreScreen({ navigation, route }: Props) {
           </SafeAreaView>
         </Modal>
 
+        <Modal visible={catModal} animationType="slide" onRequestClose={() => setCatModal(false)}>
+          <SafeAreaView style={styles.modalSafe}>
+            <View style={styles.modalHeader}>
+              <Pressable onPress={() => setCatModal(false)}>
+                <Text style={styles.modalClose}>Done</Text>
+              </Pressable>
+              <Text style={styles.modalTitle}>Category</Text>
+              <View style={{ width: 48 }} />
+            </View>
+            <TextInput
+              value={catQuery}
+              onChangeText={setCatQuery}
+              placeholder="Search"
+              style={styles.search}
+              placeholderTextColor={colors.textMuted}
+            />
+            <FlatList
+              data={filteredCategories}
+              keyExtractor={(item) => String(item.id)}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => { setCategory(item); setCatModal(false); }}
+                  style={styles.modalRow}
+                >
+                  <Text style={styles.modalRowText}>{item.name}</Text>
+                </Pressable>
+              )}
+            />
+          </SafeAreaView>
+        </Modal>
+
         <Modal visible={deliveryModal} animationType="slide" onRequestClose={() => setDeliveryModal(false)}>
           <SafeAreaView style={styles.modalSafe}>
             <View style={styles.modalHeader}>
@@ -491,6 +564,17 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 },
+  kindPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(124,58,237,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.35)',
+    marginBottom: 12,
+  },
+  kindPillText: { fontSize: 12, fontWeight: '800', color: '#7c3aed', letterSpacing: 0.3 },
   lead: { fontSize: 14, lineHeight: 21, color: colors.textMuted, marginBottom: 16 },
   leadEm: { color: colors.text, fontWeight: '800' },
   label: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 6, marginTop: 14 },

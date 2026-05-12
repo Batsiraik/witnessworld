@@ -46,6 +46,7 @@ ww_json([
     'ok' => true,
     'store' => [
         'id' => (int) $row['id'],
+        'category_id' => $row['category_id'] !== null ? (int) $row['category_id'] : null,
         'name' => (string) $row['name'],
         'description' => (string) $row['description'],
         'sells_summary' => (string) $row['sells_summary'],

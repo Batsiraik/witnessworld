@@ -31,13 +31,22 @@ if (mb_strlen($q) > 80) {
 $limit = ww_marketplace_int_bounds((int) ($_GET['limit'] ?? 40), 1, 80, 40);
 $offset = ww_marketplace_int_bounds((int) ($_GET['offset'] ?? 0), 0, 100000, 0);
 
+$categoryFilter = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
+
 $sql = 'SELECT s.id, s.name, s.description, s.sells_summary, s.logo_url, s.banner_url,
         s.location_country_code, s.location_country_name, s.location_us_state, s.delivery_type, s.created_at,
+        stc.name AS category_name,
         s.user_id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
         FROM stores s
         INNER JOIN users u ON u.id = s.user_id
+        LEFT JOIN store_categories stc ON stc.id = s.category_id
         WHERE s.moderation_status = ?';
 $params = ['approved'];
+
+if ($categoryFilter > 0) {
+    $sql .= ' AND s.category_id = ?';
+    $params[] = $categoryFilter;
+}
 
 if ($country !== '' && strlen($country) === 2) {
     $sql .= ' AND s.location_country_code = ?';
@@ -73,6 +82,7 @@ foreach ($rows as $r) {
     $list[] = [
         'id' => (int) $r['id'],
         'name' => (string) $r['name'],
+        'category_name' => $r['category_name'] ? (string) $r['category_name'] : null,
         'description' => (string) $r['description'],
         'sells_summary' => (string) $r['sells_summary'],
         'logo_url' => (string) $r['logo_url'],

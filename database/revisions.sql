@@ -112,3 +112,62 @@ INSERT IGNORE INTO service_categories (name, slug, sort_order, is_active) VALUES
 
 -- Drop the marketplace-only FK so category_id can reference either table; validation is in PHP.
 ALTER TABLE listings DROP FOREIGN KEY fk_listings_category;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-12: Store categories for Online Store module
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS store_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_stc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO store_categories (name, slug, sort_order, is_active) VALUES
+  ('Beauty & Personal Care', 'beauty_personal_care', 1, 1),
+  ('Health & Wellness', 'health_wellness', 2, 1),
+  ('Fashion & Apparel', 'fashion_apparel', 3, 1),
+  ('Artisan & Handmade', 'artisan_handmade', 4, 1),
+  ('Specialty Foods', 'specialty_foods', 5, 1),
+  ('Tech & Gadgets', 'tech_gadgets', 6, 1),
+  ('JW Products', 'jw_products', 7, 1);
+
+ALTER TABLE stores
+  ADD COLUMN category_id INT UNSIGNED NULL AFTER user_id,
+  ADD INDEX idx_stores_category (category_id),
+  ADD CONSTRAINT fk_stores_category FOREIGN KEY (category_id) REFERENCES store_categories(id) ON DELETE SET NULL;
+
+-- Add "Other" to store_categories if not already present
+INSERT IGNORE INTO store_categories (name, slug, sort_order, is_active) VALUES ('Other', 'other', 99, 1);
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-12: Directory categories for Business Directory module
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS directory_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_dc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO directory_categories (name, slug, sort_order, is_active) VALUES
+  ('Educational', 'educational', 1, 1),
+  ('Legal', 'legal', 2, 1),
+  ('Food & Dining', 'food_dining', 3, 1),
+  ('Health & Medical', 'health_medical', 4, 1),
+  ('Home Improvement & Repair', 'home_improvement_repair', 5, 1),
+  ('Beauty & Spas', 'beauty_spas', 6, 1),
+  ('Professional Offices', 'professional_offices', 7, 1),
+  ('Retail Shops', 'retail_shops', 8, 1),
+  ('Other', 'other', 9, 1);
+
+ALTER TABLE directory_entries
+  ADD COLUMN category_id INT UNSIGNED NULL AFTER category,
+  ADD INDEX idx_dir_category_id (category_id),
+  ADD CONSTRAINT fk_dir_category FOREIGN KEY (category_id) REFERENCES directory_categories(id) ON DELETE SET NULL;

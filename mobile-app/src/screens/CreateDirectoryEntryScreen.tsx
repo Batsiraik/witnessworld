@@ -32,7 +32,7 @@ type Props =
 
 type LocCountry = { code: string; name: string };
 type LocState = { code: string; name: string };
-type Cat = { slug: string; label: string };
+type Cat = { id: number; name: string; slug: string };
 
 function entryIdFromRoute(route: Props['route']): number | undefined {
   if ('entryId' in route.params && typeof route.params.entryId === 'number') {
@@ -63,7 +63,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
   const [businessName, setBusinessName] = useState('');
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
-  const [categorySlug, setCategorySlug] = useState<string | null>(null);
+  const [category, setCategory] = useState<Cat | null>(null);
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
   const [addressLine, setAddressLine] = useState('');
@@ -133,7 +133,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
         if (Array.isArray(raw)) {
           setCategories(
             raw.filter((x): x is Cat => {
-              return x != null && typeof x === 'object' && typeof x.slug === 'string' && typeof x.label === 'string';
+              return x != null && typeof x === 'object' && typeof x.id === 'number' && typeof x.name === 'string' && typeof x.slug === 'string';
             })
           );
         }
@@ -153,7 +153,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
     setBusinessName('');
     setTagline('');
     setDescription('');
-    setCategorySlug(null);
+    setCategory(null);
     setCountry(null);
     setUsState(null);
     setAddressLine('');
@@ -183,7 +183,14 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
         setBusinessName(String(E.business_name || ''));
         setTagline(E.tagline ? String(E.tagline) : '');
         setDescription(E.description ? String(E.description) : '');
-        setCategorySlug(String(E.category || '') || null);
+        if (E.category_id && typeof E.category_id === 'number') {
+          const found = categories.find((c) => c.id === E.category_id) ?? null;
+          setCategory(found);
+        } else {
+          const slug = String(E.category || '');
+          const found = categories.find((c) => c.slug === slug) ?? null;
+          setCategory(found);
+        }
         setAddressLine(E.address_line ? String(E.address_line) : '');
         setCity(String(E.city || ''));
         setPostalCode(E.postal_code ? String(E.postal_code) : '');
@@ -217,7 +224,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [editId, countries, usStates, navigation]);
+  }, [editId, countries, usStates, categories, navigation]);
 
   const filteredCountries = useMemo(() => {
     const q = countryQuery.trim().toLowerCase();
@@ -231,7 +238,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
     return usStates.filter((s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
   }, [usStates, stateQuery]);
 
-  const catLabel = categorySlug ? categories.find((c) => c.slug === categorySlug)?.label ?? 'Category' : 'Select category';
+  const catLabel = category ? category.name : 'Select category';
 
   const pickLogo = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -267,7 +274,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
       Alert.alert('Profile', 'Add a profile photo first.');
       return;
     }
-    if (!categorySlug) {
+    if (!category) {
       Alert.alert('Category', 'Select a category.');
       return;
     }
@@ -288,7 +295,8 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
       business_name: businessName.trim(),
       tagline: tagline.trim(),
       description: description.trim(),
-      category: categorySlug,
+      category: category.slug,
+      category_id: category.id,
       location_country_code: country.code,
       address_line: addressLine.trim(),
       city: city.trim(),
@@ -338,9 +346,14 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+            <View style={styles.kindPill}>
+              <Text style={styles.kindPillText}>Business Directory</Text>
+            </View>
+            <Text style={styles.heading}>List Your Business in the Directory</Text>
             <Text style={styles.lead}>
-              Phone, email, website, and map link are public so customers can reach you. Listings are reviewed before
-              they appear in the directory. You can add several businesses per account.
+              Establish your presence in our verified directory. This is designed for physical, local businesses to
+              increase visibility and connect with the community. Add your location, hours, and contact info to get
+              discovered.
             </Text>
 
             <Text style={styles.label}>Business name *</Text>
@@ -351,7 +364,7 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
 
             <Text style={styles.label}>Category *</Text>
             <Pressable onPress={() => setCatModal(true)} style={styles.selectRow}>
-              <Text style={categorySlug ? styles.selectVal : styles.selectPh}>{catLabel}</Text>
+              <Text style={category ? styles.selectVal : styles.selectPh}>{catLabel}</Text>
               <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
             </Pressable>
 
@@ -523,17 +536,17 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
             </View>
             <FlatList
               data={categories}
-              keyExtractor={(item) => item.slug}
+              keyExtractor={(item) => String(item.id)}
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {
-                    setCategorySlug(item.slug);
+                    setCategory(item);
                     setCatModal(false);
                   }}
                   style={styles.modalRow}
                 >
-                  <Text style={styles.modalRowText}>{item.label}</Text>
-                  {categorySlug === item.slug ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+                  <Text style={styles.modalRowText}>{item.name}</Text>
+                  {category?.id === item.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
                 </Pressable>
               )}
             />
@@ -548,6 +561,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 },
+  kindPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 8,
+  },
+  kindPillText: { fontSize: 12, fontWeight: '800', color: colors.primary },
+  heading: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 6 },
   lead: { fontSize: 13, lineHeight: 20, color: colors.textMuted, marginBottom: 12 },
   label: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 6, marginTop: 12 },
   input: {

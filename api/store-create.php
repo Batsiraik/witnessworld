@@ -34,6 +34,18 @@ if ($avatar === '') {
 $userId = (int) $user['id'];
 $body = ww_read_json();
 
+$categoryId = null;
+$catIn = isset($body['category_id']) ? (int) $body['category_id'] : 0;
+if ($catIn > 0) {
+    $catCheck = $pdo->prepare('SELECT id FROM store_categories WHERE id = ? AND is_active = 1 LIMIT 1');
+    $catCheck->execute([$catIn]);
+    if ($catCheck->fetchColumn()) {
+        $categoryId = $catIn;
+    } else {
+        ww_json(['ok' => false, 'error' => 'Invalid category'], 422);
+    }
+}
+
 $name = trim((string) ($body['name'] ?? ''));
 if ($name === '' || mb_strlen($name) > 120) {
     ww_json(['ok' => false, 'error' => 'Store name is required (max 120 characters)'], 422);
@@ -97,13 +109,14 @@ if ($countryCode === 'US') {
 try {
     $ins = $pdo->prepare(
         'INSERT INTO stores (
-            user_id, name, description, sells_summary, logo_url, banner_url,
+            user_id, category_id, name, description, sells_summary, logo_url, banner_url,
             location_country_code, location_country_name, location_us_state,
             delivery_type, delivery_notes, moderation_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $ins->execute([
         $userId,
+        $categoryId,
         $name,
         $description,
         $sells,

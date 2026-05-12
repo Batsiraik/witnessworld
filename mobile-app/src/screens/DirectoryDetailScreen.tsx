@@ -29,7 +29,7 @@ type Entry = {
   business_name: string;
   tagline: string | null;
   description: string | null;
-  category_label: string;
+  category_name: string | null;
   location_country_name: string;
   location_us_state: string | null;
   address_line: string | null;
@@ -148,9 +148,11 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
             <RemoteImage url={entry.logo_url} style={styles.heroLogo} contentFit="cover" />
           ) : null}
           <Text style={styles.title}>{entry.business_name}</Text>
+          {entry.category_name ? (
+            <Text style={styles.catTag}>{entry.category_name}</Text>
+          ) : null}
           <Text style={styles.meta}>
-            {entry.category_label}
-            {addressParts.length ? ` · ${addressParts.join(', ')}` : ''}
+            {addressParts.length ? addressParts.join(', ') : ''}
           </Text>
           {entry.tagline ? <Text style={styles.tagline}>{entry.tagline}</Text> : null}
           {entry.description ? <Text style={styles.body}>{entry.description}</Text> : null}
@@ -249,6 +251,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  catTag: {
+    alignSelf: 'center',
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: colors.primarySoft,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    overflow: 'hidden',
+  },
   meta: { fontSize: 13, color: colors.textMuted, textAlign: 'center', marginTop: 6, fontWeight: '600' },
   tagline: { fontSize: 15, color: colors.text, textAlign: 'center', marginTop: 12, fontWeight: '600' },
   body: { fontSize: 15, color: colors.textMuted, marginTop: 10, lineHeight: 22 },

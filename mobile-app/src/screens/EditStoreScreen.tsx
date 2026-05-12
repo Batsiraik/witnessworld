@@ -37,6 +37,8 @@ const DELIVERY = [
   { value: 'custom', label: 'Custom / other', sub: 'Describe below' },
 ] as const;
 
+type StoreCategory = { id: number; name: string; slug: string };
+
 export function EditStoreScreen({ navigation, route }: Props) {
   const storeId = route.params.storeId;
 
@@ -44,6 +46,11 @@ export function EditStoreScreen({ navigation, route }: Props) {
   const [countries, setCountries] = useState<LocCountry[]>([]);
   const [usStates, setUsStates] = useState<LocState[]>([]);
   const [usCountryCode, setUsCountryCode] = useState('US');
+
+  const [categories, setCategories] = useState<StoreCategory[]>([]);
+  const [category, setCategory] = useState<StoreCategory | null>(null);
+  const [catModal, setCatModal] = useState(false);
+  const [catQuery, setCatQuery] = useState('');
 
   const [name, setName] = useState('');
   const [sellsSummary, setSellsSummary] = useState('');
@@ -73,6 +80,13 @@ export function EditStoreScreen({ navigation, route }: Props) {
     (async () => {
       setLoading(true);
       try {
+        let loadedCats: StoreCategory[] = [];
+        try {
+          const catData = await apiGet('store-categories.php', false);
+          if (Array.isArray(catData.categories)) loadedCats = catData.categories as StoreCategory[];
+          if (!cancelled) setCategories(loadedCats);
+        } catch { /* optional */ }
+
         const loc = await apiGet('locations.php', false);
         const cs = loc.countries;
         const ss = loc.us_states;
@@ -108,6 +122,12 @@ export function EditStoreScreen({ navigation, route }: Props) {
         setDeliveryNotes(S.delivery_notes ? String(S.delivery_notes) : '');
         setLogoUrl(S.logo_url ? String(S.logo_url) : null);
         setBannerUrl(S.banner_url ? String(S.banner_url) : null);
+
+        const catId = typeof S.category_id === 'number' ? S.category_id : null;
+        if (catId && loadedCats.length) {
+          const cObj = loadedCats.find((c) => c.id === catId) ?? null;
+          if (!cancelled) setCategory(cObj);
+        }
 
         const cc = String(S.location_country_code || '').toUpperCase();
         const statesList = Array.isArray(ss)
@@ -155,6 +175,12 @@ export function EditStoreScreen({ navigation, route }: Props) {
     if (!q) return usStates;
     return usStates.filter((s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
   }, [usStates, stateQuery]);
+
+  const filteredCategories = useMemo(() => {
+    const cq = catQuery.trim().toLowerCase();
+    if (!cq) return categories;
+    return categories.filter((c) => c.name.toLowerCase().includes(cq));
+  }, [categories, catQuery]);
 
   const deliveryLabel = useMemo(() => {
     const d = DELIVERY.find((x) => x.value === deliveryType);
@@ -225,6 +251,7 @@ export function EditStoreScreen({ navigation, route }: Props) {
       delivery_type: deliveryType,
       delivery_notes: deliveryNotes.trim(),
     };
+    if (category) body.category_id = category.id;
     if (country.code === usCountryCode && usState) {
       body.location_us_state_code = usState.code;
     }
@@ -281,6 +308,14 @@ export function EditStoreScreen({ navigation, route }: Props) {
               multiline
               placeholderTextColor={colors.textMuted}
             />
+
+            <Text style={styles.label}>Category</Text>
+            <Pressable onPress={() => { setCatQuery(''); setCatModal(true); }} style={styles.selectRow}>
+              <Text style={category ? styles.selectVal : styles.selectPh}>
+                {category ? category.name : 'Tap to choose category'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+            </Pressable>
 
             <Text style={styles.label}>Store logo *</Text>
             <MediaUploadZone
@@ -419,6 +454,35 @@ export function EditStoreScreen({ navigation, route }: Props) {
                   }}
                   style={styles.modalRow}
                 >
+                  <Text style={styles.modalRowText}>{item.name}</Text>
+                </Pressable>
+              )}
+            />
+          </SafeAreaView>
+        </Modal>
+
+        <Modal visible={catModal} animationType="slide" onRequestClose={() => setCatModal(false)}>
+          <SafeAreaView style={styles.modalSafe}>
+            <View style={styles.modalHeader}>
+              <Pressable onPress={() => setCatModal(false)}>
+                <Text style={styles.modalClose}>Done</Text>
+              </Pressable>
+              <Text style={styles.modalTitle}>Category</Text>
+              <View style={{ width: 48 }} />
+            </View>
+            <TextInput
+              value={catQuery}
+              onChangeText={setCatQuery}
+              placeholder="Search"
+              style={styles.search}
+              placeholderTextColor={colors.textMuted}
+            />
+            <FlatList
+              data={filteredCategories}
+              keyExtractor={(item) => String(item.id)}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable onPress={() => { setCategory(item); setCatModal(false); }} style={styles.modalRow}>
                   <Text style={styles.modalRowText}>{item.name}</Text>
                 </Pressable>
               )}

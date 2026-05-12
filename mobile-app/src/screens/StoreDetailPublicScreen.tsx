@@ -35,6 +35,7 @@ type ProductMini = {
 type Store = {
   id: number;
   name: string;
+  category_name: string | null;
   description: string;
   sells_summary: string;
   logo_url: string;
@@ -135,6 +136,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
             <RemoteImage url={store.logo_url} style={styles.logo} contentFit="cover" />
           </View>
           <Text style={styles.title}>{store.name}</Text>
+          {store.category_name ? <Text style={styles.catTag}>{store.category_name}</Text> : null}
           <Text style={styles.summary}>{store.sells_summary}</Text>
           {loc ? <Text style={styles.meta}>{loc}</Text> : null}
           <Text style={styles.meta}>Delivery: {store.delivery_type.replace(/_/g, ' ')}</Text>
@@ -254,6 +256,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, paddingHorizontal: 20, marginTop: 12 },
+  catTag: {
+    alignSelf: 'flex-start',
+    marginLeft: 20,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(124,58,237,0.12)',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#7c3aed',
+    overflow: 'hidden',
+  },
   summary: { fontSize: 15, fontWeight: '600', color: colors.text, paddingHorizontal: 20, marginTop: 8 },
   meta: { fontSize: 13, color: colors.textMuted, paddingHorizontal: 20, marginTop: 6, fontWeight: '600' },
   body: { fontSize: 15, color: colors.textMuted, paddingHorizontal: 20, marginTop: 14, lineHeight: 22 },

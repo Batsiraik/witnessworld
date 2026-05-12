@@ -73,10 +73,11 @@ $entry = null;
 try {
     $st = $pdo->prepare(
         'SELECT d.*, u.email, u.first_name, u.last_name, u.username, u.status AS user_status,
-                a.name AS reviewer_name
+                a.name AS reviewer_name, dc.name AS category_name
          FROM directory_entries d
          INNER JOIN users u ON u.id = d.user_id
          LEFT JOIN admins a ON a.id = d.reviewed_by_admin_id
+         LEFT JOIN directory_categories dc ON dc.id = d.category_id
          WHERE d.id = ? LIMIT 1'
     );
     $st->execute([$id]);
@@ -95,7 +96,9 @@ $activeNav = 'directory';
 
 $status = trim((string) ($entry['moderation_status'] ?? ''));
 $cats = ww_directory_categories();
-$catLabel = $cats[(string) $entry['category']] ?? (string) $entry['category'];
+$catLabel = !empty($entry['category_name'])
+    ? (string) $entry['category_name']
+    : ($cats[(string) $entry['category']] ?? (string) $entry['category']);
 
 require __DIR__ . '/partials/head.php';
 require __DIR__ . '/partials/sidebar.php';

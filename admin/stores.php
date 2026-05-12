@@ -16,9 +16,10 @@ if (!in_array($filter, $allowed, true)) {
 }
 
 $sql = 'SELECT s.id, s.name, s.moderation_status, s.delivery_type, s.location_country_name, s.location_us_state,
-        s.created_at, u.email AS user_email, u.first_name, u.last_name, u.username
+        s.created_at, stc.name AS category_name, u.email AS user_email, u.first_name, u.last_name, u.username
         FROM stores s
-        INNER JOIN users u ON u.id = s.user_id';
+        INNER JOIN users u ON u.id = s.user_id
+        LEFT JOIN store_categories stc ON stc.id = s.category_id';
 $params = [];
 if ($filter !== 'all') {
     $sql .= ' WHERE s.moderation_status = ?';
@@ -93,6 +94,7 @@ require __DIR__ . '/partials/shell_open.php';
         <tr>
           <th class="px-6 py-3">Store</th>
           <th class="px-6 py-3">Owner</th>
+          <th class="px-6 py-3">Category</th>
           <th class="px-6 py-3">Location</th>
           <th class="px-6 py-3">Delivery</th>
           <th class="px-6 py-3">Status</th>
@@ -121,6 +123,7 @@ require __DIR__ . '/partials/shell_open.php';
               <span class="text-slate-500">(@<?= htmlspecialchars((string) $r['username'], ENT_QUOTES, 'UTF-8') ?>)</span>
               <div class="text-xs text-slate-500"><?= htmlspecialchars((string) $r['user_email'], ENT_QUOTES, 'UTF-8') ?></div>
             </td>
+            <td class="px-6 py-4 text-slate-700"><?= htmlspecialchars((string) ($r['category_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-slate-700"><?= $loc !== '' ? htmlspecialchars($loc, ENT_QUOTES, 'UTF-8') : '—' ?></td>
             <td class="px-6 py-4 text-slate-700"><?= htmlspecialchars($del, ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4"><?= ww_store_status_badge((string) ($r['moderation_status'] ?? '')) ?></td>
@@ -131,7 +134,7 @@ require __DIR__ . '/partials/shell_open.php';
           </tr>
         <?php endforeach; ?>
         <?php if ($rows === [] && $dbError === null): ?>
-          <tr><td colspan="7" class="px-6 py-10 text-center text-slate-500">No stores match this filter.</td></tr>
+          <tr><td colspan="8" class="px-6 py-10 text-center text-slate-500">No stores match this filter.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>

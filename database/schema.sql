@@ -229,10 +229,32 @@ CREATE TABLE listings (
   INDEX idx_listings_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Store categories (admin-managed, seeded with defaults)
+CREATE TABLE store_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_stc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO store_categories (name, slug, sort_order, is_active) VALUES
+  ('Beauty & Personal Care', 'beauty_personal_care', 1, 1),
+  ('Health & Wellness', 'health_wellness', 2, 1),
+  ('Fashion & Apparel', 'fashion_apparel', 3, 1),
+  ('Artisan & Handmade', 'artisan_handmade', 4, 1),
+  ('Specialty Foods', 'specialty_foods', 5, 1),
+  ('Tech & Gadgets', 'tech_gadgets', 6, 1),
+  ('JW Products', 'jw_products', 7, 1),
+  ('Other', 'other', 8, 1);
+
 -- Online stores (admin approves store before seller can publish products; products are moderated separately)
 CREATE TABLE stores (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
+  category_id INT UNSIGNED NULL,
   name VARCHAR(120) NOT NULL,
   description TEXT NOT NULL,
   sells_summary VARCHAR(255) NOT NULL,
@@ -251,8 +273,10 @@ CREATE TABLE stores (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_stores_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_stores_admin FOREIGN KEY (reviewed_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
+  CONSTRAINT fk_stores_category FOREIGN KEY (category_id) REFERENCES store_categories(id) ON DELETE SET NULL,
   INDEX idx_stores_moderation (moderation_status),
-  INDEX idx_stores_user (user_id)
+  INDEX idx_stores_user (user_id),
+  INDEX idx_stores_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE store_products (
@@ -277,6 +301,28 @@ CREATE TABLE store_products (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Business directory (multiple listings per user; public discovery by location/category; moderated)
+-- Directory categories (admin-managed, seeded with defaults)
+CREATE TABLE directory_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_dc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO directory_categories (name, slug, sort_order, is_active) VALUES
+  ('Educational', 'educational', 1, 1),
+  ('Legal', 'legal', 2, 1),
+  ('Food & Dining', 'food_dining', 3, 1),
+  ('Health & Medical', 'health_medical', 4, 1),
+  ('Home Improvement & Repair', 'home_improvement_repair', 5, 1),
+  ('Beauty & Spas', 'beauty_spas', 6, 1),
+  ('Professional Offices', 'professional_offices', 7, 1),
+  ('Retail Shops', 'retail_shops', 8, 1),
+  ('Other', 'other', 9, 1);
+
 CREATE TABLE directory_entries (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
@@ -284,6 +330,7 @@ CREATE TABLE directory_entries (
   tagline VARCHAR(255) NULL,
   description TEXT NULL,
   category VARCHAR(64) NOT NULL,
+  category_id INT UNSIGNED NULL,
   location_country_code CHAR(2) NOT NULL,
   location_country_name VARCHAR(120) NOT NULL,
   location_us_state VARCHAR(64) NULL,
@@ -304,10 +351,12 @@ CREATE TABLE directory_entries (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_dir_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_dir_admin FOREIGN KEY (reviewed_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
+  CONSTRAINT fk_dir_category FOREIGN KEY (category_id) REFERENCES directory_categories(id) ON DELETE SET NULL,
   INDEX idx_dir_moderation (moderation_status),
   INDEX idx_dir_user (user_id),
   INDEX idx_dir_country (location_country_code),
   INDEX idx_dir_category (category),
+  INDEX idx_dir_category_id (category_id),
   INDEX idx_dir_city (city)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -3,7 +3,18 @@
 declare(strict_types=1);
 
 /**
- * @return array<string, string> slug => label
+ * @return array<int, array{id:int, name:string, slug:string}> active categories sorted by sort_order
+ */
+function ww_directory_categories_db(PDO $pdo): array
+{
+    $st = $pdo->query(
+        'SELECT id, name, slug FROM directory_categories WHERE is_active = 1 ORDER BY sort_order, name'
+    );
+    return $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+}
+
+/**
+ * @return array<string, string> slug => label  (legacy helper kept for admin views that still use slugs)
  */
 function ww_directory_categories(): array
 {
@@ -24,6 +35,13 @@ function ww_directory_categories(): array
 function ww_directory_category_valid(string $slug): bool
 {
     return array_key_exists($slug, ww_directory_categories());
+}
+
+function ww_directory_category_id_valid(PDO $pdo, int $catId): bool
+{
+    $st = $pdo->prepare('SELECT id FROM directory_categories WHERE id = ? AND is_active = 1 LIMIT 1');
+    $st->execute([$catId]);
+    return (bool) $st->fetch();
 }
 
 function ww_directory_user_upload_prefix(int $userId): string
