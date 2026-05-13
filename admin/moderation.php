@@ -40,12 +40,14 @@ $sql = 'SELECT r.id, r.subject_type, r.subject_id, r.reason, r.status, r.created
         s.name AS store_name, s.moderation_status AS store_mod,
         p.name AS product_name, p.moderation_status AS product_mod,
         d.business_name AS directory_name, d.moderation_status AS directory_mod,
+        ru.username AS reported_username, ru.first_name AS reported_first_name, ru.last_name AS reported_last_name, ru.status AS reported_status,
         u.email AS reporter_email, u.username AS reporter_username
         FROM content_reports r
         LEFT JOIN listings l ON r.subject_type = \'listing\' AND l.id = r.subject_id
         LEFT JOIN stores s ON r.subject_type = \'store\' AND s.id = r.subject_id
         LEFT JOIN store_products p ON r.subject_type = \'product\' AND p.id = r.subject_id
         LEFT JOIN directory_entries d ON r.subject_type = \'directory_entry\' AND d.id = r.subject_id
+        LEFT JOIN users ru ON r.subject_type = \'member\' AND ru.id = r.subject_id
         LEFT JOIN users u ON u.id = r.reporter_user_id';
 $params = [];
 if ($filter !== 'all') {
@@ -92,6 +94,9 @@ $subject_link = static function (array $r) use ($base): string {
     if ($type === 'directory_entry') {
         return $pref . 'directory_entry.php?id=' . $sid;
     }
+    if ($type === 'member') {
+        return $pref . 'user.php?id=' . $sid;
+    }
     return '#';
 };
 
@@ -109,6 +114,13 @@ $subject_label = static function (array $r): string {
     if ($type === 'directory_entry') {
         return (string) ($r['directory_name'] ?? '') !== '' ? (string) $r['directory_name'] : 'Directory #' . (int) $r['subject_id'];
     }
+    if ($type === 'member') {
+        $name = trim((string) ($r['reported_first_name'] ?? '') . ' ' . (string) ($r['reported_last_name'] ?? ''));
+        if ($name !== '') {
+            return $name . ' (@' . (string) ($r['reported_username'] ?? '') . ')';
+        }
+        return (string) ($r['reported_username'] ?? '') !== '' ? '@' . (string) $r['reported_username'] : 'Member #' . (int) $r['subject_id'];
+    }
     return $type . ' #' . (int) $r['subject_id'];
 };
 
@@ -125,6 +137,9 @@ $subject_mod = static function (array $r): string {
     }
     if ($type === 'directory_entry') {
         return (string) ($r['directory_mod'] ?? '—');
+    }
+    if ($type === 'member') {
+        return (string) ($r['reported_status'] ?? '—');
     }
     return '—';
 };
@@ -145,7 +160,7 @@ require __DIR__ . '/partials/shell_open.php';
   <div class="border-b border-slate-100 px-6 py-4 space-y-4">
     <div>
       <h2 class="text-base font-semibold text-slate-900">Content reports</h2>
-      <p class="text-sm text-slate-500">Member reports for listings, stores, products, and directory entries. Review the underlying content in admin, then resolve or dismiss here.</p>
+      <p class="text-sm text-slate-500">Member reports for listings, stores, products, directory entries, and members. Review the underlying content in admin, then resolve or dismiss here.</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <?= $chip('open', 'Open', $filter) ?>

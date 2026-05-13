@@ -16,6 +16,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
+import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
@@ -48,6 +49,8 @@ type Store = {
   delivery_notes: string | null;
   seller: { user_id: number; username: string; label: string; avatar_url: string | null };
   products: ProductMini[];
+  review_summary?: ReviewSummary;
+  reviews?: ReviewRow[];
 };
 
 export function StoreDetailPublicScreen({ navigation, route }: Props) {
@@ -199,6 +202,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
           <Text style={styles.meta}>Delivery: {store.delivery_type.replace(/_/g, ' ')}</Text>
           {store.delivery_notes ? <Text style={styles.body}>{store.delivery_notes}</Text> : null}
           <Text style={styles.body}>{store.description}</Text>
+          <ReviewsBlock summary={store.review_summary} reviews={store.reviews} />
 
           <Text style={styles.section}>Products</Text>
           {store.products.length === 0 ? (

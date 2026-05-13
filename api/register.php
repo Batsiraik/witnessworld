@@ -6,6 +6,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
 require_once __DIR__ . '/lib/Mailer.php';
 require_once __DIR__ . '/lib/EmailTemplates.php';
+require_once __DIR__ . '/lib/subscription_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -22,6 +23,7 @@ $dateOfBirth = trim((string) ($in['date_of_birth'] ?? ''));
 $memberType = trim((string) ($in['member_type'] ?? ''));
 $baptismDate = trim((string) ($in['baptism_date'] ?? ''));
 $congregation = trim((string) ($in['congregation'] ?? ''));
+$plan = ww_valid_membership_plan(strtolower(trim((string) ($in['membership_plan'] ?? 'free'))));
 
 $parseDate = static function (string $value): ?DateTimeImmutable {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
@@ -88,10 +90,16 @@ if ($chk2->fetch()) {
 $otp = (string) random_int(100000, 999999);
 $otpExpires = (new DateTimeImmutable())->modify('+30 minutes')->format('Y-m-d H:i:s');
 $hash = password_hash($password, PASSWORD_DEFAULT);
+$trialDays = ww_membership_trial_days($pdo);
+$isPaidPlan = $plan !== 'free';
+$trialStartedAt = $isPaidPlan ? date('Y-m-d H:i:s') : null;
+$trialEndsAt = $isPaidPlan ? (new DateTimeImmutable())->modify('+' . $trialDays . ' days')->format('Y-m-d H:i:s') : null;
+$subscriptionStatus = $isPaidPlan ? 'trialing' : 'free';
+$paymentMethodStatus = $isPaidPlan ? 'missing' : 'none';
 
 $ins = $pdo->prepare(
-    'INSERT INTO users (email, password_hash, first_name, last_name, username, phone, date_of_birth, member_type, baptism_date, congregation, status, registration_otp, registration_otp_expires_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+    'INSERT INTO users (email, password_hash, first_name, last_name, username, phone, date_of_birth, member_type, baptism_date, congregation, membership_plan, subscription_status, trial_started_at, trial_ends_at, stripe_payment_method_status, status, registration_otp, registration_otp_expires_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
 );
 $ins->execute([
     $email,
@@ -104,6 +112,11 @@ $ins->execute([
     $memberType,
     $baptismDate,
     $congregation,
+    $plan,
+    $subscriptionStatus,
+    $trialStartedAt,
+    $trialEndsAt,
+    $paymentMethodStatus,
     'pending_otp',
     $otp,
     $otpExpires,

@@ -17,6 +17,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
+import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
@@ -44,6 +45,8 @@ type Entry = {
   owner_user_id: number;
   owner_label: string;
   owner_username: string;
+  review_summary?: ReviewSummary;
+  reviews?: ReviewRow[];
 };
 
 export function DirectoryDetailScreen({ navigation, route }: Props) {
@@ -244,6 +247,7 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
               <Text style={styles.body}>{entry.hours_text}</Text>
             </>
           ) : null}
+          <ReviewsBlock summary={entry.review_summary} reviews={entry.reviews} />
 
           <Text style={styles.section}>Listed by</Text>
           <Text style={styles.body}>

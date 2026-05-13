@@ -15,6 +15,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $keys = [
         'support_email',
         'support_user_id',
+        'membership_trial_days',
         'smtp_host',
         'smtp_port',
         'smtp_user',
@@ -38,6 +39,7 @@ $get = static function (string $k) use ($pdo): string {
 
 $support = $get('support_email');
 $supportUserId = $get('support_user_id');
+$membershipTrialDays = $get('membership_trial_days') ?: '90';
 $smtpHost = $get('smtp_host');
 $smtpPort = $get('smtp_port') ?: '465';
 $smtpUser = $get('smtp_user');
@@ -93,6 +95,21 @@ require __DIR__ . '/partials/shell_open.php';
         Numeric <code class="rounded bg-slate-100 px-1">users.id</code> for the account that sends in-app replies (create a dedicated verified member, e.g. “Witness Support”). Required for the blue support button and
         <a href="<?= htmlspecialchars($customerSupportHref, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand underline">Customer support</a>.
       </p>
+    </div>
+    <hr class="border-slate-100" />
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Membership trials</p>
+    <div>
+      <label class="text-xs font-semibold text-slate-600">Free trial days for paid plans</label>
+      <input
+        type="number"
+        min="0"
+        max="365"
+        step="1"
+        name="membership_trial_days"
+        value="<?= htmlspecialchars($membershipTrialDays, ENT_QUOTES, 'UTF-8') ?>"
+        class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+      />
+      <p class="mt-1 text-xs text-slate-500">Set this to <strong>90</strong> for launch promo. Change to <strong>30</strong> after launch. New paid signups use this value.</p>
     </div>
     <hr class="border-slate-100" />
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Outgoing mail (OTP &amp; notifications)</p>

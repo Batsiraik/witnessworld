@@ -1,7 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
@@ -22,6 +22,8 @@ type RequestRow = {
   currency: string;
   seller_label: string;
   seller_username: string | null;
+  subject_type: 'product' | 'listing' | 'directory_entry' | 'member';
+  subject_id: number;
   created_at: string;
   tracking_number?: string | null;
 };
@@ -78,6 +80,11 @@ export function CartScreen({ navigation, route }: Props) {
   const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('');
   const [ack, setAck] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<RequestRow | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewBody, setReviewBody] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (isRequestForm) return;
@@ -166,6 +173,40 @@ export function CartScreen({ navigation, route }: Props) {
       await load();
     } catch (e) {
       Alert.alert('Could not update', e instanceof Error ? e.message : 'Try again.');
+    }
+  };
+
+  const openReview = (item: RequestRow) => {
+    setReviewTarget(item);
+    setReviewRating(5);
+    setReviewTitle('');
+    setReviewBody('');
+  };
+
+  const submitReview = async () => {
+    if (!reviewTarget) return;
+    if (!reviewBody.trim()) {
+      Alert.alert('Review required', 'Please write a short review.');
+      return;
+    }
+    setReviewBusy(true);
+    try {
+      await apiPost(
+        'content-review-create.php',
+        {
+          request_id: reviewTarget.id,
+          rating: reviewRating,
+          title: reviewTitle.trim(),
+          body: reviewBody.trim(),
+        },
+        true
+      );
+      Alert.alert('Review posted', 'Thanks for helping other members make safer choices.');
+      setReviewTarget(null);
+    } catch (e) {
+      Alert.alert('Could not post review', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setReviewBusy(false);
     }
   };
 
@@ -273,6 +314,11 @@ export function CartScreen({ navigation, route }: Props) {
                       <Text style={styles.smallBtnText}>Complete</Text>
                     </Pressable>
                   ) : null}
+                  {item.status === 'completed' ? (
+                    <Pressable onPress={() => openReview(item)} style={styles.smallBtn}>
+                      <Text style={styles.smallBtnText}>Leave review</Text>
+                    </Pressable>
+                  ) : null}
                   {!['completed', 'cancelled', 'declined'].includes(item.status) ? (
                     <Pressable onPress={() => void action(item.id, 'dispute')} style={[styles.smallBtn, styles.dangerBtn]}>
                       <Text style={[styles.smallBtnText, styles.dangerText]}>Dispute</Text>
@@ -283,6 +329,34 @@ export function CartScreen({ navigation, route }: Props) {
             )}
           />
         )}
+        <Modal visible={reviewTarget != null} transparent animationType="fade" onRequestClose={() => setReviewTarget(null)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.reviewModal}>
+              <Text style={styles.reviewModalTitle}>Review {reviewTarget?.subject_title}</Text>
+              <View style={styles.starRow}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Pressable key={n} onPress={() => setReviewRating(n)} hitSlop={8}>
+                    <Text style={[styles.starPick, n <= reviewRating && styles.starPickOn]}>★</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput value={reviewTitle} onChangeText={setReviewTitle} placeholder="Title (optional)" style={styles.input} />
+              <TextInput
+                value={reviewBody}
+                onChangeText={setReviewBody}
+                placeholder="Tell other members how it went."
+                multiline
+                style={[styles.input, styles.textArea]}
+              />
+              <View style={styles.modalActions}>
+                <Pressable onPress={() => setReviewTarget(null)} style={[styles.smallBtn, styles.mutedBtn]}>
+                  <Text style={styles.mutedBtnText}>Cancel</Text>
+                </Pressable>
+                <PrimaryButton label="Post review" onPress={() => void submitReview()} loading={reviewBusy} style={styles.reviewSubmit} />
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -326,4 +400,14 @@ const styles = StyleSheet.create({
   smallBtnText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
   dangerBtn: { backgroundColor: 'rgba(220, 38, 38, 0.1)' },
   dangerText: { color: colors.danger },
+  mutedBtn: { backgroundColor: 'rgba(11, 18, 32, 0.06)' },
+  mutedBtnText: { color: colors.textMuted, fontSize: 12, fontWeight: '800' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(11,18,32,0.48)', justifyContent: 'center', padding: 20 },
+  reviewModal: { backgroundColor: colors.white, borderRadius: 22, padding: 18 },
+  reviewModalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+  starRow: { flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 4 },
+  starPick: { fontSize: 30, color: 'rgba(11,18,32,0.16)' },
+  starPickOn: { color: colors.gold },
+  modalActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
+  reviewSubmit: { flex: 1 },
 });

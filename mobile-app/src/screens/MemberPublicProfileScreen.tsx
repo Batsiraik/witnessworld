@@ -2,6 +2,7 @@ import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-n
 import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,10 +10,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet } from '../api/client';
+import { apiGet, apiSubmitReport } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
+import { ReportSheet } from '../components/ReportSheet';
+import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -26,6 +29,8 @@ type Member = {
   username: string;
   label: string;
   avatar_url: string | null;
+  review_summary?: ReviewSummary;
+  reviews?: ReviewRow[];
 };
 
 type ListingMini = {
@@ -58,6 +63,7 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
   const [listings, setListings] = useState<ListingMini[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: member?.label || 'Profile' });
@@ -138,6 +144,14 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
             label={hireLabel}
             onPress={() => stackNavigation.navigate('HireComingSoon', { username: member.username, peerUserId: member.user_id })}
           />
+          <PrimaryButton
+            label="Report member"
+            variant="outline"
+            style={styles.reportBtn}
+            onPress={() => setReportOpen(true)}
+          />
+
+          <ReviewsBlock summary={member.review_summary} reviews={member.reviews} />
 
           <Text style={styles.section}>Marketplace listings</Text>
           {listings.length === 0 ? (
@@ -169,6 +183,15 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
             ))
           )}
         </ScrollView>
+        <ReportSheet
+          visible={reportOpen}
+          title="Report member"
+          onClose={() => setReportOpen(false)}
+          onSubmit={async (reason) => {
+            await apiSubmitReport({ subject_type: 'member', subject_id: member.user_id, reason });
+            Alert.alert('Thanks', 'Your report was sent to moderation.');
+          }}
+        />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -191,6 +214,7 @@ const styles = StyleSheet.create({
   avatarLetter: { fontSize: 36, fontWeight: '800', color: colors.primaryDark },
   name: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
   user: { fontSize: 14, fontWeight: '600', color: colors.textMuted, marginTop: 6 },
+  reportBtn: { marginTop: 10 },
   section: {
     fontSize: 12,
     fontWeight: '800',

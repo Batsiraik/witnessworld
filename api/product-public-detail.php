@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
+require_once __DIR__ . '/lib/review_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -63,6 +64,8 @@ if (!$row) {
     ww_json(['ok' => false, 'error' => 'Product not found'], 404);
 }
 
+$reviewData = ww_reviews_payload($pdo, 'product', $id);
+
 ww_json([
     'ok' => true,
     'product' => [
@@ -92,4 +95,6 @@ ww_json([
         'label' => trim((string) $row['first_name'] . ' ' . (string) $row['last_name']),
         'avatar_url' => $row['avatar_url'] ? (string) $row['avatar_url'] : null,
     ],
+    'review_summary' => $reviewData['summary'],
+    'reviews' => $reviewData['reviews'],
 ]);

@@ -7,7 +7,7 @@ import { apiGet, getStoredToken } from '../api/client';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { GradientBackground } from '../components/GradientBackground';
 import { VerificationLockOverlay } from '../components/VerificationLockOverlay';
-import { DashboardProvider, type DashboardUser } from '../context/DashboardContext';
+import { DashboardProvider, type DashboardUser, type SubscriptionInfo } from '../context/DashboardContext';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import type { RootStackParamList } from '../navigation/types';
@@ -21,6 +21,7 @@ export function DashboardScreen({ navigation }: Props) {
   const [sessionLoadError, setSessionLoadError] = useState(false);
   const [debugError, setDebugError] = useState('');
   const [user, setUser] = useState<DashboardUser | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [supportEmail, setSupportEmail] = useState('info@witnessworldconnect.com');
   const [supportAvailable, setSupportAvailable] = useState(false);
 
@@ -41,6 +42,7 @@ export function DashboardScreen({ navigation }: Props) {
         return;
       }
       setUser(u);
+      setSubscription((data.subscription as SubscriptionInfo | undefined) ?? null);
       if (typeof data.support_email === 'string' && data.support_email) {
         setSupportEmail(data.support_email);
       }
@@ -62,6 +64,7 @@ export function DashboardScreen({ navigation }: Props) {
       const data = await apiGet('me.php', true);
       const u = (data.user as DashboardUser) || null;
       setUser(u);
+      setSubscription((data.subscription as SubscriptionInfo | undefined) ?? null);
       if (typeof data.support_email === 'string' && data.support_email) {
         setSupportEmail(data.support_email);
       }
@@ -122,6 +125,7 @@ export function DashboardScreen({ navigation }: Props) {
       ) : user ? (
         <DashboardProvider
           user={user}
+          subscription={subscription}
           isGuest={false}
           showGuestPrompt={() => {}}
           supportEmail={supportEmail}

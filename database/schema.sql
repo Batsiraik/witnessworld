@@ -31,6 +31,7 @@ CREATE TABLE settings (
 INSERT INTO settings (`key`, `value`) VALUES
   ('support_email', 'info@witnessworldconnect.com'),
   ('support_user_id', '0'),
+  ('membership_trial_days', '90'),
   ('smtp_host', ''),
   ('smtp_port', '465'),
   ('smtp_user', ''),
@@ -65,6 +66,14 @@ CREATE TABLE users (
   baptism_date DATE NOT NULL,
   congregation VARCHAR(180) NOT NULL,
   avatar_url VARCHAR(512) NULL,
+  membership_plan ENUM('free','plus','starter','growth','elite') NOT NULL DEFAULT 'free',
+  subscription_status ENUM('free','trialing','active','grace','past_due','canceled') NOT NULL DEFAULT 'free',
+  trial_started_at DATETIME NULL,
+  trial_ends_at DATETIME NULL,
+  grace_ends_at DATETIME NULL,
+  stripe_customer_id VARCHAR(191) NULL,
+  stripe_subscription_id VARCHAR(191) NULL,
+  stripe_payment_method_status ENUM('none','missing','attached') NOT NULL DEFAULT 'none',
   status ENUM(
     'pending_otp',
     'pending_verification',
@@ -80,6 +89,7 @@ CREATE TABLE users (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_users_status (status),
+  INDEX idx_users_membership (membership_plan, subscription_status),
   INDEX idx_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -509,7 +519,7 @@ CREATE TABLE commerce_request_events (
 CREATE TABLE content_reports (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   reporter_user_id INT UNSIGNED NULL,
-  subject_type ENUM('listing','store','product','directory_entry') NOT NULL,
+  subject_type ENUM('listing','store','product','directory_entry','member') NOT NULL,
   subject_id INT UNSIGNED NOT NULL,
   reason TEXT NOT NULL,
   status ENUM('open','reviewed','dismissed') NOT NULL DEFAULT 'open',
@@ -521,6 +531,28 @@ CREATE TABLE content_reports (
   CONSTRAINT fk_cr_adm FOREIGN KEY (resolved_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
   INDEX idx_cr_status (status),
   INDEX idx_cr_subject (subject_type, subject_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE content_reviews (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  request_id INT UNSIGNED NULL,
+  reviewer_user_id INT UNSIGNED NOT NULL,
+  subject_type ENUM('listing','store','product','directory_entry','member') NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  seller_user_id INT UNSIGNED NULL,
+  rating TINYINT UNSIGNED NOT NULL,
+  title VARCHAR(140) NULL,
+  body TEXT NULL,
+  status ENUM('published','hidden') NOT NULL DEFAULT 'published',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_crev_request FOREIGN KEY (request_id) REFERENCES commerce_requests(id) ON DELETE SET NULL,
+  CONSTRAINT fk_crev_reviewer FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_crev_seller FOREIGN KEY (seller_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_crev_request (request_id),
+  INDEX idx_crev_subject (subject_type, subject_id, status, created_at),
+  INDEX idx_crev_seller (seller_user_id, status),
+  INDEX idx_crev_rating (rating)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Promotional placements (future app surfaces)

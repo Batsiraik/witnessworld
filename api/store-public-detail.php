@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
+require_once __DIR__ . '/lib/review_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -48,6 +49,8 @@ try {
 if (!$row) {
     ww_json(['ok' => false, 'error' => 'Store not found'], 404);
 }
+
+$reviewData = ww_reviews_payload($pdo, 'store', $id);
 
 $storeOwnerId = (int) ($row['user_id'] ?? 0);
 $viewerId = $user ? (int) $user['id'] : 0;
@@ -115,5 +118,7 @@ ww_json([
             'avatar_url' => $row['avatar_url'] ? (string) $row['avatar_url'] : null,
         ],
         'products' => $products,
+        'review_summary' => $reviewData['summary'],
+        'reviews' => $reviewData['reviews'],
     ],
 ]);

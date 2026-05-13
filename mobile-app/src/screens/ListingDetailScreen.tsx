@@ -18,6 +18,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { ListingVideoBlock } from '../components/ListingVideoBlock';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
+import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
@@ -47,6 +48,8 @@ type Listing = {
   location_us_state: string | null;
   created_at?: string;
   seller: { user_id: number; username: string; label: string; avatar_url: string | null };
+  review_summary?: ReviewSummary;
+  reviews?: ReviewRow[];
 };
 
 const PAGE_BG = '#F4F5F7';
@@ -385,6 +388,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
 
           <Text style={styles.subHeading}>Description</Text>
           <Text style={styles.body}>{descriptionText}</Text>
+          <ReviewsBlock summary={listing.review_summary} reviews={listing.reviews} />
 
           {portfolioUrls.length > 0 ? (
             <>

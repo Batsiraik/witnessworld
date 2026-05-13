@@ -26,7 +26,7 @@ if (($user['status'] ?? '') !== 'verified') {
 
 $body = ww_read_json();
 $subjectType = strtolower(trim((string) ($body['subject_type'] ?? '')));
-if (!in_array($subjectType, ['listing', 'store', 'product', 'directory_entry'], true)) {
+if (!in_array($subjectType, ['listing', 'store', 'product', 'directory_entry', 'member'], true)) {
     ww_json(['ok' => false, 'error' => 'Invalid subject_type'], 422);
 }
 
@@ -61,9 +61,16 @@ try {
         );
         $st->execute([$subjectId, 'approved', 'approved']);
         $visible = (bool) $st->fetchColumn();
-    } else {
+    } elseif ($subjectType === 'directory_entry') {
         $st = $pdo->prepare('SELECT id FROM directory_entries WHERE id = ? AND moderation_status = ? LIMIT 1');
         $st->execute([$subjectId, 'approved']);
+        $visible = (bool) $st->fetchColumn();
+    } else {
+        if ($subjectId === $userId) {
+            ww_json(['ok' => false, 'error' => 'You cannot report yourself'], 422);
+        }
+        $st = $pdo->prepare('SELECT id FROM users WHERE id = ? AND status = ? LIMIT 1');
+        $st->execute([$subjectId, 'verified']);
         $visible = (bool) $st->fetchColumn();
     }
 } catch (Throwable) {

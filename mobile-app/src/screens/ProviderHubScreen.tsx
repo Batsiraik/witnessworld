@@ -20,10 +20,20 @@ type HubRow = {
 };
 
 export function ProviderHubScreen({ navigation }: Props) {
-  const { user } = useDashboardContext();
+  const { user, subscription } = useDashboardContext();
   const hasAvatar = Boolean(user?.avatar_url && String(user.avatar_url).trim() !== '');
+  const canPost = subscription?.features?.can_post === true;
+  const planTitle = subscription?.plan_title ?? 'User Member';
+  const trialEnds = subscription?.trial_ends_at ? `Trial ends ${String(subscription.trial_ends_at).slice(0, 10)}` : null;
 
   const requireAvatar = (then: () => void) => {
+    if (!canPost) {
+      Alert.alert('Upgrade required', 'Free members can browse and message, but posting requires a paid plan.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Change plan', onPress: () => navigation.navigate('MembershipPlans') },
+      ]);
+      return;
+    }
     if (!hasAvatar) {
       Alert.alert(
         'Profile photo required',
@@ -66,7 +76,8 @@ export function ProviderHubScreen({ navigation }: Props) {
       icon: 'storefront-outline',
       iconBg: '#DCFCE7',
       iconColor: '#15803D',
-      onPress: () => requireAvatar(() => navigation.navigate('CreateStore', { seed: Date.now() })),
+      onPress: () =>
+        Alert.alert('Storefront add-on', 'Storefront is a separate add-on and is locked for this release.'),
     },
     {
       key: 'directory',
@@ -93,6 +104,16 @@ export function ProviderHubScreen({ navigation }: Props) {
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.planCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.planLabel}>Current plan</Text>
+              <Text style={styles.planTitle}>{planTitle}</Text>
+              {trialEnds ? <Text style={styles.planMeta}>{trialEnds}</Text> : null}
+            </View>
+            <Pressable onPress={() => navigation.navigate('MembershipPlans')} style={styles.planBtn}>
+              <Text style={styles.planBtnText}>Change plan</Text>
+            </Pressable>
+          </View>
           <Text style={styles.pageSub}>What would you like to post?</Text>
 
           {rows.map((row) => (
@@ -129,6 +150,22 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 18,
   },
+  planCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 14,
+    marginBottom: 16,
+  },
+  planLabel: { fontSize: 11, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  planTitle: { marginTop: 3, fontSize: 17, fontWeight: '800', color: colors.text },
+  planMeta: { marginTop: 3, fontSize: 12, fontWeight: '700', color: colors.goldDark },
+  planBtn: { borderRadius: 999, backgroundColor: colors.primarySoft, paddingHorizontal: 12, paddingVertical: 8 },
+  planBtnText: { fontSize: 12, fontWeight: '800', color: colors.primaryDark },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

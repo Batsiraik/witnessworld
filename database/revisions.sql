@@ -279,3 +279,48 @@ CREATE TABLE IF NOT EXISTS commerce_request_events (
   CONSTRAINT fk_creq_event_actor FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_creq_event_request (request_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-13: Reviews/ratings and member reports
+-- ---------------------------------------------------------------------------
+ALTER TABLE content_reports
+  MODIFY subject_type ENUM('listing','store','product','directory_entry','member') NOT NULL;
+
+CREATE TABLE IF NOT EXISTS content_reviews (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  request_id INT UNSIGNED NULL,
+  reviewer_user_id INT UNSIGNED NOT NULL,
+  subject_type ENUM('listing','store','product','directory_entry','member') NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  seller_user_id INT UNSIGNED NULL,
+  rating TINYINT UNSIGNED NOT NULL,
+  title VARCHAR(140) NULL,
+  body TEXT NULL,
+  status ENUM('published','hidden') NOT NULL DEFAULT 'published',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_crev_request FOREIGN KEY (request_id) REFERENCES commerce_requests(id) ON DELETE SET NULL,
+  CONSTRAINT fk_crev_reviewer FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_crev_seller FOREIGN KEY (seller_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_crev_request (request_id),
+  INDEX idx_crev_subject (subject_type, subject_id, status, created_at),
+  INDEX idx_crev_seller (seller_user_id, status),
+  INDEX idx_crev_rating (rating)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-13: Membership plans, trials, and Stripe-ready subscription fields
+-- ---------------------------------------------------------------------------
+INSERT INTO settings (`key`, `value`) VALUES ('membership_trial_days', '90')
+ON DUPLICATE KEY UPDATE `value` = `value`;
+
+ALTER TABLE users
+  ADD COLUMN membership_plan ENUM('free','plus','starter','growth','elite') NOT NULL DEFAULT 'free' AFTER avatar_url,
+  ADD COLUMN subscription_status ENUM('free','trialing','active','grace','past_due','canceled') NOT NULL DEFAULT 'free' AFTER membership_plan,
+  ADD COLUMN trial_started_at DATETIME NULL AFTER subscription_status,
+  ADD COLUMN trial_ends_at DATETIME NULL AFTER trial_started_at,
+  ADD COLUMN grace_ends_at DATETIME NULL AFTER trial_ends_at,
+  ADD COLUMN stripe_customer_id VARCHAR(191) NULL AFTER grace_ends_at,
+  ADD COLUMN stripe_subscription_id VARCHAR(191) NULL AFTER stripe_customer_id,
+  ADD COLUMN stripe_payment_method_status ENUM('none','missing','attached') NOT NULL DEFAULT 'none' AFTER stripe_subscription_id,
+  ADD INDEX idx_users_membership (membership_plan, subscription_status);

@@ -21,6 +21,7 @@ export type HomeStackParamList = {
       }
     | undefined;
   Favorites: undefined;
+  MembershipPlans: undefined;
   Profile: undefined;
   ProviderHub: undefined;
   CreateListing: { listingType?: 'classified' | 'service' | 'community'; seed?: number };

@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
 require_once __DIR__ . '/lib/store_helpers.php';
+require_once __DIR__ . '/lib/subscription_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -24,6 +25,7 @@ if (!$user) {
 if (($user['status'] ?? '') !== 'verified') {
     ww_json(['ok' => false, 'error' => 'Account must be verified'], 403);
 }
+ww_subscription_require_posting($pdo, $user);
 
 $userId = (int) $user['id'];
 $body = ww_read_json();

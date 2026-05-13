@@ -11,10 +11,33 @@ export type DashboardUser = {
   username?: string;
   status?: string;
   avatar_url?: string | null;
+  membership_plan?: string;
+  subscription_status?: string;
+  trial_ends_at?: string | null;
+};
+
+export type SubscriptionInfo = {
+  plan: string;
+  status: string;
+  plan_title: string;
+  trial_ends_at?: string | null;
+  grace_ends_at?: string | null;
+  stripe_payment_method_status?: string;
+  features?: {
+    can_post?: boolean;
+    max_active_ads?: number;
+    featured_days?: number;
+    top_ad_days?: number;
+    storefront?: boolean;
+    [key: string]: unknown;
+  };
+  plans?: Array<Record<string, unknown>>;
+  trial_days?: number;
 };
 
 type Ctx = {
   user: DashboardUser | null;
+  subscription: SubscriptionInfo | null;
   /** True when browsing without a logged-in account */
   isGuest: boolean;
   /** Prompt to sign in or register (guest-only actions) */
@@ -30,6 +53,7 @@ const DashboardContext = createContext<Ctx | null>(null);
 export function DashboardProvider({
   children,
   user,
+  subscription,
   isGuest,
   showGuestPrompt,
   supportEmail,
@@ -39,6 +63,7 @@ export function DashboardProvider({
 }: {
   children: ReactNode;
   user: DashboardUser | null;
+  subscription: SubscriptionInfo | null;
   isGuest: boolean;
   showGuestPrompt: () => void;
   supportEmail: string;
@@ -50,6 +75,7 @@ export function DashboardProvider({
     <DashboardContext.Provider
       value={{
         user,
+        subscription,
         isGuest,
         showGuestPrompt,
         supportEmail,

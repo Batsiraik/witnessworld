@@ -16,6 +16,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
+import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
@@ -43,6 +44,8 @@ type Payload = {
     delivery_type: string;
   };
   seller: { user_id: number; username: string; label: string; avatar_url: string | null };
+  review_summary?: ReviewSummary;
+  reviews?: ReviewRow[];
 };
 
 export function ProductDetailScreen({ navigation, route }: Props) {
@@ -78,7 +81,13 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           setErr('Not found');
           return;
         }
-        setRow({ product, store, seller });
+        setRow({
+          product,
+          store,
+          seller,
+          review_summary: j.review_summary as ReviewSummary | undefined,
+          reviews: Array.isArray(j.reviews) ? (j.reviews as ReviewRow[]) : [],
+        });
       } catch (e) {
         if (!cancelled) setErr(e instanceof Error ? e.message : 'Error');
       } finally {
@@ -237,6 +246,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           <Text style={styles.price}>
             {product.currency} {product.price_amount}
           </Text>
+          <ReviewsBlock summary={row.review_summary} reviews={row.reviews} />
 
           <Pressable onPress={openStore} style={({ pressed }) => [styles.storeCard, pressed && styles.pressed]}>
             <RemoteImage url={store.logo_url} style={styles.storeLogo} contentFit="cover" />

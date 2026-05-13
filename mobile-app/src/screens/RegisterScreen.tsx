@@ -25,6 +25,14 @@ import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
+const SIGNUP_PLANS = [
+  { key: 'free', title: 'Free', price: '$0', note: 'Browse and message' },
+  { key: 'plus', title: 'Plus', price: '$10/mo', note: '1 regular ad after trial' },
+  { key: 'starter', title: 'Starter', price: '$25/mo', note: '2 active ads' },
+  { key: 'growth', title: 'Growth', price: '$50/mo', note: 'Most Popular' },
+  { key: 'elite', title: 'Elite', price: '$150/mo', note: 'Done-For-You' },
+] as const;
+
 function parseDate(value: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
   if (!m) return null;
@@ -67,6 +75,7 @@ export function RegisterScreen({ navigation }: Props) {
   const [memberType, setMemberType] = useState('');
   const [baptismDate, setBaptismDate] = useState('');
   const [congregation, setCongregation] = useState('');
+  const [membershipPlan, setMembershipPlan] = useState<(typeof SIGNUP_PLANS)[number]['key']>('free');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [agreed, setAgreed] = useState(false);
@@ -114,6 +123,7 @@ export function RegisterScreen({ navigation }: Props) {
           member_type: memberType.trim(),
           baptism_date: baptismDate.trim(),
           congregation: congregation.trim(),
+          membership_plan: membershipPlan,
         },
         false
       );
@@ -234,6 +244,31 @@ export function RegisterScreen({ navigation }: Props) {
                 error={errors.congregation}
               />
 
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Membership plan</Text>
+                <Text style={styles.sectionHint}>
+                  Free needs no card. Paid plans start a trial now; Stripe card collection will be connected before auto-charge.
+                </Text>
+              </View>
+              <View style={styles.planGrid}>
+                {SIGNUP_PLANS.map((plan) => {
+                  const active = membershipPlan === plan.key;
+                  return (
+                    <Pressable
+                      key={plan.key}
+                      onPress={() => setMembershipPlan(plan.key)}
+                      style={[styles.planChip, active && styles.planChipOn]}
+                    >
+                      <Text style={[styles.planName, active && styles.planNameOn]}>{plan.title}</Text>
+                      <Text style={[styles.planPrice, active && styles.planPriceOn]}>{plan.price}</Text>
+                      <Text style={[styles.planNote, active && styles.planNoteOn]} numberOfLines={2}>
+                        {plan.note}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
               <AppPasswordField
                 label="Password"
                 value={password}
@@ -301,6 +336,21 @@ const styles = StyleSheet.create({
   section: { marginTop: 2, marginBottom: 14 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
   sectionHint: { fontSize: 13, lineHeight: 19, color: colors.textMuted, fontWeight: '500' },
+  planGrid: { gap: 10, marginBottom: 18 },
+  planChip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    padding: 13,
+  },
+  planChipOn: { borderColor: colors.primaryDark, backgroundColor: colors.primarySoft },
+  planName: { fontSize: 15, fontWeight: '800', color: colors.text },
+  planNameOn: { color: colors.primaryDark },
+  planPrice: { marginTop: 2, fontSize: 13, fontWeight: '800', color: colors.goldDark },
+  planPriceOn: { color: colors.primaryDark },
+  planNote: { marginTop: 3, fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  planNoteOn: { color: colors.text },
   agreeRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8, marginBottom: 20 },
   checkbox: {
     width: 22,

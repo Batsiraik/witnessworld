@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/lib/review_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -29,6 +30,8 @@ try {
 if (!$peer || ($peer['status'] ?? '') !== 'verified') {
     ww_json(['ok' => false, 'error' => 'Profile not found'], 404);
 }
+
+$reviewData = ww_reviews_payload($pdo, 'member', $targetId);
 
 $fn = trim((string) ($peer['first_name'] ?? ''));
 $ln = trim((string) ($peer['last_name'] ?? ''));
@@ -69,6 +72,8 @@ ww_json([
         'username' => (string) $peer['username'],
         'label' => $label,
         'avatar_url' => $peer['avatar_url'] !== null && (string) $peer['avatar_url'] !== '' ? (string) $peer['avatar_url'] : null,
+        'review_summary' => $reviewData['summary'],
+        'reviews' => $reviewData['reviews'],
     ],
     'listings' => $listings,
 ]);

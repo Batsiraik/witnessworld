@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/lib/review_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -34,6 +35,8 @@ if (!$row) {
     ww_json(['ok' => false, 'error' => 'Business not found'], 404);
 }
 
+$reviewData = ww_reviews_payload($pdo, 'directory_entry', $id);
+
 ww_json([
     'ok' => true,
     'entry' => [
@@ -57,5 +60,7 @@ ww_json([
         'owner_user_id' => (int) $row['user_id'],
         'owner_label' => trim((string) $row['first_name'] . ' ' . (string) $row['last_name']),
         'owner_username' => (string) $row['username'],
+        'review_summary' => $reviewData['summary'],
+        'reviews' => $reviewData['reviews'],
     ],
 ]);

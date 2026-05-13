@@ -10,6 +10,7 @@ import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ListingDetailScreen } from '../screens/ListingDetailScreen';
 import { MemberPublicProfileScreen } from '../screens/MemberPublicProfileScreen';
+import { MembershipPlansScreen } from '../screens/MembershipPlansScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { ProfileSettingsScreen } from '../screens/ProfileSettingsScreen';
 import { CreateDirectoryEntryScreen } from '../screens/CreateDirectoryEntryScreen';
@@ -72,6 +73,7 @@ export function HomeStackNavigator() {
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product' }} />
       <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart' }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favorites' }} />
+      <Stack.Screen name="MembershipPlans" component={MembershipPlansScreen} options={{ title: 'Membership plans' }} />
       <Stack.Screen name="Profile" component={ProfileSettingsScreen} options={{ title: 'Profile & settings' }} />
       <Stack.Screen
         name="ProviderHub"
