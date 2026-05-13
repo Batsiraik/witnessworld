@@ -314,6 +314,14 @@ CREATE TABLE IF NOT EXISTS content_reviews (
 INSERT INTO settings (`key`, `value`) VALUES ('membership_trial_days', '90')
 ON DUPLICATE KEY UPDATE `value` = `value`;
 
+INSERT INTO settings (`key`, `value`) VALUES
+  ('stripe_publishable_key', ''),
+  ('stripe_price_plus', ''),
+  ('stripe_price_starter', ''),
+  ('stripe_price_growth', ''),
+  ('stripe_price_elite', '')
+ON DUPLICATE KEY UPDATE `value` = `value`;
+
 ALTER TABLE users
   ADD COLUMN membership_plan ENUM('free','plus','starter','growth','elite') NOT NULL DEFAULT 'free' AFTER avatar_url,
   ADD COLUMN subscription_status ENUM('free','trialing','active','grace','past_due','canceled') NOT NULL DEFAULT 'free' AFTER membership_plan,

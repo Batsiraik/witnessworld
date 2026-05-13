@@ -16,6 +16,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         'support_email',
         'support_user_id',
         'membership_trial_days',
+        'stripe_publishable_key',
+        'stripe_price_plus',
+        'stripe_price_starter',
+        'stripe_price_growth',
+        'stripe_price_elite',
         'smtp_host',
         'smtp_port',
         'smtp_user',
@@ -40,6 +45,11 @@ $get = static function (string $k) use ($pdo): string {
 $support = $get('support_email');
 $supportUserId = $get('support_user_id');
 $membershipTrialDays = $get('membership_trial_days') ?: '90';
+$stripePublishableKey = $get('stripe_publishable_key');
+$stripePricePlus = $get('stripe_price_plus');
+$stripePriceStarter = $get('stripe_price_starter');
+$stripePriceGrowth = $get('stripe_price_growth');
+$stripePriceElite = $get('stripe_price_elite');
 $smtpHost = $get('smtp_host');
 $smtpPort = $get('smtp_port') ?: '465';
 $smtpUser = $get('smtp_user');
@@ -111,6 +121,39 @@ require __DIR__ . '/partials/shell_open.php';
       />
       <p class="mt-1 text-xs text-slate-500">Set this to <strong>90</strong> for launch promo. Change to <strong>30</strong> after launch. New paid signups use this value.</p>
     </div>
+    <hr class="border-slate-100" />
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Stripe billing</p>
+    <div>
+      <label class="text-xs font-semibold text-slate-600">Stripe publishable key</label>
+      <input
+        name="stripe_publishable_key"
+        value="<?= htmlspecialchars($stripePublishableKey, ENT_QUOTES, 'UTF-8') ?>"
+        class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        placeholder="pk_test_..."
+      />
+      <p class="mt-1 text-xs text-slate-500">Safe to expose to the app. The secret key belongs only in <code class="rounded bg-slate-100 px-1">api/config.local.php</code>.</p>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="text-xs font-semibold text-slate-600">Plus Stripe Price ID</label>
+        <input name="stripe_price_plus" value="<?= htmlspecialchars($stripePricePlus, ENT_QUOTES, 'UTF-8') ?>" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="price_..." />
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-600">Starter Stripe Price ID</label>
+        <input name="stripe_price_starter" value="<?= htmlspecialchars($stripePriceStarter, ENT_QUOTES, 'UTF-8') ?>" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="price_..." />
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-600">Growth Stripe Price ID</label>
+        <input name="stripe_price_growth" value="<?= htmlspecialchars($stripePriceGrowth, ENT_QUOTES, 'UTF-8') ?>" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="price_..." />
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-600">Elite Stripe Price ID</label>
+        <input name="stripe_price_elite" value="<?= htmlspecialchars($stripePriceElite, ENT_QUOTES, 'UTF-8') ?>" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="price_..." />
+      </div>
+    </div>
+    <p class="text-xs leading-relaxed text-slate-500">
+      Stripe subscriptions need recurring Price IDs. Create one monthly recurring price for each paid plan in Stripe, then paste the IDs here.
+    </p>
     <hr class="border-slate-100" />
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Outgoing mail (OTP &amp; notifications)</p>
     <div>

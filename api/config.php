@@ -25,3 +25,14 @@ define('WW_API_DEBUG', false);
 
 /** Session token lifetime for mobile app (days). Users stay signed in until expiry or explicit logout. */
 define('WW_TOKEN_DAYS', 365);
+
+/**
+ * Optional local/private API config.
+ *
+ * Put server-only secrets here (for example WW_STRIPE_SECRET_KEY) and never commit it:
+ * api/config.local.php
+ */
+$wwLocalConfig = __DIR__ . '/config.local.php';
+if (is_file($wwLocalConfig)) {
+    require_once $wwLocalConfig;
+}

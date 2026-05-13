@@ -1,5 +1,6 @@
 # Admin — do not commit database credentials
 admin/includes/config.local.php
+api/config.local.php
 
 # OS / editor
 Thumbs.db
