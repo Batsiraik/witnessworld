@@ -73,6 +73,7 @@ export function ChatScreen({ route, navigation }: Props) {
   const openHire = () => {
     stackNavigation.navigate('HireComingSoon', {
       username: peerUsername?.trim() || peerName?.trim(),
+      peerUserId,
     });
   };
   const headerHeight = useHeaderHeight();

@@ -224,7 +224,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
                       )}
                       {canAddToCart ? (
                         <Pressable
-                          onPress={() => navigation.push('Cart')}
+                          onPress={() => navigation.push('Cart', { subjectType: 'product', subjectId: p.id })}
                           style={({ pressed }) => [styles.productCartBtn, pressed && styles.pCartBtnPressed]}
                           accessibilityRole="button"
                           accessibilityLabel="Add to cart"

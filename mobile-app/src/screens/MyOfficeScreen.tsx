@@ -319,6 +319,19 @@ export function MyOfficeScreen({ navigation }: Props) {
 
   const listHeader = (
     <>
+      <Pressable
+        onPress={() => navigation.navigate('SalesDashboard')}
+        style={({ pressed }) => [styles.salesCard, pressed && styles.pressed]}
+      >
+        <View style={styles.salesIcon}>
+          <Ionicons name="receipt-outline" size={22} color={colors.goldDark} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.salesTitle}>Sales & hire requests</Text>
+          <Text style={styles.salesText}>Review new orders, shipping details, service requests, and disputes.</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </Pressable>
       {directoryHeader}
       {storeHeader}
     </>
@@ -431,6 +444,27 @@ const styles = StyleSheet.create({
   listPad: { paddingHorizontal: 20, paddingBottom: 24, gap: 12 },
   emptyGrow: { flexGrow: 1, paddingHorizontal: 20, justifyContent: 'center' },
   empty: { textAlign: 'center', color: colors.textMuted, fontSize: 15, fontWeight: '500' },
+  salesCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 18,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 14,
+    marginBottom: 14,
+  },
+  salesIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: colors.goldSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  salesTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
+  salesText: { marginTop: 3, fontSize: 12, lineHeight: 17, fontWeight: '600', color: colors.textMuted },
   card: {
     borderRadius: 18,
     backgroundColor: colors.card,

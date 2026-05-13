@@ -134,7 +134,10 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
             <Text style={styles.user}>@{member.username}</Text>
           </View>
 
-          <PrimaryButton label={hireLabel} onPress={() => stackNavigation.navigate('HireComingSoon', { username: member.username })} />
+          <PrimaryButton
+            label={hireLabel}
+            onPress={() => stackNavigation.navigate('HireComingSoon', { username: member.username, peerUserId: member.user_id })}
+          />
 
           <Text style={styles.section}>Marketplace listings</Text>
           {listings.length === 0 ? (

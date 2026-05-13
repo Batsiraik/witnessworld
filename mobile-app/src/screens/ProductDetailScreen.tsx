@@ -146,7 +146,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           </Pressable>
           {canAddToCart === true ? (
             <Pressable
-              onPress={() => navigation.push('Cart')}
+              onPress={() => navigation.push('Cart', { subjectType: 'product', subjectId: product.id })}
               style={headerCartStyles.wrap}
               hitSlop={12}
               accessibilityRole="button"

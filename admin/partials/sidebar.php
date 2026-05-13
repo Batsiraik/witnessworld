@@ -17,6 +17,7 @@ $home = $base === '' ? 'index.php' : $base . '/index.php';
 $users = $base === '' ? 'users.php' : $base . '/users.php';
 $settings = $base === '' ? 'settings.php' : $base . '/settings.php';
 $listings = $base === '' ? 'listings.php' : $base . '/listings.php';
+$commerceRequests = $base === '' ? 'commerce_requests.php' : $base . '/commerce_requests.php';
 $stores = $base === '' ? 'stores.php' : $base . '/stores.php';
 $storeProducts = $base === '' ? 'store_products.php' : $base . '/store_products.php';
 $directoryAdmin = $base === '' ? 'directory.php' : $base . '/directory.php';
@@ -70,6 +71,13 @@ $isSuper = !empty($cu['is_super']);
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
       </span>
       Listings & gigs
+    </a>
+    <a href="<?= htmlspecialchars($commerceRequests, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('commerce_requests'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 4h10a2 2 0 012 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 012-2z"/></svg>
+      </span>
+      Commerce requests
     </a>
     <a href="<?= htmlspecialchars($stores, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('stores'), ENT_QUOTES, 'UTF-8') ?>">

@@ -14,7 +14,12 @@ export type HomeStackParamList = {
   MemberPublicProfile: { userId: number; listingViaHomeTab?: boolean };
   StoreDetailPublic: { id: number };
   ProductDetail: { id: number };
-  Cart: undefined;
+  Cart:
+    | {
+        subjectType?: 'product' | 'listing' | 'directory_entry' | 'member';
+        subjectId?: number;
+      }
+    | undefined;
   Favorites: undefined;
   Profile: undefined;
   ProviderHub: undefined;
@@ -43,6 +48,7 @@ export type OfficeStackParamList = {
   EditStore: { storeId: number };
   EditProduct: { storeId: number; productId?: number };
   EditDirectoryEntry: { entryId: number };
+  SalesDashboard: undefined;
 };
 
 /** Discover tab — browse entry points (detail screens live on Home stack). */
@@ -82,7 +88,7 @@ export type RootStackParamList = {
   /** Tab shell lives under Dashboard; use nested navigate for tab routes (e.g. OfficeTab, HomeTab). */
   Dashboard: NavigatorScreenParams<MainTabParamList> | undefined;
   SupportChat: { conversationId?: number };
-  HireComingSoon: { username?: string };
+  HireComingSoon: { username?: string; peerUserId?: number };
 };
 
 export type RootNav = NativeStackNavigationProp<RootStackParamList>;

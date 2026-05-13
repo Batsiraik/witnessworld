@@ -4,6 +4,7 @@ import { CreateListingScreen } from '../screens/CreateListingScreen';
 import { EditProductScreen } from '../screens/EditProductScreen';
 import { EditStoreScreen } from '../screens/EditStoreScreen';
 import { MyOfficeScreen } from '../screens/MyOfficeScreen';
+import { SalesDashboardScreen } from '../screens/SalesDashboardScreen';
 import { StoreManageScreen } from '../screens/StoreManageScreen';
 import { colors } from '../theme/colors';
 import type { OfficeStackParamList } from './types';
@@ -22,6 +23,7 @@ export function OfficeStackNavigator() {
       }}
     >
       <Stack.Screen name="MyOffice" component={MyOfficeScreen} options={{ title: 'My office' }} />
+      <Stack.Screen name="SalesDashboard" component={SalesDashboardScreen} options={{ title: 'Sales dashboard' }} />
       <Stack.Screen name="EditListing" component={CreateListingScreen} options={{ title: 'Edit listing' }} />
       <Stack.Screen name="StoreManage" component={StoreManageScreen} options={{ title: 'Manage store' }} />
       <Stack.Screen name="EditStore" component={EditStoreScreen} options={{ title: 'Edit storefront' }} />

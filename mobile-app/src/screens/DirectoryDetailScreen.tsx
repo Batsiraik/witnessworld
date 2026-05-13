@@ -48,7 +48,7 @@ type Entry = {
 
 export function DirectoryDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user, stackNavigation, isGuest, showGuestPrompt } = useDashboardContext();
+  const { user, isGuest, showGuestPrompt } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [entry, setEntry] = useState<Entry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -265,9 +265,7 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
             <PrimaryButton
               label={`Hire (${entry.owner_username})`}
               variant="outline"
-              onPress={() =>
-                stackNavigation.navigate('HireComingSoon', { username: entry.owner_username })
-              }
+              onPress={() => navigation.push('Cart', { subjectType: 'directory_entry', subjectId: entry.id })}
             />
           ) : null}
           <PrimaryButton

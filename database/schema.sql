@@ -450,6 +450,61 @@ CREATE TABLE user_favorites (
   INDEX idx_uf_subject (subject_type, subject_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Buyer requests / seller sales workflow (V1: request first, pay later)
+CREATE TABLE commerce_requests (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  buyer_user_id INT UNSIGNED NOT NULL,
+  seller_user_id INT UNSIGNED NOT NULL,
+  subject_type ENUM('product','listing','directory_entry','member') NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  subject_title VARCHAR(255) NOT NULL,
+  subject_image_url VARCHAR(500) NULL,
+  request_type ENUM('product_order','service_hire','local_meetup','directory_hire','member_hire') NOT NULL,
+  status ENUM('new','accepted','declined','cancelled','in_progress','ready','shipped','delivered','completed','disputed') NOT NULL DEFAULT 'new',
+  quantity INT UNSIGNED NOT NULL DEFAULT 1,
+  unit_price DECIMAL(12,2) NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  buyer_name VARCHAR(160) NOT NULL,
+  buyer_email VARCHAR(190) NULL,
+  buyer_phone VARCHAR(64) NULL,
+  shipping_name VARCHAR(160) NULL,
+  shipping_address1 VARCHAR(190) NULL,
+  shipping_address2 VARCHAR(190) NULL,
+  shipping_city VARCHAR(120) NULL,
+  shipping_state VARCHAR(120) NULL,
+  shipping_postal_code VARCHAR(40) NULL,
+  shipping_country VARCHAR(120) NULL,
+  project_brief TEXT NULL,
+  preferred_contact VARCHAR(32) NULL,
+  anti_scam_ack TINYINT(1) NOT NULL DEFAULT 0,
+  seller_note TEXT NULL,
+  tracking_number VARCHAR(120) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  accepted_at DATETIME NULL,
+  shipped_at DATETIME NULL,
+  delivered_at DATETIME NULL,
+  completed_at DATETIME NULL,
+  CONSTRAINT fk_commerce_buyer FOREIGN KEY (buyer_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_commerce_seller FOREIGN KEY (seller_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_commerce_buyer (buyer_user_id, created_at),
+  INDEX idx_commerce_seller (seller_user_id, status, created_at),
+  INDEX idx_commerce_subject (subject_type, subject_id),
+  INDEX idx_commerce_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE commerce_request_events (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  request_id INT UNSIGNED NOT NULL,
+  actor_user_id INT UNSIGNED NULL,
+  event_type VARCHAR(64) NOT NULL,
+  note TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_creq_event_request FOREIGN KEY (request_id) REFERENCES commerce_requests(id) ON DELETE CASCADE,
+  CONSTRAINT fk_creq_event_actor FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_creq_event_request (request_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- User reports (listings, stores, products, directory)
 CREATE TABLE content_reports (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

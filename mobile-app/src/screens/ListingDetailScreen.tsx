@@ -77,7 +77,7 @@ function humanizeListingType(t: string): string {
 
 export function ListingDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user, stackNavigation, isGuest, showGuestPrompt } = useDashboardContext();
+  const { user, isGuest, showGuestPrompt } = useDashboardContext();
   const myId = user?.id ?? 0;
   const insets = useSafeAreaInsets();
   const [listing, setListing] = useState<Listing | null>(null);
@@ -453,7 +453,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
                       showGuestPrompt();
                       return;
                     }
-                    stackNavigation.navigate('HireComingSoon', { username: listing.seller.username });
+                    navigation.navigate('Cart', { subjectType: 'listing', subjectId: listing.id });
                   }}
                   style={({ pressed }) => [styles.footerLinkHit, pressed && styles.pressed]}
                 >
