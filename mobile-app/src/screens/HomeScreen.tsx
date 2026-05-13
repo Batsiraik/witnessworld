@@ -85,7 +85,7 @@ function normalizeFeed(raw: unknown): Feed {
   };
 }
 
-type TopCategoryRoute = 'Classifieds' | 'Services' | 'Directory' | 'Stores';
+type TopCategoryRoute = 'Classifieds' | 'Services' | 'Community' | 'Directory' | 'Stores';
 
 const TOP_CATEGORIES: {
   label: string;
@@ -96,6 +96,7 @@ const TOP_CATEGORIES: {
 }[] = [
   { label: 'Marketplace', route: 'Classifieds', icon: 'bag-handle-outline', bg: '#E8F4FD', iconColor: '#1D4ED8' },
   { label: 'Services', route: 'Services', icon: 'construct-outline', bg: '#F3E8FF', iconColor: '#7C3AED' },
+  { label: 'Community', route: 'Community', icon: 'people-outline', bg: '#FEF3C7', iconColor: '#B45309' },
   { label: 'Businesses', route: 'Directory', icon: 'business-outline', bg: '#DCFCE7', iconColor: '#15803D' },
   { label: 'Stores', route: 'Stores', icon: 'storefront-outline', bg: '#FFEDD5', iconColor: '#C2410C' },
 ];
@@ -107,6 +108,9 @@ function navigateTopCategory(navigation: Props['navigation'], route: TopCategory
       break;
     case 'Services':
       navigation.navigate('Services');
+      break;
+    case 'Community':
+      navigation.navigate('Community');
       break;
     case 'Directory':
       navigation.navigate('Directory');

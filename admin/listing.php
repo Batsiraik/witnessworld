@@ -69,12 +69,13 @@ $listing = null;
 try {
     $st = $pdo->prepare(
         'SELECT l.*, u.email, u.first_name, u.last_name, u.username, u.status AS user_status,
-                a.name AS reviewer_name, COALESCE(mc.name, sc.name) AS category_name
+                a.name AS reviewer_name, COALESCE(mc.name, sc.name, cc.name) AS category_name
          FROM listings l
          INNER JOIN users u ON u.id = l.user_id
          LEFT JOIN admins a ON a.id = l.reviewed_by_admin_id
          LEFT JOIN marketplace_categories mc ON mc.id = l.category_id AND l.listing_type = \'classified\'
          LEFT JOIN service_categories sc ON sc.id = l.category_id AND l.listing_type = \'service\'
+         LEFT JOIN community_categories cc ON cc.id = l.category_id AND l.listing_type = \'community\'
          WHERE l.id = ? LIMIT 1'
     );
     $st->execute([$id]);

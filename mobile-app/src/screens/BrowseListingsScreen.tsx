@@ -21,7 +21,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'Services' | 'Classifieds'>;
+type Props = NativeStackScreenProps<HomeStackParamList, 'Services' | 'Classifieds' | 'Community'>;
 
 type MktCategory = { id: number; name: string; slug: string };
 
@@ -43,8 +43,9 @@ type Row = {
 
 export function BrowseListingsScreen({ navigation, route }: Props) {
   const tileW = useGridTileWidth();
-  const listingType = route.name === 'Services' ? 'service' : 'classified';
+  const listingType = route.name === 'Services' ? 'service' : route.name === 'Community' ? 'community' : 'classified';
   const isClassified = listingType === 'classified';
+  const isCommunity = listingType === 'community';
   const [categories, setCategories] = useState<MktCategory[]>([]);
   const [selectedCat, setSelectedCat] = useState<MktCategory | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<LocCountry | null>(null);
@@ -72,7 +73,12 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    const endpoint = isClassified ? 'marketplace-categories.php' : 'service-categories.php';
+    const catEndpoints: Record<string, string> = {
+      classified: 'marketplace-categories.php',
+      service: 'service-categories.php',
+      community: 'community-categories.php',
+    };
+    const endpoint = catEndpoints[listingType] ?? 'marketplace-categories.php';
     (async () => {
       try {
         const data = await apiGet(endpoint, false);
@@ -81,7 +87,7 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
       } catch { /* optional */ }
     })();
     return () => { cancelled = true; };
-  }, [isClassified]);
+  }, [listingType]);
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -359,5 +365,9 @@ export function BrowseClassifiedsScreen(props: NativeStackScreenProps<HomeStackP
 }
 
 export function BrowseServicesScreen(props: NativeStackScreenProps<HomeStackParamList, 'Services'>) {
+  return <BrowseListingsScreen {...props} />;
+}
+
+export function BrowseCommunityScreen(props: NativeStackScreenProps<HomeStackParamList, 'Community'>) {
   return <BrowseListingsScreen {...props} />;
 }

@@ -171,3 +171,30 @@ ALTER TABLE directory_entries
   ADD COLUMN category_id INT UNSIGNED NULL AFTER category,
   ADD INDEX idx_dir_category_id (category_id),
   ADD CONSTRAINT fk_dir_category FOREIGN KEY (category_id) REFERENCES directory_categories(id) ON DELETE SET NULL;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-12: Community classifieds categories (5th module)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS community_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_cc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO community_categories (name, slug, sort_order, is_active) VALUES
+  ('Careers / Jobs', 'careers_jobs', 1, 1),
+  ('Roommates & Housing', 'roommates_housing', 2, 1),
+  ('Childcare & Babysitting', 'childcare_babysitting', 3, 1),
+  ('Pet Sitting & Dog Walking', 'pet_sitting_dog_walking', 4, 1),
+  ('Tutoring & Lessons', 'tutoring_lessons', 5, 1),
+  ('Travels / Events', 'travels_events', 6, 1),
+  ('Healthcare', 'healthcare', 7, 1),
+  ('Real Estate', 'real_estate', 8, 1),
+  ('Vacation Homes', 'vacation_homes', 9, 1),
+  ('Transportation', 'transportation', 10, 1),
+  ('Classes', 'classes', 11, 1),
+  ('Other', 'other', 12, 1);

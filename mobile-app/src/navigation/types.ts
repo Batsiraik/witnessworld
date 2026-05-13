@@ -5,6 +5,7 @@ export type HomeStackParamList = {
   Home: undefined;
   Classifieds: { initialQuery?: string } | undefined;
   Services: { initialQuery?: string } | undefined;
+  Community: { initialQuery?: string } | undefined;
   Stores: undefined;
   ProductsBrowse: undefined;
   Directory: undefined;
@@ -16,7 +17,7 @@ export type HomeStackParamList = {
   Cart: undefined;
   Profile: undefined;
   ProviderHub: undefined;
-  CreateListing: { listingType?: 'classified' | 'service'; seed?: number };
+  CreateListing: { listingType?: 'classified' | 'service' | 'community'; seed?: number };
   CreateStore: { seed?: number };
   CreateDirectoryEntry: { seed?: number };
 };

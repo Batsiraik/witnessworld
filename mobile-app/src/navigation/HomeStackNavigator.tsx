@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet } from 'react-native';
 import { homeStackSafeGoBack, type HomeStackBackNavigation } from './homeStackSafeBack';
-import { BrowseClassifiedsScreen, BrowseServicesScreen } from '../screens/BrowseListingsScreen';
+import { BrowseClassifiedsScreen, BrowseCommunityScreen, BrowseServicesScreen } from '../screens/BrowseListingsScreen';
 import { BrowseProductsScreen } from '../screens/BrowseProductsScreen';
 import { BrowseStoresScreen } from '../screens/BrowseStoresScreen';
 import { CreateListingScreen } from '../screens/CreateListingScreen';
@@ -56,6 +56,7 @@ export function HomeStackNavigator() {
         options={{ title: 'Classified marketplace' }}
       />
       <Stack.Screen name="Services" component={BrowseServicesScreen} options={{ title: 'Service marketplace' }} />
+      <Stack.Screen name="Community" component={BrowseCommunityScreen} options={{ title: 'Community classifieds' }} />
       <Stack.Screen name="Stores" component={BrowseStoresScreen} options={{ title: 'Online stores' }} />
       <Stack.Screen name="ProductsBrowse" component={BrowseProductsScreen} options={{ title: 'Shop products' }} />
       <Stack.Screen name="Directory" component={DirectoryScreen} options={{ title: 'Business directory' }} />

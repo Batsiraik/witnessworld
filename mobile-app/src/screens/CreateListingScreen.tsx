@@ -56,19 +56,22 @@ export function CreateListingScreen({ navigation, route }: Props) {
   const editId = listingEditId(route.params);
   const seed = listingSeed(route.params);
   const ltRoute =
-    'listingType' in params && (params.listingType === 'service' || params.listingType === 'classified')
+    'listingType' in params && (params.listingType === 'service' || params.listingType === 'classified' || params.listingType === 'community')
       ? params.listingType
       : 'classified';
-  const [listingType, setListingType] = useState<'classified' | 'service'>(ltRoute);
+  const [listingType, setListingType] = useState<'classified' | 'service' | 'community'>(ltRoute);
   const [editLoading, setEditLoading] = useState(() => Boolean(editId));
 
   useLayoutEffect(() => {
     if (editId) {
       navigation.setOptions({ title: 'Edit listing' });
     } else {
-      navigation.setOptions({
-        title: listingType === 'service' ? 'Offer a Professional Service' : 'Sell or Give Away an Item',
-      });
+      const titles: Record<string, string> = {
+        service: 'Offer a Professional Service',
+        classified: 'Sell or Give Away an Item',
+        community: 'Post a Community Classified',
+      };
+      navigation.setOptions({ title: titles[listingType] ?? 'New listing' });
     }
   }, [navigation, editId, listingType]);
 
@@ -111,10 +114,12 @@ export function CreateListingScreen({ navigation, route }: Props) {
 
   const formCopy = useMemo(() => {
     const svc = listingType === 'service';
+    const comm = listingType === 'community';
     if (editId) {
       return {
-        kindLabel: svc ? 'Professional Service' : 'Classified ad',
+        kindLabel: svc ? 'Professional Service' : comm ? 'Community Classified' : 'Classified ad',
         kindService: svc,
+        kindCommunity: comm,
         hint: 'Saving changes requeues your listing for review if it was already approved or rejected. Removed listings cannot be edited.',
         titleLabel: svc ? 'Headline *' : 'Ad title *',
         titlePh: svc
@@ -136,11 +141,14 @@ export function CreateListingScreen({ navigation, route }: Props) {
       };
     }
     return {
-      kindLabel: svc ? 'Offer a Professional Service' : 'Sell or Give Away an Item',
+      kindLabel: svc ? 'Offer a Professional Service' : comm ? 'Post a Community Classified' : 'Sell or Give Away an Item',
       kindService: svc,
+      kindCommunity: comm,
       hint: svc
         ? 'Showcase your expertise to a global network of entrepreneurs and businesses. This module is optimized for high-value digital and virtual services. Whether you are a creative, a technical expert, or a strategic consultant, this is your platform to find new clients and manage professional projects.'
-        : 'Give your quality items a second home. This local marketplace is for members to buy, sell, or share household goods directly within their local community. Whether you are decluttering or offering something for free, keep it local and keep it simple.',
+        : comm
+          ? 'The go-to spot for community-based needs and personal notices. Whether you are looking for a reliable sitter, a new roommate, or sharing a neighborhood update, post your notice here to reach your neighbors instantly.'
+          : 'Give your quality items a second home. This local marketplace is for members to buy, sell, or share household goods directly within their local community. Whether you are decluttering or offering something for free, keep it local and keep it simple.',
       titleLabel: svc ? 'Headline *' : 'Ad title *',
       titlePh: svc
         ? 'e.g. Mobile notary · evenings & weekends — same-day appointments'
@@ -180,8 +188,12 @@ export function CreateListingScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    const endpoint =
-      listingType === 'classified' ? 'marketplace-categories.php' : 'service-categories.php';
+    const catEndpoints: Record<string, string> = {
+      classified: 'marketplace-categories.php',
+      service: 'service-categories.php',
+      community: 'community-categories.php',
+    };
+    const endpoint = catEndpoints[listingType] ?? 'marketplace-categories.php';
     (async () => {
       try {
         const data = await apiGet(endpoint, false);
@@ -516,10 +528,10 @@ export function CreateListingScreen({ navigation, route }: Props) {
         <SafeAreaView style={styles.safe} edges={['bottom']}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View
-              style={[styles.kindPill, formCopy.kindService ? styles.kindPillService : null]}
+              style={[styles.kindPill, formCopy.kindService ? styles.kindPillService : formCopy.kindCommunity ? styles.kindPillCommunity : null]}
               accessibilityRole="text"
             >
-              <Text style={[styles.kindPillText, formCopy.kindService ? styles.kindPillTextService : null]}>
+              <Text style={[styles.kindPillText, formCopy.kindService ? styles.kindPillTextService : formCopy.kindCommunity ? styles.kindPillTextCommunity : null]}>
                 {formCopy.kindLabel}
               </Text>
             </View>
@@ -865,6 +877,11 @@ const styles = StyleSheet.create({
   },
   kindPillText: { fontSize: 12, fontWeight: '800', color: colors.primaryDark, letterSpacing: 0.3 },
   kindPillTextService: { color: '#0f766e' },
+  kindPillCommunity: {
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+    borderColor: 'rgba(217, 119, 6, 0.4)',
+  },
+  kindPillTextCommunity: { color: '#b45309' },
   hint: {
     fontSize: 13,
     lineHeight: 20,

@@ -34,8 +34,8 @@ $userId = (int) $user['id'];
 $body = ww_read_json();
 
 $listingType = strtolower(trim((string) ($body['listing_type'] ?? '')));
-if (!in_array($listingType, ['classified', 'service'], true)) {
-    ww_json(['ok' => false, 'error' => 'listing_type must be classified or service'], 422);
+if (!in_array($listingType, ['classified', 'service', 'community'], true)) {
+    ww_json(['ok' => false, 'error' => 'listing_type must be classified, service, or community'], 422);
 }
 
 $categoryId = null;
@@ -44,8 +44,9 @@ $priceAmount = null;
 $pricingType = 'none';
 $currency = 'USD';
 
-if ($listingType === 'classified' || $listingType === 'service') {
-    $catTable = $listingType === 'classified' ? 'marketplace_categories' : 'service_categories';
+if (in_array($listingType, ['classified', 'service', 'community'], true)) {
+    $catTables = ['classified' => 'marketplace_categories', 'service' => 'service_categories', 'community' => 'community_categories'];
+    $catTable = $catTables[$listingType];
     $catIn = isset($body['category_id']) ? (int) $body['category_id'] : 0;
     if ($catIn > 0) {
         $catCheck = $pdo->prepare("SELECT id FROM {$catTable} WHERE id = ? AND is_active = 1 LIMIT 1");

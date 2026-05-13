@@ -194,6 +194,31 @@ INSERT INTO service_categories (name, slug, sort_order, is_active) VALUES
   ('Multimedia', 'multimedia', 8, 1),
   ('Other', 'other', 9, 1);
 
+-- Community classifieds categories (admin-managed, seeded with defaults)
+CREATE TABLE community_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_cc_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO community_categories (name, slug, sort_order, is_active) VALUES
+  ('Careers / Jobs', 'careers_jobs', 1, 1),
+  ('Roommates & Housing', 'roommates_housing', 2, 1),
+  ('Childcare & Babysitting', 'childcare_babysitting', 3, 1),
+  ('Pet Sitting & Dog Walking', 'pet_sitting_dog_walking', 4, 1),
+  ('Tutoring & Lessons', 'tutoring_lessons', 5, 1),
+  ('Travels / Events', 'travels_events', 6, 1),
+  ('Healthcare', 'healthcare', 7, 1),
+  ('Real Estate', 'real_estate', 8, 1),
+  ('Vacation Homes', 'vacation_homes', 9, 1),
+  ('Transportation', 'transportation', 10, 1),
+  ('Classes', 'classes', 11, 1),
+  ('Other', 'other', 12, 1);
+
 -- Gigs / listings (require admin approval before public visibility in the app)
 CREATE TABLE listings (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -221,7 +246,7 @@ CREATE TABLE listings (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_listings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_listings_admin FOREIGN KEY (reviewed_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
-  -- category_id references marketplace_categories (classified) or service_categories (service) based on listing_type; validated in PHP.
+  -- category_id references marketplace_categories (classified), service_categories (service), or community_categories (community) based on listing_type; validated in PHP.
   INDEX idx_listings_moderation (moderation_status),
   INDEX idx_listings_user (user_id),
   INDEX idx_listings_type (listing_type),

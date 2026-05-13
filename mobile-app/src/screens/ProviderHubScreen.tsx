@@ -77,6 +77,16 @@ export function ProviderHubScreen({ navigation }: Props) {
       iconColor: '#0D9488',
       onPress: () => requireAvatar(() => navigation.navigate('CreateDirectoryEntry', { seed: Date.now() })),
     },
+    {
+      key: 'community',
+      title: 'Community classified',
+      subtitle: 'Post a notice or need',
+      icon: 'people-outline',
+      iconBg: '#FEF3C7',
+      iconColor: '#B45309',
+      onPress: () =>
+        requireAvatar(() => navigation.navigate('CreateListing', { listingType: 'community', seed: Date.now() })),
+    },
   ];
 
   return (
