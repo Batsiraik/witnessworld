@@ -15,6 +15,7 @@ export type HomeStackParamList = {
   StoreDetailPublic: { id: number };
   ProductDetail: { id: number };
   Cart: undefined;
+  Favorites: undefined;
   Profile: undefined;
   ProviderHub: undefined;
   CreateListing: { listingType?: 'classified' | 'service' | 'community'; seed?: number };

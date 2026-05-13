@@ -15,7 +15,8 @@ if (!in_array($filter, $allowed, true)) {
     $filter = 'all';
 }
 
-$sql = 'SELECT l.id, l.title, l.listing_type, l.moderation_status, l.pricing_type, l.price_amount, l.is_free, l.currency,
+$sql = 'SELECT l.id, l.title, l.listing_type, l.moderation_status, l.is_featured, l.is_urgent, l.is_verified,
+        l.pricing_type, l.price_amount, l.is_free, l.currency,
         l.location_country_code, l.location_country_name, l.location_us_state,
         l.created_at, COALESCE(mc.name, sc.name, cc.name) AS category_name,
         u.email AS user_email, u.first_name, u.last_name, u.username
@@ -112,6 +113,17 @@ require __DIR__ . '/partials/shell_open.php';
             <td class="px-6 py-4 font-medium text-slate-900">
               <?= htmlspecialchars((string) $r['title'], ENT_QUOTES, 'UTF-8') ?>
               <div class="text-xs font-normal text-slate-500">#<?= (int) $r['id'] ?></div>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <?php if ((int) ($r['is_featured'] ?? 0) === 1): ?>
+                  <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-inset ring-amber-600/20">Featured</span>
+                <?php endif; ?>
+                <?php if ((int) ($r['is_urgent'] ?? 0) === 1): ?>
+                  <span class="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-800 ring-1 ring-inset ring-red-600/20">Urgent</span>
+                <?php endif; ?>
+                <?php if ((int) ($r['is_verified'] ?? 0) === 1): ?>
+                  <span class="inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-800 ring-1 ring-inset ring-sky-600/20">Verified</span>
+                <?php endif; ?>
+              </div>
             </td>
             <td class="px-6 py-4 text-slate-600">
               <?= htmlspecialchars(trim((string) $r['first_name'] . ' ' . (string) $r['last_name']), ENT_QUOTES, 'UTF-8') ?>

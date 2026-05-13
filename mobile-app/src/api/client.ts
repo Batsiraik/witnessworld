@@ -321,6 +321,41 @@ export async function apiConversationAction(
   await apiPost('conversation-action.php', { conversation_id: conversationId, action } as Json, true);
 }
 
+export type FavoriteSubjectType = 'listing' | 'store' | 'product' | 'directory_entry';
+
+export type FavoriteRow = {
+  subject_type: FavoriteSubjectType;
+  subject_id: number;
+  title: string;
+  subtitle: string | null;
+  meta: string | null;
+  price: string | null;
+  image_url: string | null;
+  created_at: string;
+};
+
+export async function apiFavoriteStatus(subjectType: FavoriteSubjectType, subjectId: number): Promise<boolean> {
+  const qs = new URLSearchParams({ subject_type: subjectType, subject_id: String(subjectId) });
+  const data = await apiGet(`favorite-status.php?${qs.toString()}`, true);
+  return data.favorited === true;
+}
+
+export async function apiToggleFavorite(
+  subjectType: FavoriteSubjectType,
+  subjectId: number,
+  favorite?: boolean
+): Promise<boolean> {
+  const body: Json = { subject_type: subjectType, subject_id: subjectId };
+  if (typeof favorite === 'boolean') body.favorite = favorite;
+  const data = await apiPost('favorite-toggle.php', body, true);
+  return data.favorited === true;
+}
+
+export async function apiFavoritesList(): Promise<FavoriteRow[]> {
+  const data = await apiGet('favorites-list.php', true);
+  return Array.isArray(data.favorites) ? (data.favorites as FavoriteRow[]) : [];
+}
+
 /** Send a text message with one attachment (image, PDF, Word, etc.). */
 export async function apiSendMessageWithFile(
   conversationId: number,

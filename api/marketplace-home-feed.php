@@ -20,7 +20,7 @@ if ($tok && !$user) {
 $viewerId = $user ? (int) $user['id'] : 0;
 
 $section = strtolower(trim((string) ($_GET['section'] ?? 'all')));
-if (!in_array($section, ['all', 'services', 'classifieds', 'products', 'stores', 'directory'], true)) {
+if (!in_array($section, ['all', 'services', 'classifieds', 'community', 'products', 'stores', 'directory'], true)) {
     $section = 'all';
 }
 
@@ -51,6 +51,7 @@ $need = static function (string $key) use ($section): bool {
 $out = [
     'services' => [],
     'classifieds' => [],
+    'community' => [],
     'products' => [],
     'stores' => [],
     'directory' => [],
@@ -63,6 +64,7 @@ $out = [
 function ww_feed_listing_sql(string $listingType, int $limit, string $country, string $usState): array
 {
     $sql = 'SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
+                    l.is_featured, l.is_urgent, l.is_verified,
                     l.location_country_name, l.location_us_state, l.created_at,
                     u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
              FROM listings l
@@ -77,7 +79,7 @@ function ww_feed_listing_sql(string $listingType, int $limit, string $country, s
         $sql .= ' AND l.location_us_state = ?';
         $params[] = $usState;
     }
-    $sql .= ' ORDER BY l.id DESC LIMIT ' . (int) $limit;
+    $sql .= ' ORDER BY l.is_featured DESC, l.is_urgent DESC, l.id DESC LIMIT ' . (int) $limit;
 
     return [$sql, $params];
 }
@@ -123,6 +125,15 @@ try {
         $st->execute($params);
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
             $out['classifieds'][] = ww_feed_row_listing($r);
+        }
+    }
+
+    if ($need('community')) {
+        [$sql, $params] = ww_feed_listing_sql('community', $limit, $country, $usState);
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $out['community'][] = ww_feed_row_listing($r);
         }
     }
 
@@ -335,6 +346,9 @@ function ww_feed_row_listing(array $r): array
         'title' => (string) $r['title'],
         'description' => (string) $r['description'],
         'price_amount' => $r['price_amount'] !== null ? (string) $r['price_amount'] : null,
+        'is_featured' => (int) ($r['is_featured'] ?? 0) === 1,
+        'is_urgent' => (int) ($r['is_urgent'] ?? 0) === 1,
+        'is_verified' => (int) ($r['is_verified'] ?? 0) === 1,
         'pricing_type' => (string) $r['pricing_type'],
         'currency' => (string) $r['currency'],
         'media_url' => $r['media_url'] ? (string) $r['media_url'] : null,

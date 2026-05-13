@@ -25,7 +25,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $row = $st->fetch(PDO::FETCH_ASSOC);
         if ($row) {
             $now = date('Y-m-d H:i:s');
-            if ($action === 'approve') {
+            if ($action === 'toggle_flags') {
+                $pdo->prepare(
+                    'UPDATE listings SET is_featured = ?, is_urgent = ?, is_verified = ? WHERE id = ?'
+                )->execute([
+                    !empty($_POST['is_featured']) ? 1 : 0,
+                    !empty($_POST['is_urgent']) ? 1 : 0,
+                    !empty($_POST['is_verified']) ? 1 : 0,
+                    $id,
+                ]);
+            } elseif ($action === 'approve') {
                 $pdo->prepare(
                     'UPDATE listings SET moderation_status = ?, admin_note = NULL, reviewed_at = ?, reviewed_by_admin_id = ? WHERE id = ?'
                 )->execute(['approved', $now, $adminId > 0 ? $adminId : null, $id]);
@@ -239,6 +248,53 @@ require __DIR__ . '/partials/shell_open.php';
     <?php if (!empty($listing['reviewed_at'])): ?>
       <p class="mt-3 text-xs text-slate-500">Last reviewed <?= htmlspecialchars((string) $listing['reviewed_at'], ENT_QUOTES, 'UTF-8') ?><?php if (!empty($listing['reviewer_name'])): ?> · <?= htmlspecialchars((string) $listing['reviewer_name'], ENT_QUOTES, 'UTF-8') ?><?php endif; ?></p>
     <?php endif; ?>
+  </div>
+
+  <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-900">Display flags</h3>
+        <p class="mt-1 text-sm text-slate-500">These badges change how the listing appears in the app. Use sparingly for clean merchandising.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <?php if ((int) ($listing['is_featured'] ?? 0) === 1): ?>
+          <span class="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900 ring-1 ring-inset ring-amber-600/20">Featured</span>
+        <?php endif; ?>
+        <?php if ((int) ($listing['is_urgent'] ?? 0) === 1): ?>
+          <span class="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-800 ring-1 ring-inset ring-red-600/20">Urgent</span>
+        <?php endif; ?>
+        <?php if ((int) ($listing['is_verified'] ?? 0) === 1): ?>
+          <span class="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800 ring-1 ring-inset ring-sky-600/20">Verified</span>
+        <?php endif; ?>
+      </div>
+    </div>
+    <form method="post" class="mt-4 space-y-4">
+      <input type="hidden" name="action" value="toggle_flags" />
+      <div class="grid gap-3 sm:grid-cols-3">
+        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm hover:bg-slate-50">
+          <input type="checkbox" name="is_featured" value="1" class="mt-1 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand" <?= (int) ($listing['is_featured'] ?? 0) === 1 ? 'checked' : '' ?> />
+          <span>
+            <span class="block font-semibold text-slate-900">Featured</span>
+            <span class="block text-xs text-slate-500">Gold badge and elevated accent.</span>
+          </span>
+        </label>
+        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm hover:bg-slate-50">
+          <input type="checkbox" name="is_urgent" value="1" class="mt-1 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand" <?= (int) ($listing['is_urgent'] ?? 0) === 1 ? 'checked' : '' ?> />
+          <span>
+            <span class="block font-semibold text-slate-900">Urgent</span>
+            <span class="block text-xs text-slate-500">Urgent badge and warm highlight.</span>
+          </span>
+        </label>
+        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm hover:bg-slate-50">
+          <input type="checkbox" name="is_verified" value="1" class="mt-1 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand" <?= (int) ($listing['is_verified'] ?? 0) === 1 ? 'checked' : '' ?> />
+          <span>
+            <span class="block font-semibold text-slate-900">Verified</span>
+            <span class="block text-xs text-slate-500">Trust badge for admin-confirmed posts.</span>
+          </span>
+        </label>
+      </div>
+      <button type="submit" class="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">Save display flags</button>
+    </form>
   </div>
 
   <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">

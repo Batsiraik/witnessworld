@@ -239,6 +239,9 @@ CREATE TABLE listings (
   location_country_name VARCHAR(120) NULL,
   location_us_state VARCHAR(64) NULL,
   moderation_status ENUM('pending_approval','approved','rejected','removed') NOT NULL DEFAULT 'pending_approval',
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  is_urgent TINYINT(1) NOT NULL DEFAULT 0,
+  is_verified TINYINT(1) NOT NULL DEFAULT 0,
   admin_note TEXT NULL,
   reviewed_at DATETIME NULL,
   reviewed_by_admin_id INT UNSIGNED NULL,
@@ -251,7 +254,8 @@ CREATE TABLE listings (
   INDEX idx_listings_user (user_id),
   INDEX idx_listings_type (listing_type),
   INDEX idx_listings_country (location_country_code),
-  INDEX idx_listings_category (category_id)
+  INDEX idx_listings_category (category_id),
+  INDEX idx_listings_flags (is_featured, is_urgent, is_verified)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Store categories (admin-managed, seeded with defaults)
@@ -431,6 +435,19 @@ CREATE TABLE message_attachments (
   CONSTRAINT fk_ma_msg FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
   UNIQUE KEY uq_ma_message (message_id),
   INDEX idx_ma_message (message_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- User favorites / saved content
+CREATE TABLE user_favorites (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  subject_type ENUM('listing','store','product','directory_entry') NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_uf_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_uf_subject (user_id, subject_type, subject_id),
+  INDEX idx_uf_user_created (user_id, created_at),
+  INDEX idx_uf_subject (subject_type, subject_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- User reports (listings, stores, products, directory)

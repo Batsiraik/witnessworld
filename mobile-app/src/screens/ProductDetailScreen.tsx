@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
+import { apiFavoriteStatus, apiGet, apiOpenConversation, apiSubmitReport, apiToggleFavorite } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
@@ -56,6 +56,8 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const [err, setErr] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [favoriteOn, setFavoriteOn] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(id) || id <= 0) {
@@ -88,6 +90,41 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (isGuest || !Number.isFinite(id) || id <= 0) {
+      setFavoriteOn(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const on = await apiFavoriteStatus('product', id);
+        if (!cancelled) setFavoriteOn(on);
+      } catch {
+        if (!cancelled) setFavoriteOn(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isGuest]);
+
+  const toggleFavorite = async () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
+    if (!Number.isFinite(id) || id <= 0 || favoriteBusy) return;
+    setFavoriteBusy(true);
+    try {
+      setFavoriteOn(await apiToggleFavorite('product', id, !favoriteOn));
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
+
   useLayoutEffect(() => {
     const canAddToCart =
       !isGuest &&
@@ -95,22 +132,33 @@ export function ProductDetailScreen({ navigation, route }: Props) {
       row.seller.user_id !== myId &&
       row.product.moderation_status !== 'pending_approval';
     navigation.setOptions({
-      headerRight:
-        canAddToCart === true
-          ? () => (
-              <Pressable
-                onPress={() => navigation.push('Cart')}
-                style={headerCartStyles.wrap}
-                hitSlop={12}
-                accessibilityRole="button"
-                accessibilityLabel="Add to cart"
-              >
-                <Ionicons name="cart-outline" size={26} color={colors.text} />
-              </Pressable>
-            )
-          : undefined,
+      headerRight: () => (
+        <View style={headerCartStyles.row}>
+          <Pressable
+            onPress={() => void toggleFavorite()}
+            disabled={favoriteBusy}
+            style={headerCartStyles.wrap}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={favoriteOn ? 'Remove favorite' : 'Save favorite'}
+          >
+            <Ionicons name={favoriteOn ? 'heart' : 'heart-outline'} size={25} color={favoriteOn ? colors.danger : colors.text} />
+          </Pressable>
+          {canAddToCart === true ? (
+            <Pressable
+              onPress={() => navigation.push('Cart')}
+              style={headerCartStyles.wrap}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Add to cart"
+            >
+              <Ionicons name="cart-outline" size={26} color={colors.text} />
+            </Pressable>
+          ) : null}
+        </View>
+      ),
     });
-  }, [navigation, row, myId, isGuest]);
+  }, [navigation, row, myId, isGuest, favoriteOn, favoriteBusy]);
 
   const contact = async () => {
     if (!row) return;
@@ -314,5 +362,6 @@ const styles = StyleSheet.create({
 });
 
 const headerCartStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   wrap: { marginRight: 12, padding: 4 },
 });

@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
+import { apiFavoriteStatus, apiGet, apiOpenConversation, apiSubmitReport, apiToggleFavorite } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
@@ -48,13 +48,15 @@ type Entry = {
 
 export function DirectoryDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user, stackNavigation } = useDashboardContext();
+  const { user, stackNavigation, isGuest, showGuestPrompt } = useDashboardContext();
   const myId = user?.id ?? 0;
   const [entry, setEntry] = useState<Entry | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [msgBusy, setMsgBusy] = useState(false);
+  const [favoriteOn, setFavoriteOn] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +81,58 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (isGuest) {
+      setFavoriteOn(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const on = await apiFavoriteStatus('directory_entry', id);
+        if (!cancelled) setFavoriteOn(on);
+      } catch {
+        if (!cancelled) setFavoriteOn(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isGuest]);
+
+  const toggleFavorite = async () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
+    if (favoriteBusy) return;
+    setFavoriteBusy(true);
+    try {
+      setFavoriteOn(await apiToggleFavorite('directory_entry', id, !favoriteOn));
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => void toggleFavorite()}
+          disabled={favoriteBusy}
+          style={styles.headerIcon}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={favoriteOn ? 'Remove favorite' : 'Save favorite'}
+        >
+          <Ionicons name={favoriteOn ? 'heart' : 'heart-outline'} size={25} color={favoriteOn ? colors.danger : colors.text} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, favoriteOn, favoriteBusy]);
 
   const openUrl = (u: string) => {
     void Linking.openURL(u);
@@ -283,4 +337,5 @@ const styles = StyleSheet.create({
   actionTextShrink: { flexShrink: 1 },
   ownerCtaFirst: { marginTop: 14 },
   reportBtn: { marginTop: 10 },
+  headerIcon: { marginRight: 12, padding: 4 },
 });

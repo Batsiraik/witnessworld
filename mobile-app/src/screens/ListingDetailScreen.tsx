@@ -1,7 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
+import { apiFavoriteStatus, apiGet, apiOpenConversation, apiSubmitReport, apiToggleFavorite } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { ListingVideoBlock } from '../components/ListingVideoBlock';
 import { RemoteImage } from '../components/RemoteImage';
@@ -34,6 +34,9 @@ type Listing = {
   description: string;
   price_amount: string | null;
   is_free?: boolean;
+  is_featured?: boolean;
+  is_urgent?: boolean;
+  is_verified?: boolean;
   pricing_type: string;
   currency: string;
   media_url: string;
@@ -83,6 +86,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [contactBusy, setContactBusy] = useState(false);
   const [heartOn, setHeartOn] = useState(false);
+  const [heartBusy, setHeartBusy] = useState(false);
 
   const loadedIdRef = useRef<number | null>(null);
 
@@ -136,6 +140,41 @@ export function ListingDetailScreen({ navigation, route }: Props) {
       };
     }, [id])
   );
+
+  useEffect(() => {
+    if (isGuest) {
+      setHeartOn(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const on = await apiFavoriteStatus('listing', id);
+        if (!cancelled) setHeartOn(on);
+      } catch {
+        if (!cancelled) setHeartOn(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isGuest]);
+
+  const toggleFavorite = async () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
+    if (heartBusy) return;
+    setHeartBusy(true);
+    try {
+      setHeartOn(await apiToggleFavorite('listing', id, !heartOn));
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setHeartBusy(false);
+    }
+  };
 
   const contact = async () => {
     if (!listing) return;
@@ -259,7 +298,8 @@ export function ListingDetailScreen({ navigation, route }: Props) {
                   <Ionicons name="share-outline" size={20} color={colors.white} />
                 </Pressable>
                 <Pressable
-                  onPress={() => setHeartOn((v) => !v)}
+                  onPress={() => void toggleFavorite()}
+                  disabled={heartBusy}
                   style={({ pressed }) => [styles.heroIconBtn, pressed && styles.pressed]}
                   accessibilityLabel="Favorite"
                 >
@@ -270,7 +310,14 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           </SafeAreaView>
         </View>
 
-        <View style={[styles.sheet, { backgroundColor: PAGE_BG }]}>
+        <View
+          style={[
+            styles.sheet,
+            { backgroundColor: PAGE_BG },
+            listing.is_featured && styles.sheetFeatured,
+            listing.is_urgent && styles.sheetUrgent,
+          ]}
+        >
           {hasVideo ? (
             <View style={styles.videoBlock}>
               <ListingVideoBlock uri={videoUri} style={styles.heroVideo} />
@@ -286,6 +333,21 @@ export function ListingDetailScreen({ navigation, route }: Props) {
             {listing.category_name ? (
               <View style={[styles.tag, styles.tagCat]}>
                 <Text style={styles.tagText}>{listing.category_name}</Text>
+              </View>
+            ) : null}
+            {listing.is_featured ? (
+              <View style={[styles.tag, styles.tagFeatured]}>
+                <Text style={[styles.tagText, styles.tagFeaturedText]}>Featured</Text>
+              </View>
+            ) : null}
+            {listing.is_urgent ? (
+              <View style={[styles.tag, styles.tagUrgent]}>
+                <Text style={[styles.tagText, styles.tagUrgentText]}>Urgent</Text>
+              </View>
+            ) : null}
+            {listing.is_verified ? (
+              <View style={[styles.tag, styles.tagVerified]}>
+                <Text style={[styles.tagText, styles.tagVerifiedText]}>Verified</Text>
               </View>
             ) : null}
             {skillTag ? (
@@ -466,6 +528,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sheet: {
+    borderTopWidth: 1,
+    borderTopColor: 'transparent',
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     marginTop: -18,
@@ -473,6 +537,8 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
   },
+  sheetFeatured: { borderTopColor: 'rgba(200, 162, 74, 0.6)' },
+  sheetUrgent: { borderTopColor: 'rgba(220, 38, 38, 0.35)' },
   videoBlock: {
     marginBottom: 8,
     marginTop: 8,
@@ -494,6 +560,12 @@ const styles = StyleSheet.create({
   },
   tagText: { fontSize: 12, fontWeight: '700', color: colors.text },
   tagCat: { backgroundColor: 'rgba(5, 150, 105, 0.1)' },
+  tagFeatured: { backgroundColor: colors.goldSoft },
+  tagFeaturedText: { color: colors.goldDark },
+  tagUrgent: { backgroundColor: 'rgba(220, 38, 38, 0.1)' },
+  tagUrgentText: { color: colors.danger },
+  tagVerified: { backgroundColor: colors.primarySoft },
+  tagVerifiedText: { color: colors.primaryDark },
   title: { fontSize: 24, fontWeight: '800', color: colors.text, lineHeight: 30 },
   price: { fontSize: 20, fontWeight: '800', color: PRICE_PURPLE, marginTop: 10 },
   priceFree: { fontSize: 20, fontWeight: '800', color: '#059669', marginTop: 10 },

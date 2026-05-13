@@ -198,3 +198,27 @@ INSERT IGNORE INTO community_categories (name, slug, sort_order, is_active) VALU
   ('Transportation', 'transportation', 10, 1),
   ('Classes', 'classes', 11, 1),
   ('Other', 'other', 12, 1);
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-13: User favorites / saved content
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS user_favorites (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  subject_type ENUM('listing','store','product','directory_entry') NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_uf_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_uf_subject (user_id, subject_type, subject_id),
+  INDEX idx_uf_user_created (user_id, created_at),
+  INDEX idx_uf_subject (subject_type, subject_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-13: Listing display flags for admin merchandising
+-- ---------------------------------------------------------------------------
+ALTER TABLE listings
+  ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER moderation_status,
+  ADD COLUMN is_urgent TINYINT(1) NOT NULL DEFAULT 0 AFTER is_featured,
+  ADD COLUMN is_verified TINYINT(1) NOT NULL DEFAULT 0 AFTER is_urgent,
+  ADD INDEX idx_listings_flags (is_featured, is_urgent, is_verified);

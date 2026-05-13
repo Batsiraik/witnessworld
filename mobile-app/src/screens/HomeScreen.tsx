@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
+import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import type { LocCountry, LocState } from '../components/BrowseLocationFilters';
@@ -145,6 +146,7 @@ function formatDirLocation(row: Record<string, unknown>): string {
 }
 
 export function HomeScreen({ navigation }: Props) {
+  const { isGuest, showGuestPrompt } = useDashboardContext();
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
   const [locModal, setLocModal] = useState(false);
@@ -283,10 +285,19 @@ export function HomeScreen({ navigation }: Props) {
       const cur = String(row.currency ?? 'USD');
       const pt = String(row.pricing_type ?? 'fixed');
       const loc = formatListingLocation(row);
+      const isFeatured = row.is_featured === true || showBadge;
+      const isUrgent = row.is_urgent === true;
+      const isVerified = row.is_verified === true;
       return (
         <Pressable
           key={`fl-${id}`}
-          style={({ pressed }) => [styles.fCard, { width: FEATURED_CARD_W }, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.fCard,
+            isFeatured && styles.fCardFeatured,
+            isUrgent && styles.fCardUrgent,
+            { width: FEATURED_CARD_W },
+            pressed && styles.pressed,
+          ]}
           onPress={() => navigation.push('ListingDetail', { id })}
         >
           <View style={styles.fImgWrap}>
@@ -297,12 +308,18 @@ export function HomeScreen({ navigation }: Props) {
                 <Ionicons name="document-text-outline" size={32} color={colors.textMuted} />
               </View>
             )}
-            {showBadge ? (
+            {isFeatured ? (
               <View style={styles.featuredBadge}>
                 <Text style={styles.featuredBadgeText}>Featured</Text>
               </View>
             ) : null}
           </View>
+          {isUrgent || isVerified ? (
+            <View style={styles.flagRow}>
+              {isUrgent ? <Text style={[styles.flagBadge, styles.flagUrgent]}>Urgent</Text> : null}
+              {isVerified ? <Text style={[styles.flagBadge, styles.flagVerified]}>Verified</Text> : null}
+            </View>
+          ) : null}
           <Text style={styles.fTitle} numberOfLines={2}>
             {title}
           </Text>
@@ -334,10 +351,19 @@ export function HomeScreen({ navigation }: Props) {
     const cur = String(row.currency ?? 'USD');
     const pt = String(row.pricing_type ?? 'fixed');
     const loc = formatListingLocation(row);
+    const isFeatured = row.is_featured === true;
+    const isUrgent = row.is_urgent === true;
+    const isVerified = row.is_verified === true;
     return (
       <Pressable
         key={`${isService ? 's' : 'c'}-${id}`}
-        style={({ pressed }) => [styles.fCard, { width: FEATURED_CARD_W }, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.fCard,
+          isFeatured && styles.fCardFeatured,
+          isUrgent && styles.fCardUrgent,
+          { width: FEATURED_CARD_W },
+          pressed && styles.pressed,
+        ]}
         onPress={() => navigation.push('ListingDetail', { id })}
       >
         <View style={styles.fImgWrap}>
@@ -348,7 +374,18 @@ export function HomeScreen({ navigation }: Props) {
               <Ionicons name="document-text-outline" size={32} color={colors.textMuted} />
             </View>
           )}
+          {isFeatured ? (
+            <View style={styles.featuredBadge}>
+              <Text style={styles.featuredBadgeText}>Featured</Text>
+            </View>
+          ) : null}
         </View>
+        {isUrgent || isVerified ? (
+          <View style={styles.flagRow}>
+            {isUrgent ? <Text style={[styles.flagBadge, styles.flagUrgent]}>Urgent</Text> : null}
+            {isVerified ? <Text style={[styles.flagBadge, styles.flagVerified]}>Verified</Text> : null}
+          </View>
+        ) : null}
         <Text style={styles.fTitle} numberOfLines={2}>
           {title}
         </Text>
@@ -515,15 +552,30 @@ export function HomeScreen({ navigation }: Props) {
               />
               <Text style={styles.brandTitle}>WWC</Text>
             </View>
-            <Pressable
-              accessibilityLabel="Notifications"
-              onPress={() => {
-                /* Reserved for future push / notification center */
-              }}
-              style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
-            >
-              <Ionicons name="notifications-outline" size={22} color={colors.text} />
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Pressable
+                accessibilityLabel="Favorites"
+                onPress={() => {
+                  if (isGuest) {
+                    showGuestPrompt();
+                    return;
+                  }
+                  navigation.navigate('Favorites');
+                }}
+                style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="heart-outline" size={22} color={colors.text} />
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Notifications"
+                onPress={() => {
+                  /* Reserved for future push / notification center */
+                }}
+                style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="notifications-outline" size={22} color={colors.text} />
+              </Pressable>
+            </View>
           </View>
 
           <Pressable onPress={() => setLocModal(true)} style={({ pressed }) => [styles.locLine, pressed && styles.pressed]}>
@@ -726,6 +778,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(11, 18, 32, 0.08)',
   },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   locLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   locLineText: { fontSize: 14, fontWeight: '600', color: colors.textMuted, flex: 1 },
   searchPill: {
@@ -783,6 +836,8 @@ const styles = StyleSheet.create({
     elevation: 3,
     paddingBottom: 12,
   },
+  fCardFeatured: { borderWidth: 1, borderColor: 'rgba(200, 162, 74, 0.48)' },
+  fCardUrgent: { borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.34)' },
   fImgWrap: { position: 'relative', overflow: 'hidden' },
   /** Landscape hero (~16:9): shorter than the old 1.25 ratio; top corners only, flat bottom against text */
   fImg: {
@@ -796,12 +851,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: '#7C3AED',
+    backgroundColor: colors.gold,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
   featuredBadgeText: { color: colors.white, fontSize: 11, fontWeight: '800' },
+  flagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 12, paddingTop: 10 },
+  flagBadge: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  flagUrgent: { backgroundColor: 'rgba(220, 38, 38, 0.1)', color: colors.danger },
+  flagVerified: { backgroundColor: colors.primarySoft, color: colors.primaryDark },
   hPh: { alignItems: 'center', justifyContent: 'center' },
   fTitle: {
     fontSize: 16,

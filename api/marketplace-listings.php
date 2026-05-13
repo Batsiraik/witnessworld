@@ -42,6 +42,7 @@ $offset = ww_marketplace_int_bounds((int) ($_GET['offset'] ?? 0), 0, 100000, 0);
 $categoryFilter = isset($_GET['category_id']) ? (int) $_GET['category_id'] : 0;
 
 $sql = 'SELECT l.id, l.title, l.description, l.price_amount, l.is_free, l.pricing_type, l.currency, l.media_url,
+        l.is_featured, l.is_urgent, l.is_verified,
         l.location_country_code, l.location_country_name, l.location_us_state, l.created_at,
         COALESCE(mc.name, sc.name, cc.name) AS category_name,
         u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
@@ -85,7 +86,7 @@ if ($q !== '') {
     $params[] = $like;
 }
 
-$sql .= ' ORDER BY l.id DESC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+$sql .= ' ORDER BY l.is_featured DESC, l.is_urgent DESC, l.id DESC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
 
 try {
     $st = $pdo->prepare($sql);
@@ -103,6 +104,9 @@ foreach ($rows as $r) {
         'description' => (string) $r['description'],
         'price_amount' => $r['price_amount'] !== null ? (string) $r['price_amount'] : null,
         'is_free' => (int) ($r['is_free'] ?? 0) === 1,
+        'is_featured' => (int) ($r['is_featured'] ?? 0) === 1,
+        'is_urgent' => (int) ($r['is_urgent'] ?? 0) === 1,
+        'is_verified' => (int) ($r['is_verified'] ?? 0) === 1,
         'pricing_type' => (string) $r['pricing_type'],
         'currency' => (string) $r['currency'],
         'category_name' => $r['category_name'] ? (string) $r['category_name'] : null,

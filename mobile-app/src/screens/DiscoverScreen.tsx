@@ -20,16 +20,20 @@ import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { DiscoverStackParamList, HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
 type Props = NativeStackScreenProps<DiscoverStackParamList, 'Discover'>;
 
-type PillId = 'all' | 'marketplace' | 'services' | 'stores' | 'businesses';
+type PillId = 'all' | 'marketplace' | 'services' | 'community' | 'stores' | 'businesses';
 
 type FeedListing = {
   id: number;
   title: string;
   price_amount: string | null;
+  is_featured?: boolean;
+  is_urgent?: boolean;
+  is_verified?: boolean;
   pricing_type: string;
   currency: string;
   media_url: string | null;
@@ -73,7 +77,7 @@ type FeedDirectory = {
 };
 
 type DiscoverItem =
-  | { kind: 'classified' | 'service'; listing: FeedListing; created_at: string }
+  | { kind: 'classified' | 'service' | 'community'; listing: FeedListing; created_at: string }
   | { kind: 'product'; product: FeedProduct; created_at: string }
   | { kind: 'store'; store: FeedStore; created_at: string }
   | { kind: 'directory'; entry: FeedDirectory; created_at: string };
@@ -82,6 +86,7 @@ const PILLS: { id: PillId; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'marketplace', label: 'Marketplace' },
   { id: 'services', label: 'Services' },
+  { id: 'community', label: 'Community' },
   { id: 'stores', label: 'Stores' },
   { id: 'businesses', label: 'Businesses' },
 ];
@@ -91,6 +96,7 @@ const FEED_LIMIT = '24';
 type MarketplaceFeedBundle = {
   services?: FeedListing[];
   classifieds?: FeedListing[];
+  community?: FeedListing[];
   products?: FeedProduct[];
   stores?: FeedStore[];
   directory?: FeedDirectory[];
@@ -105,6 +111,7 @@ function parseMarketplaceFeed(data: Awaited<ReturnType<typeof apiGet>>): Marketp
 function mergeAll(feed: {
   services?: FeedListing[];
   classifieds?: FeedListing[];
+  community?: FeedListing[];
   products?: FeedProduct[];
   stores?: FeedStore[];
   directory?: FeedDirectory[];
@@ -115,6 +122,9 @@ function mergeAll(feed: {
   }
   for (const l of feed.classifieds ?? []) {
     out.push({ kind: 'classified', listing: l, created_at: l.created_at });
+  }
+  for (const l of feed.community ?? []) {
+    out.push({ kind: 'community', listing: l, created_at: l.created_at });
   }
   for (const p of feed.products ?? []) {
     out.push({ kind: 'product', product: p, created_at: p.created_at });
@@ -128,7 +138,7 @@ function mergeAll(feed: {
   return out.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
 }
 
-function mapListings(rows: FeedListing[], kind: 'classified' | 'service'): DiscoverItem[] {
+function mapListings(rows: FeedListing[], kind: 'classified' | 'service' | 'community'): DiscoverItem[] {
   return rows.map((l) => ({ kind, listing: l, created_at: l.created_at }));
 }
 
@@ -189,6 +199,9 @@ export function DiscoverScreen({ navigation }: Props) {
         } else if (pill === 'services') {
           const data = await apiGet(`marketplace-home-feed.php?section=services&${base}`, true);
           setItems(mapListings(parseMarketplaceFeed(data).services ?? [], 'service'));
+        } else if (pill === 'community') {
+          const data = await apiGet(`marketplace-home-feed.php?section=community&${base}`, true);
+          setItems(mapListings(parseMarketplaceFeed(data).community ?? [], 'community'));
         } else if (pill === 'stores') {
           const data = await apiGet(`marketplace-home-feed.php?section=stores&${base}`, true);
           setItems(mapStores(parseMarketplaceFeed(data).stores ?? []));
@@ -215,7 +228,7 @@ export function DiscoverScreen({ navigation }: Props) {
     const q = search.trim().toLowerCase();
     if (!q) return items;
     return items.filter((it) => {
-      if (it.kind === 'classified' || it.kind === 'service') {
+      if (it.kind === 'classified' || it.kind === 'service' || it.kind === 'community') {
         const t = it.listing.title.toLowerCase();
         return t.includes(q);
       }
@@ -251,12 +264,18 @@ export function DiscoverScreen({ navigation }: Props) {
       const locLine = (a: string | null | undefined, b: string | null | undefined) =>
         [b, a].filter(Boolean).join(', ');
 
-      if (item.kind === 'classified' || item.kind === 'service') {
+      if (item.kind === 'classified' || item.kind === 'service' || item.kind === 'community') {
         const row = item.listing;
         const loc = locLine(row.location_country_name, row.location_us_state);
         return (
           <Pressable
-            style={({ pressed }) => [styles.tile, { width: tileW }, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.tile,
+              row.is_featured && styles.tileFeatured,
+              row.is_urgent && styles.tileUrgent,
+              { width: tileW },
+              pressed && styles.pressed,
+            ]}
             onPress={() => goHome('ListingDetail', { id: row.id })}
           >
             <View style={styles.imgWrap}>
@@ -269,6 +288,13 @@ export function DiscoverScreen({ navigation }: Props) {
               )}
             </View>
             <View style={styles.tileBody}>
+              {row.is_featured || row.is_urgent || row.is_verified ? (
+                <View style={styles.badgeRow}>
+                  {row.is_featured ? <Text style={[styles.badge, styles.badgeFeatured]}>Featured</Text> : null}
+                  {row.is_urgent ? <Text style={[styles.badge, styles.badgeUrgent]}>Urgent</Text> : null}
+                  {row.is_verified ? <Text style={[styles.badge, styles.badgeVerified]}>Verified</Text> : null}
+                </View>
+              ) : null}
               <Text style={styles.tileTitle} numberOfLines={2}>
                 {row.title}
               </Text>
@@ -405,7 +431,7 @@ export function DiscoverScreen({ navigation }: Props) {
   );
 
   const keyExtractor = useCallback((it: DiscoverItem) => {
-    if (it.kind === 'classified' || it.kind === 'service') return `l-${it.kind}-${it.listing.id}`;
+    if (it.kind === 'classified' || it.kind === 'service' || it.kind === 'community') return `l-${it.kind}-${it.listing.id}`;
     if (it.kind === 'product') return `p-${it.product.id}`;
     if (it.kind === 'store') return `s-${it.store.id}`;
     if (it.kind === 'directory') return `d-${it.entry.id}`;
@@ -549,22 +575,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: 14,
+    borderRadius: radii.md,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: 'rgba(11, 18, 32, 0.08)',
+    borderColor: colors.line,
   },
   searchIcon: { marginRight: 6 },
   searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, fontWeight: '600', color: colors.text },
   iconBtn: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(11, 18, 32, 0.08)',
+    borderColor: colors.line,
   },
   viewToggle: { flexDirection: 'row', backgroundColor: 'rgba(11, 18, 32, 0.06)', borderRadius: 12, padding: 3 },
   toggleBtn: {
@@ -588,9 +614,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(11, 18, 32, 0.12)',
     marginRight: 8,
   },
-  pillOn: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
+  pillOn: surfaces.goldChip,
   pillText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
-  pillTextOn: { color: colors.white },
+  pillTextOn: { color: colors.goldDark },
   listFlex: { flex: 1 },
   listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
   gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
@@ -600,23 +626,28 @@ const styles = StyleSheet.create({
   retry: { marginTop: 12, paddingVertical: 10, paddingHorizontal: 20 },
   retryText: { fontWeight: '800', color: colors.primaryDark },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 24, fontWeight: '600' },
-  tile: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#0B1220',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
+  tile: surfaces.shopCard,
+  tileFeatured: { borderWidth: 1, borderColor: 'rgba(200, 162, 74, 0.48)' },
+  tileUrgent: { borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.34)' },
   imgWrap: { overflow: 'hidden' },
   img: { width: '100%', aspectRatio: GRID_IMAGE_ASPECT, backgroundColor: colors.primarySoft },
   imgPh: { alignItems: 'center', justifyContent: 'center' },
   tileBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12, flex: 1 },
-  tileTitle: { fontSize: 14, fontWeight: '800', color: colors.text, lineHeight: 18, minHeight: 36 },
-  tileMeta: { fontSize: 11, fontWeight: '600', color: colors.textMuted, marginTop: 4 },
-  tilePrice: { fontSize: 15, fontWeight: '800', color: '#2563EB', marginTop: 6 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 6 },
+  badge: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  badgeFeatured: { backgroundColor: colors.goldSoft, color: colors.goldDark },
+  badgeUrgent: { backgroundColor: 'rgba(220, 38, 38, 0.1)', color: colors.danger },
+  badgeVerified: { backgroundColor: colors.primarySoft, color: colors.primaryDark },
+  tileTitle: { ...typography.cardTitle, minHeight: 36 },
+  tileMeta: { ...typography.meta, marginTop: 4 },
+  tilePrice: { ...typography.price, marginTop: 6 },
   tilePriceMuted: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginTop: 6 },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   loc: { flex: 1, fontSize: 11, fontWeight: '600', color: colors.textMuted },

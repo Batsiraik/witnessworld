@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet, apiOpenConversation, apiSubmitReport } from '../api/client';
+import { apiFavoriteStatus, apiGet, apiOpenConversation, apiSubmitReport, apiToggleFavorite } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
@@ -20,6 +20,8 @@ import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
+import { radii, surfaces, typography } from '../theme/designSystem';
+import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'StoreDetailPublic'>;
 
@@ -50,13 +52,16 @@ type Store = {
 
 export function StoreDetailPublicScreen({ navigation, route }: Props) {
   const { id } = route.params;
-  const { user } = useDashboardContext();
+  const { user, isGuest, showGuestPrompt } = useDashboardContext();
+  const tileW = useGridTileWidth();
   const myId = user?.id ?? 0;
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [favoriteOn, setFavoriteOn] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +86,58 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (isGuest) {
+      setFavoriteOn(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const on = await apiFavoriteStatus('store', id);
+        if (!cancelled) setFavoriteOn(on);
+      } catch {
+        if (!cancelled) setFavoriteOn(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isGuest]);
+
+  const toggleFavorite = async () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
+    if (favoriteBusy) return;
+    setFavoriteBusy(true);
+    try {
+      setFavoriteOn(await apiToggleFavorite('store', id, !favoriteOn));
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => void toggleFavorite()}
+          disabled={favoriteBusy}
+          style={styles.headerIcon}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={favoriteOn ? 'Remove favorite' : 'Save favorite'}
+        >
+          <Ionicons name={favoriteOn ? 'heart' : 'heart-outline'} size={25} color={favoriteOn ? colors.danger : colors.text} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, favoriteOn, favoriteBusy]);
 
   const contact = async () => {
     if (!store) return;
@@ -147,23 +204,37 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
           {store.products.length === 0 ? (
             <Text style={styles.empty}>No approved products yet.</Text>
           ) : (
-            store.products.map((p) => {
-              const canAddToCart =
-                store.seller.user_id !== myId && p.moderation_status !== 'pending_approval';
-              return (
-                <View key={p.id} style={styles.pRow}>
+            <View style={styles.productsGrid}>
+              {store.products.map((p) => {
+                const canAddToCart =
+                  store.seller.user_id !== myId && p.moderation_status !== 'pending_approval';
+                return (
                   <Pressable
-                    style={({ pressed }) => [styles.pRowMain, pressed && styles.pPressed]}
+                    key={p.id}
+                    style={({ pressed }) => [styles.productTile, { width: tileW }, pressed && styles.pPressed]}
                     onPress={() => navigation.push('ProductDetail', { id: p.id })}
                   >
-                    {p.image_url ? (
-                      <RemoteImage url={p.image_url} style={styles.pImg} contentFit="cover" />
-                    ) : (
-                      <View style={[styles.pImg, styles.pPh]}>
-                        <Ionicons name="cube-outline" size={22} color={colors.textMuted} />
-                      </View>
-                    )}
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={styles.productImgWrap}>
+                      {p.image_url ? (
+                        <RemoteImage url={p.image_url} style={styles.productImg} contentFit="cover" />
+                      ) : (
+                        <View style={[styles.productImg, styles.pPh]}>
+                          <Ionicons name="cube-outline" size={28} color={colors.textMuted} />
+                        </View>
+                      )}
+                      {canAddToCart ? (
+                        <Pressable
+                          onPress={() => navigation.push('Cart')}
+                          style={({ pressed }) => [styles.productCartBtn, pressed && styles.pCartBtnPressed]}
+                          accessibilityRole="button"
+                          accessibilityLabel="Add to cart"
+                          hitSlop={8}
+                        >
+                          <Ionicons name="cart-outline" size={18} color={colors.primaryDark} />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                    <View style={styles.productBody}>
                       <Text style={styles.pName} numberOfLines={2}>
                         {p.name}
                       </Text>
@@ -174,22 +245,10 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
                         {p.currency} {p.price_amount}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                   </Pressable>
-                  {canAddToCart ? (
-                    <Pressable
-                      onPress={() => navigation.push('Cart')}
-                      style={({ pressed }) => [styles.pCartBtn, pressed && styles.pCartBtnPressed]}
-                      accessibilityRole="button"
-                      accessibilityLabel="Add to cart"
-                      hitSlop={8}
-                    >
-                      <Ionicons name="cart-outline" size={24} color={colors.primaryDark} />
-                    </Pressable>
-                  ) : null}
-                </View>
-              );
-            })
+                );
+              })}
+            </View>
           )}
 
           <Text style={styles.section}>Owner</Text>
@@ -277,11 +336,38 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text,
     marginTop: 22,
-    paddingHorizontal: 20,
+    paddingHorizontal: GRID_PAD,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   empty: { paddingHorizontal: 20, marginTop: 8, color: colors.textMuted, fontWeight: '600' },
+  productsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GRID_GAP,
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  productTile: surfaces.shopCard,
+  productImgWrap: { position: 'relative', overflow: 'hidden' },
+  productImg: { width: '100%', aspectRatio: GRID_IMAGE_ASPECT, backgroundColor: colors.primarySoft },
+  productCartBtn: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  productBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12 },
   pRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -313,9 +399,9 @@ const styles = StyleSheet.create({
   pPressed: { opacity: 0.92 },
   pImg: { width: 56, height: 56, borderRadius: 10, backgroundColor: colors.primarySoft },
   pPh: { alignItems: 'center', justifyContent: 'center' },
-  pName: { fontSize: 15, fontWeight: '800', color: colors.text },
-  pPending: { fontSize: 11, fontWeight: '800', color: '#c2410c', marginTop: 4 },
-  pPrice: { fontSize: 14, fontWeight: '800', color: colors.primaryDark, marginTop: 4 },
+  pName: { ...typography.cardTitle },
+  pPending: { ...typography.accent, fontSize: 11, marginTop: 4 },
+  pPrice: { ...typography.price, fontSize: 14, marginTop: 4 },
   sellerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, marginTop: 12 },
   avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primarySoft },
   avatarPh: { alignItems: 'center', justifyContent: 'center' },
@@ -323,4 +409,5 @@ const styles = StyleSheet.create({
   sellerUser: { fontSize: 13, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
   ctaBlock: { paddingHorizontal: 20, marginTop: 16, gap: 10 },
   reportBtn: { marginTop: 0 },
+  headerIcon: { marginRight: 12, padding: 4 },
 });

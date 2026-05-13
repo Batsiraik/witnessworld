@@ -19,6 +19,7 @@ import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Services' | 'Classifieds' | 'Community'>;
@@ -30,6 +31,9 @@ type Row = {
   title: string;
   price_amount: string | null;
   is_free?: boolean;
+  is_featured?: boolean;
+  is_urgent?: boolean;
+  is_verified?: boolean;
   pricing_type: string;
   currency: string;
   media_url: string | null;
@@ -237,6 +241,8 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
                 <Pressable
                   style={({ pressed }) => [
                     styles.gridTile,
+                    item.is_featured && styles.gridTileFeatured,
+                    item.is_urgent && styles.gridTileUrgent,
                     { width: tileW },
                     pressed && styles.cardPressed,
                   ]}
@@ -252,6 +258,13 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
                     )}
                   </View>
                   <View style={styles.gridBody}>
+                    {item.is_featured || item.is_urgent || item.is_verified ? (
+                      <View style={styles.badgeRow}>
+                        {item.is_featured ? <Text style={[styles.badge, styles.badgeFeatured]}>Featured</Text> : null}
+                        {item.is_urgent ? <Text style={[styles.badge, styles.badgeUrgent]}>Urgent</Text> : null}
+                        {item.is_verified ? <Text style={[styles.badge, styles.badgeVerified]}>Verified</Text> : null}
+                      </View>
+                    ) : null}
                     <Text style={styles.gridTitle} numberOfLines={2}>
                       {item.title}
                     </Text>
@@ -290,26 +303,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: 'rgba(11,18,32,0.06)',
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  catChipOn: {
-    backgroundColor: 'rgba(31,170,242,0.15)',
-    borderColor: 'rgba(31,170,242,0.4)',
-  },
+  catChipOn: surfaces.goldChip,
   catChipText: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
-  catChipTextOn: { color: colors.primaryDark },
+  catChipTextOn: { color: colors.goldDark },
   input: {
     borderWidth: 1,
-    borderColor: 'rgba(11,18,32,0.1)',
-    borderRadius: 12,
+    borderColor: colors.line,
+    borderRadius: radii.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
-    backgroundColor: colors.card,
+    backgroundColor: colors.white,
   },
   row2: { flexDirection: 'row', gap: 8 },
   half: { flex: 1 },
@@ -319,7 +329,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: radii.md,
     backgroundColor: colors.primarySoft,
     marginBottom: 8,
   },
@@ -332,18 +342,11 @@ const styles = StyleSheet.create({
   errScroll: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 8 },
   err: { color: '#b91c1c', padding: 16, fontWeight: '600' },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 24, fontWeight: '600' },
-  gridTile: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#0B1220',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
+  gridTile: surfaces.shopCard,
+  gridTileFeatured: { borderWidth: 1, borderColor: 'rgba(200, 162, 74, 0.48)' },
+  gridTileUrgent: { borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.34)' },
   cardPressed: { opacity: 0.92 },
-  gridImgWrap: { overflow: 'hidden', borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  gridImgWrap: { overflow: 'hidden', borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg },
   gridImg: {
     width: '100%',
     aspectRatio: GRID_IMAGE_ASPECT,
@@ -351,9 +354,21 @@ const styles = StyleSheet.create({
   },
   thumbPh: { alignItems: 'center', justifyContent: 'center' },
   gridBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12 },
-  gridTitle: { fontSize: 14, fontWeight: '800', color: colors.text, lineHeight: 18, minHeight: 36 },
-  gridPrice: { fontSize: 15, fontWeight: '800', color: '#2563EB', marginTop: 6 },
-  gridPriceFree: { fontSize: 14, fontWeight: '800', color: '#059669', marginTop: 6 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 6 },
+  badge: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  badgeFeatured: { backgroundColor: colors.goldSoft, color: colors.goldDark },
+  badgeUrgent: { backgroundColor: 'rgba(220, 38, 38, 0.1)', color: colors.danger },
+  badgeVerified: { backgroundColor: colors.primarySoft, color: colors.primaryDark },
+  gridTitle: { ...typography.cardTitle, minHeight: 36 },
+  gridPrice: { ...typography.price, marginTop: 6 },
+  gridPriceFree: { ...typography.accent, color: '#059669', marginTop: 6 },
   gridPriceMuted: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginTop: 6 },
   gridLocRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   gridLoc: { flex: 1, fontSize: 11, fontWeight: '600', color: colors.textMuted },
