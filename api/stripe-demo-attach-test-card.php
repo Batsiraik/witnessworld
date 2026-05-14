@@ -16,16 +16,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
 }
 
-if (!defined('WW_STRIPE_DEMO_ATTACH') || !WW_STRIPE_DEMO_ATTACH) {
-    ww_json(['ok' => false, 'error' => 'Demo card attach is not enabled on this server.'], 403);
-}
-
 if (!defined('WW_STRIPE_SECRET_KEY')) {
     ww_json(['ok' => false, 'error' => 'Billing is not configured on this server.'], 503);
 }
 $sk = trim((string) WW_STRIPE_SECRET_KEY);
 if ($sk === '' || !str_starts_with($sk, 'sk_test_')) {
-    ww_json(['ok' => false, 'error' => 'Demo attach is only allowed with Stripe test secret keys (sk_test_…).'], 403);
+    ww_json(['ok' => false, 'error' => 'Demo card attach only works when this server uses a Stripe test secret key (sk_test_…). Live keys cannot use this endpoint.'], 403);
+}
+
+/** Optional opt-out in api/config.local.php: define('WW_STRIPE_DEMO_DISABLE', true); */
+if (defined('WW_STRIPE_DEMO_DISABLE') && WW_STRIPE_DEMO_DISABLE) {
+    ww_json(['ok' => false, 'error' => 'Demo card attach is disabled on this server.'], 403);
 }
 
 $tok = ww_bearer_token();

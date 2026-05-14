@@ -36,11 +36,3 @@ $wwLocalConfig = __DIR__ . '/config.local.php';
 if (is_file($wwLocalConfig)) {
     require_once $wwLocalConfig;
 }
-
-/**
- * When true, POST api/stripe-demo-attach-test-card.php may attach Stripe’s test Visa (4242…) on the server
- * without the native CardField (for client QA builds). Only works with sk_test_ keys — never enable with live keys.
- */
-if (!defined('WW_STRIPE_DEMO_ATTACH')) {
-    define('WW_STRIPE_DEMO_ATTACH', false);
-}

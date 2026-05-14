@@ -137,7 +137,7 @@ function DemoAddPaymentCardScreen({ navigation, route }: Props) {
       Alert.alert(
         'Card',
         msg +
-          '\n\nAsk the server admin to set WW_STRIPE_DEMO_ATTACH to true in api/config.local.php (Stripe must use sk_test_…).'
+          '\n\nThis test flow needs a Stripe test secret key (sk_test_…) on the server. If you see this on production, the app demo mode should be turned off or the server must use test keys for QA only.'
       );
     } finally {
       setSaving(false);
