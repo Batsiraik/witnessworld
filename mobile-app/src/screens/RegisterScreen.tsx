@@ -435,9 +435,9 @@ export function RegisterScreen({ navigation }: Props) {
                       <Text style={styles.trialBold}>{trialDays}-day free trial</Text>
                       {' when you create the account. '}
                       <Text style={styles.trialBold}>You are not charged</Text>
-                      {' until after that trial ends. Right after email verification, the app will offer '}
-                      <Text style={styles.trialBold}>in-app Stripe card form</Text>
-                      {' to save a card in the app (Stripe test cards while the server uses test keys). If you skip it, you can add a card anytime under Profile → Payment method or when you change plan.'}
+                      {' until after that trial ends. Right after email verification you go straight to the '}
+                      <Text style={styles.trialBold}>add card</Text>
+                      {' screen (or you can switch to Free there). Use Stripe test card 4242 4242 4242 4242 with any future expiry and any CVC while the server is in test mode.'}
                     </Text>
                     <Text style={[styles.trialIntro, { marginTop: 10 }]}>
                       Your exact trial end date appears in the app after signup. Illustration only — last free day

@@ -73,7 +73,8 @@
           "merchantIdentifier": "merchant.com.witnessworldconnect",
           "enableGooglePay": false
         }
-      ]
+      ],
+      "./plugins/withStripeAndroidMaterialTheme.js"
     ],
     "extra": {
       "eas": {

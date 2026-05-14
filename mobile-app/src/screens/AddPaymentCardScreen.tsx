@@ -86,7 +86,6 @@ function AddPaymentCardForm({ clientSecret, email, returnTo, navigation }: Inner
       </Text>
       <CardField
         postalCodeEnabled={false}
-        autofocus
         cardStyle={{
           backgroundColor: colors.white,
           textColor: colors.text,
@@ -111,11 +110,13 @@ function AddPaymentCardForm({ clientSecret, email, returnTo, navigation }: Inner
 export function AddPaymentCardScreen({ navigation, route }: Props) {
   const returnTo = route.params?.returnTo ?? 'pop';
   const email = route.params?.email ?? '';
+  const signupFlow = returnTo === 'register_complete';
 
   const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading');
   const [publishableKey, setPublishableKey] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [skipBusy, setSkipBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,10 +151,48 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
     else navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
   };
 
+  const confirmSkipToFree = () => {
+    Alert.alert(
+      'Use free plan instead?',
+      'Your membership will switch to Free ($0/month). You will not add a card now. You can upgrade again anytime from Profile → Membership.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Switch to Free', style: 'destructive', onPress: () => void skipToFree() },
+      ]
+    );
+  };
+
+  const skipToFree = async () => {
+    setSkipBusy(true);
+    try {
+      await apiPost('membership-change.php', { membership_plan: 'free' }, true);
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
+    } catch (e) {
+      Alert.alert('Could not update plan', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setSkipBusy(false);
+    }
+  };
+
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScreenHeader title="Add payment method" onBack={onBack} />
+        {signupFlow ? (
+          <View style={styles.signupBanner}>
+            <Text style={styles.signupBannerText}>
+              Your trial is active. Add a test card (4242 4242 4242 4242, any future expiry, any CVC) or switch to
+              Free below — you are not charged until after the trial if you stay on a paid plan with a card on file.
+            </Text>
+            <PrimaryButton
+              label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
+              variant="outline"
+              onPress={confirmSkipToFree}
+              disabled={skipBusy}
+              style={styles.skipBtn}
+            />
+          </View>
+        ) : null}
         {phase === 'loading' ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -164,10 +203,23 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
           <View style={styles.center}>
             <Text style={styles.errorText}>{loadError}</Text>
             <PrimaryButton label="Close" onPress={onBack} style={styles.closeBtn} />
+            {signupFlow ? (
+              <PrimaryButton
+                label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
+                variant="outline"
+                onPress={confirmSkipToFree}
+                disabled={skipBusy}
+                style={styles.skipBtn}
+              />
+            ) : null}
           </View>
         ) : null}
         {phase === 'ready' && publishableKey && clientSecret ? (
-          <StripeProvider publishableKey={publishableKey} urlScheme={STRIPE_URL_SCHEME}>
+          <StripeProvider
+            publishableKey={publishableKey}
+            urlScheme={STRIPE_URL_SCHEME}
+            setReturnUrlSchemeOnAndroid
+          >
             <AddPaymentCardForm
               clientSecret={clientSecret}
               email={email}
@@ -187,6 +239,21 @@ const styles = StyleSheet.create({
   muted: { marginTop: 12, color: colors.textMuted, fontWeight: '600', textAlign: 'center' },
   errorText: { color: colors.danger, textAlign: 'center', fontWeight: '700', marginBottom: 16 },
   closeBtn: { marginTop: 8 },
+  signupBanner: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(11, 18, 32, 0.12)',
+  },
+  signupBannerText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  skipBtn: { marginTop: 4 },
   scroll: { paddingHorizontal: 20, paddingBottom: 32 },
   lead: {
     fontSize: 14,
@@ -195,5 +262,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 18,
   },
-  cardField: { width: '100%', height: 56, marginBottom: 20 },
+  cardField: { width: '100%', minHeight: 56, height: 200, marginBottom: 20 },
 });

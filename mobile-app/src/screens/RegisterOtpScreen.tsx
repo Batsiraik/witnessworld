@@ -43,31 +43,13 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
       const sub = data.subscription as VerifySubscription | undefined;
       const plan = typeof sub?.plan === 'string' ? sub.plan : 'free';
       const pm = String(sub?.stripe_payment_method_status ?? '');
-      const trialDays =
-        typeof sub?.trial_days === 'number' && Number.isFinite(sub.trial_days)
-          ? sub.trial_days
-          : 90;
 
       const goDashboard = () => {
         navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
       };
 
       if (plan !== 'free' && pm !== 'attached') {
-        Alert.alert(
-          'Add a payment method',
-          `Your ${trialDays}-day trial is active. Enter your card in the next screen (secure Stripe form inside the app). In test mode use 4242 4242 4242 4242 with any future expiry and any CVC. You are not charged until after the trial ends.`,
-          [
-            { text: "I'll add later", style: 'cancel', onPress: goDashboard },
-            {
-              text: 'Add card',
-              onPress: () =>
-                navigation.navigate('AddPaymentCard', {
-                  returnTo: 'register_complete',
-                  email,
-                }),
-            },
-          ]
-        );
+        navigation.replace('AddPaymentCard', { returnTo: 'register_complete', email });
         return;
       }
 
