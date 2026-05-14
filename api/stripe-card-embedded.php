@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * In-app card setup — WebView (?t=…). Light template + SetupIntent + postMessage.
+ * In-app card setup — WebView (?t=…). Beautiful Stripe Card Elements with clean UI.
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/stripe_card_embed_session.php';
@@ -13,7 +13,6 @@ if (!preg_match('/^[a-f0-9]{64}$/', $t)) {
     http_response_code(400);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Invalid link.';
-
     exit;
 }
 
@@ -22,7 +21,6 @@ if (!$session) {
     http_response_code(410);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'This setup link expired. Close it and open Add card again from the app.';
-
     exit;
 }
 
@@ -46,13 +44,10 @@ echo <<<HTML
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Add Card | Secure Payment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Add payment method</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
-    /* -------------------------------
-       RESET & GLOBAL (light, neutral)
-    ------------------------------- */
     * {
       margin: 0;
       padding: 0;
@@ -61,258 +56,219 @@ echo <<<HTML
     }
 
     body {
-      background: #f8fafc;   /* very light cool grey background */
-      font-family: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
-      padding: 24px 20px;
-      color: #1e293b;
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
+      background: linear-gradient(135deg, #f5f7fa 0%, #eef2f7 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* main card container — clean, elevated but subtle */
     .card-container {
-      max-width: 540px;
+      max-width: 520px;
+      width: 100%;
       margin: 0 auto;
       background: #ffffff;
-      border-radius: 32px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.02), 0 2px 6px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.03);
-      transition: box-shadow 0.2s ease;
+      border-radius: 40px;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.02);
+      overflow: hidden;
     }
 
     .form-content {
-      padding: 28px 24px 32px;
+      padding: 36px 32px 40px;
     }
 
-    /* header area */
     h1 {
-      font-size: 1.75rem;
+      font-size: 32px;
       font-weight: 600;
-      letter-spacing: -0.3px;
-      background: linear-gradient(135deg, #1e293b 0%, #2d3a4f 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
+      letter-spacing: -0.5px;
+      color: #1a1f2e;
       margin-bottom: 8px;
     }
 
     .lead {
-      font-size: 0.95rem;
-      color: #5b6e8c;
+      font-size: 15px;
+      color: #6b7280;
       line-height: 1.4;
-      margin-bottom: 28px;
-      border-left: 3px solid #e2e8f0;
-      padding-left: 14px;
+      margin-bottom: 32px;
     }
 
-    /* Stripe Elements field wrappers */
     .field-group {
       margin-bottom: 20px;
     }
 
     .field-label {
       display: block;
-      font-size: 0.8rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #5b6e8c;
-      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+      letter-spacing: -0.2px;
     }
 
-    /* Stripe iframe container styling — clean borders, soft focus */
+    /* Stripe field containers */
     .stripe-input {
-      display: block;
-      width: 100%;
-      min-height: 48px;
       background: #ffffff;
-      border: 1.5px solid #e2edf2;
-      border-radius: 20px;
-      padding: 12px 14px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      border: 1.5px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 12px 16px;
+      transition: all 0.2s ease;
+      min-height: 56px;
     }
 
-    .stripe-input > div {
-      width: 100% !important;
-      min-width: 0;
-    }
-
-    /* on hover subtle indication */
     .stripe-input:hover {
-      border-color: #cbdde6;
-      background-color: #fefefe;
+      border-color: #cbd5e1;
+      background: #fefefe;
     }
 
-    /* when Stripe inner field is focused, we mimic a clean glow */
     .stripe-input--focus {
-      border-color: #a0c0d4;
-      box-shadow: 0 0 0 3px rgba(100, 150, 200, 0.1);
-      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.08);
     }
 
-    /* Split row for expiry & cvc */
+    /* Split row for expiry and CVC */
     .row-split {
       display: flex;
-      gap: 16px;
+      gap: 14px;
       margin-bottom: 20px;
     }
+    
     .row-split .field-group {
-      flex: 1 1 0;
-      min-width: 0;
+      flex: 1;
       margin-bottom: 0;
     }
 
-    /* error message area */
+    /* Error message styling */
     .error-message {
-      background: #fff6f5;
-      border-radius: 18px;
-      padding: 10px 16px;
-      margin: 16px 0 8px;
-      font-size: 0.8rem;
-      color: #d0302f;
-      border-left: 3px solid #d0302f;
-      font-weight: 450;
-      transition: all 0.1s;
+      background: #fef2f2;
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin: 16px 0 12px;
+      font-size: 14px;
+      color: #dc2626;
+      border-left: 3px solid #ef4444;
+      font-weight: 500;
     }
 
-    /* primary button — light, modern, subtle but confident */
+    /* Button styling */
     .btn-primary {
       width: 100%;
-      background: #1f2a3e;
+      background: #1a1f2e;
       border: none;
-      padding: 14px 18px;
-      border-radius: 44px;
+      padding: 16px 20px;
+      border-radius: 48px;
       font-weight: 600;
-      font-size: 1rem;
+      font-size: 16px;
       color: white;
       cursor: pointer;
       transition: all 0.2s ease;
-      margin-top: 8px;
+      margin-top: 16px;
       font-family: inherit;
-      letter-spacing: 0.2px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .btn-primary:hover {
-      background: #2d3a55;
-      opacity: 0.96;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      background: #2d3448;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     }
 
     .btn-primary:active {
-      opacity: 0.92;
-      background: #141e2f;
+      transform: translateY(0);
     }
 
     .btn-primary:disabled {
-      background: #b9c2d0;
+      background: #cbd5e1;
       cursor: not-allowed;
       transform: none;
-      opacity: 0.7;
     }
 
-    /* cancel link – minimal & clean */
+    /* Cancel link */
     .cancel-wrapper {
       text-align: center;
-      margin-top: 20px;
+      margin-top: 24px;
     }
+    
     .cancel-link {
+      font-size: 15px;
+      color: #6b7280;
+      text-decoration: none;
+      padding: 8px 16px;
       display: inline-block;
-      font-size: 0.9rem;
-      color: #7c8ba0;
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: 40px;
-      transition: background 0.15s;
+      transition: color 0.2s;
     }
+    
     .cancel-link:hover {
-      background: #f0f4f9;
-      color: #3b4d66;
-      text-decoration: none;
+      color: #374151;
     }
 
-    /* additional micro spacing */
-    hr {
-      margin: 20px 0 0;
-      border: none;
-      border-top: 1px solid #ecf3f8;
-    }
-
-    /* small responsive */
-    @media (max-width: 480px) {
-      body { padding: 16px; }
-      .form-content { padding: 20px 20px 28px; }
-      h1 { font-size: 1.55rem; }
-    }
-
-    /* subtle brand lockup */
+    /* Security badge */
     .badge-secure {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      font-size: 0.7rem;
-      color: #8da0b0;
-      margin-top: 18px;
-      letter-spacing: 0.2px;
+      gap: 8px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #f0f2f5;
+      font-size: 12px;
+      color: #9ca3af;
     }
-    .badge-secure svg {
-      opacity: 0.7;
+
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      .form-content { padding: 28px 24px 32px; }
+      h1 { font-size: 28px; }
     }
   </style>
 </head>
 <body>
 <div class="card-container">
   <div class="form-content">
-    <h1>✨ Add payment method</h1>
+    <h1>Add card</h1>
     <div class="lead">
-      Encrypted & secure · saved for membership billing
+      Enter your card details to start your membership
     </div>
 
     <form id="payment-form" autocomplete="off">
-      <!-- Card number field -->
       <div class="field-group">
         <div class="field-label">Card number</div>
         <div id="card-number" class="stripe-input"></div>
       </div>
 
-      <!-- Expiry & CVC inline -->
       <div class="row-split">
         <div class="field-group">
           <div class="field-label">Expiry date</div>
           <div id="card-expiry" class="stripe-input"></div>
         </div>
         <div class="field-group">
-          <div class="field-label">CVC</div>
+          <div class="field-label">Security code</div>
           <div id="card-cvc" class="stripe-input"></div>
         </div>
       </div>
 
-      <!-- Dynamic error message -->
       <div id="card-errors" role="alert" class="error-message" style="display: none;"></div>
 
-      <button type="submit" id="submit-btn" class="btn-primary">✓ Save card</button>
+      <button type="submit" id="submit-btn" class="btn-primary">Save card</button>
     </form>
 
     <div class="cancel-wrapper">
-      <a href="#" id="cancel-link" class="cancel-link">← Cancel & return to app</a>
+      <a href="#" id="cancel-link" class="cancel-link">Cancel</a>
     </div>
+    
     <div class="badge-secure">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2C8.13 2 5 5.13 5 9v4c0 3.87 3.13 7 7 7s7-3.13 7-7V9c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5" fill="none"/>
         <path d="M12 11v3m0 2v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
-      <span>PCI compliant · Stripe Elements</span>
+      <span>PCI compliant · Secured by Stripe</span>
     </div>
   </div>
 </div>
 
 <script>
-  (function() {
-    // ======================
-    // Retrieve backend data (injected from PHP)
-    // ======================
-    // Server injects publishable key, SetupIntent client secret, embed token, and API URLs below.
+(function() {
+    // Backend data
     let pk = {$pkJs};
     let clientSecret = {$csJs};
     let embedT = {$tJs};
@@ -320,69 +276,92 @@ echo <<<HTML
     let completeUrl = {$completeJs};
     
     if (!pk || !clientSecret) {
-      document.getElementById('card-errors').innerText = 'Configuration error. Please close and try again.';
-      document.getElementById('card-errors').style.display = 'block';
+      const errEl = document.getElementById('card-errors');
+      errEl.innerText = 'Configuration error. Please close and try again.';
+      errEl.style.display = 'block';
       return;
     }
 
     const stripe = Stripe(pk);
-    const elements = stripe.elements();
-
-    /* Web-safe font + normal spacing — avoids “squashed” glyphs in some Android WebViews. */
-    const elementStyle = {
+    
+    // Enhanced Stripe Elements styling for beautiful text and placeholders
+    const elementStyles = {
       base: {
-        color: '#1e293b',
-        fontSize: '17px',
-        fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
-        letterSpacing: '0.02em',
-        fontSmoothing: 'antialiased'
+        color: '#1f2937',
+        fontWeight: '500',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif',
+        fontSize: '16px',
+        fontSmoothing: 'antialiased',
+        '::placeholder': {
+          color: '#9ca3af',
+          fontWeight: '400',
+          fontSize: '15px',
+          letterSpacing: '0px'
+        },
+        ':focus': {
+          color: '#111827'
+        }
       },
       invalid: {
-        color: '#1e293b',
-        iconColor: '#64748b'
+        color: '#dc2626',
+        iconColor: '#dc2626',
+        '::placeholder': {
+          color: '#fca5a5'
+        }
+      },
+      complete: {
+        color: '#10b981'
       }
     };
 
-    const cardNumber = elements.create('cardNumber', { style: elementStyle });
-    const cardExpiry = elements.create('cardExpiry', { style: elementStyle });
-    const cardCvc = elements.create('cardCvc', { style: elementStyle });
-
-    // Mount the fields into dedicated containers
+    const elements = stripe.elements({
+      fonts: [],
+      locale: 'auto'
+    });
+    
+    // Create elements with custom placeholders
+    const cardNumber = elements.create('cardNumber', { 
+      style: elementStyles,
+      showIcon: true,
+      placeholder: '1234 5678 9012 3456'
+    });
+    
+    const cardExpiry = elements.create('cardExpiry', { 
+      style: elementStyles,
+      placeholder: 'MM / YY'
+    });
+    
+    const cardCvc = elements.create('cardCvc', { 
+      style: elementStyles,
+      placeholder: 'CVC'
+    });
+    
+    // Mount the fields
     cardNumber.mount('#card-number');
     cardExpiry.mount('#card-expiry');
     cardCvc.mount('#card-cvc');
 
-    // Add class-based focus effects: when Stripe iframe gets focus,
-    // we apply a focus class to the parent .stripe-input container
-    // to achieve a clean border glow. We'll listen to 'focus' and 'blur' events from Stripe.
-    const numberContainer = document.querySelector('#card-number');
-    const expiryContainer = document.querySelector('#card-expiry');
-    const cvcContainer = document.querySelector('#card-cvc');
+    // Focus effects
+    const containers = {
+      number: document.querySelector('#card-number'),
+      expiry: document.querySelector('#card-expiry'),
+      cvc: document.querySelector('#card-cvc')
+    };
 
-    function addFocusClass(containerEl) {
-      if (containerEl) containerEl.classList.add('stripe-input--focus');
-    }
-    function removeFocusClass(containerEl) {
-      if (containerEl) containerEl.classList.remove('stripe-input--focus');
-    }
+    cardNumber.on('focus', () => containers.number.classList.add('stripe-input--focus'));
+    cardNumber.on('blur', () => containers.number.classList.remove('stripe-input--focus'));
+    cardExpiry.on('focus', () => containers.expiry.classList.add('stripe-input--focus'));
+    cardExpiry.on('blur', () => containers.expiry.classList.remove('stripe-input--focus'));
+    cardCvc.on('focus', () => containers.cvc.classList.add('stripe-input--focus'));
+    cardCvc.on('blur', () => containers.cvc.classList.remove('stripe-input--focus'));
 
-    cardNumber.on('focus', () => addFocusClass(numberContainer));
-    cardNumber.on('blur', () => removeFocusClass(numberContainer));
-    cardExpiry.on('focus', () => addFocusClass(expiryContainer));
-    cardExpiry.on('blur', () => removeFocusClass(expiryContainer));
-    cardCvc.on('focus', () => addFocusClass(cvcContainer));
-    cardCvc.on('blur', () => removeFocusClass(cvcContainer));
-
-    // Error container
     const errorElement = document.getElementById('card-errors');
     const submitBtn = document.getElementById('submit-btn');
-    const originalBtnText = '✓ Save card';
+    const originalBtnText = 'Save card';
 
-    // Helper: show inline error in friendly style
     function showError(message) {
-      errorElement.innerText = message || 'Something went wrong. Please verify your card details.';
+      errorElement.innerText = message || 'Something went wrong. Please check your card details.';
       errorElement.style.display = 'block';
-      // auto-hide after 5 seconds? but better to keep visible until next input? But we keep for ux.
     }
 
     function hideError() {
@@ -390,51 +369,55 @@ echo <<<HTML
       errorElement.style.display = 'none';
     }
 
-    function onFieldChange(event) {
+    // Clear error when user types
+    cardNumber.on('change', (event) => {
       if (event.error) {
         showError(event.error.message);
       } else {
         hideError();
       }
-    }
-    cardNumber.on('change', onFieldChange);
-    cardExpiry.on('change', onFieldChange);
-    cardCvc.on('change', onFieldChange);
+    });
+    
+    cardExpiry.on('change', (event) => {
+      if (event.error) {
+        showError(event.error.message);
+      } else {
+        hideError();
+      }
+    });
+    
+    cardCvc.on('change', (event) => {
+      if (event.error) {
+        showError(event.error.message);
+      } else {
+        hideError();
+      }
+    });
 
-    // Communicate with React Native WebView
     function postMessageToApp(payload) {
       try {
         if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
           window.ReactNativeWebView.postMessage(JSON.stringify(payload));
         } else {
-          // For debugging in browser: console log
-          console.log('[Bridge message]', payload);
+          console.log('[Bridge]', payload);
         }
       } catch (err) {
         console.warn('Failed to post message', err);
       }
     }
 
-    // Cancel handler
-    const cancelLink = document.getElementById('cancel-link');
-    if (cancelLink) {
-      cancelLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        postMessageToApp({ type: 'payment_cancelled' });
-      });
-    }
+    document.getElementById('cancel-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      postMessageToApp({ type: 'payment_cancelled' });
+    });
 
-    // Submit handler: confirm setupIntent with Stripe
-    const form = document.getElementById('payment-form');
-
-    form.addEventListener('submit', async (e) => {
+    document.getElementById('payment-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       hideError();
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
 
       try {
-        // Confirm the card setup using the client secret and card element
         const result = await stripe.confirmCardSetup(clientSecret, {
           payment_method: {
             card: cardNumber,
@@ -442,14 +425,7 @@ echo <<<HTML
         });
 
         if (result.error) {
-          // user-friendly error message
-          let friendlyMsg = result.error.message;
-          if (friendlyMsg && friendlyMsg.toLowerCase().includes('incomplete')) {
-            friendlyMsg = 'Please fill in all card details correctly.';
-          } else if (friendlyMsg && friendlyMsg.toLowerCase().includes('expired')) {
-            friendlyMsg = 'Your card has expired. Use a different card.';
-          }
-          showError(friendlyMsg || 'Card validation failed. Check details and try again.');
+          showError(result.error.message || 'Card was declined. Please try again.');
           submitBtn.disabled = false;
           submitBtn.textContent = originalBtnText;
           return;
@@ -457,20 +433,18 @@ echo <<<HTML
 
         const { setupIntent } = result;
         if (!setupIntent || setupIntent.status !== 'succeeded') {
-          showError('Setup was not completed. Please try again.');
+          showError('Setup did not complete. Please try again.');
           submitBtn.disabled = false;
           submitBtn.textContent = originalBtnText;
           return;
         }
 
-        const returnedSetupId = setupIntent.id || setupIntentId;
-        // Call our backend completion endpoint
         const response = await fetch(completeUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            t: embedT,
-            setup_intent_id: returnedSetupId
+          body: JSON.stringify({ 
+            t: embedT, 
+            setup_intent_id: setupIntent.id || setupIntentId 
           })
         });
 
@@ -478,39 +452,23 @@ echo <<<HTML
         try {
           data = await response.json();
         } catch (err) {
-          data = { ok: false, error: 'Invalid server response' };
+          data = { ok: false, error: 'Server error' };
         }
 
         if (data && data.ok === true) {
-          // Success: notify app and close
           postMessageToApp({ type: 'payment_success' });
         } else {
-          const backendError = data && data.error ? String(data.error) : 'Card could not be saved.';
-          showError(backendError);
+          showError((data && data.error) || 'Could not save card. Please try again.');
           submitBtn.disabled = false;
           submitBtn.textContent = originalBtnText;
         }
       } catch (networkErr) {
-        console.error('network error', networkErr);
-        showError('Network error. Please check your connection and try again.');
+        showError('Network error. Please check your connection.');
         submitBtn.disabled = false;
         submitBtn.textContent = originalBtnText;
       }
     });
-
-    // Additional polish: if any Stripe element is complete, we could remove error after success retry.
-    // Also, ensure that button state resets properly.
-    // Simulate responsive adjustments: clean and ready.
-    // For perfect placeholder & typing preview: the custom elementStyle ensures that while typing the text is crisp.
-    // And because we set placeholder for cardNumber, expiry, cvc — user sees clear guidance.
-    // Additionally we can set a small utility to prevent double submission.
-    window.addEventListener('load', () => {
-      // Force focus outline consistency
-      document.querySelectorAll('.stripe-input').forEach(el => {
-        el.style.cursor = 'text';
-      });
-    });
-  })();
+})();
 </script>
 </body>
 </html>
