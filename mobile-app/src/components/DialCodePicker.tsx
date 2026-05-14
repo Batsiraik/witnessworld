@@ -36,7 +36,9 @@ export function DialCodePicker({ value, onChange }: Props) {
         style={({ pressed }) => [styles.trigger, pressed && { opacity: 0.9 }]}
       >
         <Text style={styles.flag}>{value.flag}</Text>
-        <Text style={styles.dial}>{value.dial}</Text>
+        <Text style={styles.dial} numberOfLines={1}>
+          {value.dial}
+        </Text>
         <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
       </Pressable>
 
@@ -89,16 +91,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(31, 170, 242, 0.25)',
     backgroundColor: 'rgba(255,255,255,0.92)',
-    width: 112,
+    minWidth: 136,
+    maxWidth: 168,
+    flexShrink: 0,
   },
-  flag: { fontSize: 17 },
-  dial: { fontSize: 13, fontWeight: '800', color: colors.text, flex: 1 },
+  flag: { fontSize: 17, flexShrink: 0 },
+  dial: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.text,
+    flexShrink: 0,
+  },
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',

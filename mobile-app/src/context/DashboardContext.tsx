@@ -33,6 +33,16 @@ export type SubscriptionInfo = {
   };
   plans?: Array<Record<string, unknown>>;
   trial_days?: number;
+  storefront_addon?: string;
+  storefront_addon_title?: string | null;
+  storefront_addon_monthly?: number | null;
+  storefront_product_cap?: number;
+  has_business_membership?: boolean;
+  usage?: {
+    marketplace_listings_used?: number;
+    marketplace_listings_limit?: number;
+    marketplace_listings_remaining?: number;
+  };
 };
 
 type Ctx = {

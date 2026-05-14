@@ -84,6 +84,80 @@ function ww_valid_membership_plan(string $plan): string
     return array_key_exists($plan, ww_subscription_plans()) ? $plan : 'free';
 }
 
+/** Business tiers that may purchase a storefront add-on. */
+function ww_subscription_has_business_membership(string $planKey): bool
+{
+    $p = ww_valid_membership_plan($planKey);
+
+    return in_array($p, ['starter', 'growth', 'elite'], true);
+}
+
+/** @return array<string, array{title: string, price_monthly: int, product_cap: int}> */
+function ww_storefront_addon_catalog(): array
+{
+    return [
+        'small' => ['title' => 'Small Storefront', 'price_monthly' => 25, 'product_cap' => 25],
+        'large' => ['title' => 'Large Storefront', 'price_monthly' => 50, 'product_cap' => 50],
+    ];
+}
+
+function ww_storefront_addon_valid(string $v): bool
+{
+    return in_array($v, ['none', 'small', 'large'], true);
+}
+
+function ww_storefront_product_cap(string $addon): int
+{
+    $cat = ww_storefront_addon_catalog();
+
+    return (int) ($cat[$addon]['product_cap'] ?? 0);
+}
+
+function ww_subscription_count_marketplace_listings(PDO $pdo, int $userId): int
+{
+    $sql = "SELECT COUNT(*) FROM listings
+            WHERE user_id = ?
+              AND listing_type IN ('classified','service','community')
+              AND moderation_status IN ('pending_approval','approved')";
+
+    try {
+        $st = $pdo->prepare($sql);
+        $st->execute([$userId]);
+
+        return (int) $st->fetchColumn();
+    } catch (\Throwable) {
+        return 0;
+    }
+}
+
+/**
+ * Block new marketplace listings when the member is at max_active_ads (approved + pending).
+ *
+ * @param array<string, mixed> $user
+ */
+function ww_subscription_enforce_listing_cap(PDO $pdo, array $user): void
+{
+    $planKey = ww_valid_membership_plan((string) ($user['membership_plan'] ?? 'free'));
+    $status = (string) ($user['subscription_status'] ?? 'free');
+    $paidAccess = $planKey !== 'free' && in_array($status, ['trialing', 'active', 'grace'], true);
+    if (!$paidAccess) {
+        return;
+    }
+    $plans = ww_subscription_plans();
+    $plan = $plans[$planKey];
+    $limit = (int) ($plan['max_active_ads'] ?? 0);
+    if ($limit <= 0) {
+        return;
+    }
+    $used = ww_subscription_count_marketplace_listings($pdo, (int) $user['id']);
+    if ($used >= $limit) {
+        ww_json([
+            'ok' => false,
+            'error' => 'You are at your plan limit for active marketplace listings. Remove or wait for one to leave review before adding another.',
+        ], 402);
+    }
+}
+
 /**
  * @param array<string, mixed> $user
  * @return array<string, mixed>
@@ -98,6 +172,22 @@ function ww_subscription_payload(PDO $pdo, array $user): array
     $features = $plan;
     $features['can_post'] = $paidAccess && !empty($plan['can_post']);
 
+    $userId = (int) ($user['id'] ?? 0);
+    $usedListings = ww_subscription_count_marketplace_listings($pdo, $userId);
+    $limitAds = (int) ($plan['max_active_ads'] ?? 0);
+
+    $addon = (string) ($user['storefront_addon'] ?? 'none');
+    if (!ww_storefront_addon_valid($addon)) {
+        $addon = 'none';
+    }
+    $addonCatalog = ww_storefront_addon_catalog();
+    $addonMonthly = null;
+    $addonTitle = null;
+    if ($addon !== 'none' && isset($addonCatalog[$addon])) {
+        $addonMonthly = (int) $addonCatalog[$addon]['price_monthly'];
+        $addonTitle = (string) $addonCatalog[$addon]['title'];
+    }
+
     return [
         'plan' => $planKey,
         'status' => $status,
@@ -105,6 +195,16 @@ function ww_subscription_payload(PDO $pdo, array $user): array
         'trial_ends_at' => $user['trial_ends_at'] ?? null,
         'grace_ends_at' => $user['grace_ends_at'] ?? null,
         'stripe_payment_method_status' => (string) ($user['stripe_payment_method_status'] ?? 'none'),
+        'storefront_addon' => $addon,
+        'storefront_addon_title' => $addonTitle,
+        'storefront_addon_monthly' => $addonMonthly,
+        'storefront_product_cap' => ww_storefront_product_cap($addon),
+        'has_business_membership' => ww_subscription_has_business_membership($planKey),
+        'usage' => [
+            'marketplace_listings_used' => $usedListings,
+            'marketplace_listings_limit' => $limitAds,
+            'marketplace_listings_remaining' => max(0, $limitAds - $usedListings),
+        ],
         'features' => $features,
         'plans' => array_values($plans),
         'trial_days' => ww_membership_trial_days($pdo),

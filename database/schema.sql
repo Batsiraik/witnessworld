@@ -79,6 +79,7 @@ CREATE TABLE users (
   stripe_customer_id VARCHAR(191) NULL,
   stripe_subscription_id VARCHAR(191) NULL,
   stripe_payment_method_status ENUM('none','missing','attached') NOT NULL DEFAULT 'none',
+  storefront_addon ENUM('none','small','large') NOT NULL DEFAULT 'none',
   status ENUM(
     'pending_otp',
     'pending_verification',

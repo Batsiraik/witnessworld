@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { colors } from '../theme/colors';
 
@@ -8,11 +9,15 @@ type Props = TextInputProps & {
   hideLabel?: boolean;
 };
 
-export function AppTextField({ label, error, style, hideLabel, ...rest }: Props) {
+export const AppTextField = forwardRef<TextInput, Props>(function AppTextField(
+  { label, error, style, hideLabel, ...rest },
+  ref
+) {
   return (
     <View style={[styles.wrap, hideLabel && styles.wrapDense]}>
       {hideLabel ? null : <Text style={styles.label}>{label}</Text>}
       <TextInput
+        ref={ref}
         placeholderTextColor={colors.textMuted}
         style={[styles.input, error ? styles.inputError : null, style]}
         {...rest}
@@ -20,7 +25,7 @@ export function AppTextField({ label, error, style, hideLabel, ...rest }: Props)
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 16 },

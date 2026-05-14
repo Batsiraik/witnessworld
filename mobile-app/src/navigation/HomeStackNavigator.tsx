@@ -11,6 +11,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { ListingDetailScreen } from '../screens/ListingDetailScreen';
 import { MemberPublicProfileScreen } from '../screens/MemberPublicProfileScreen';
 import { MembershipPlansScreen } from '../screens/MembershipPlansScreen';
+import { StorefrontAddonScreen } from '../screens/StorefrontAddonScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { ProfileSettingsScreen } from '../screens/ProfileSettingsScreen';
 import { CreateDirectoryEntryScreen } from '../screens/CreateDirectoryEntryScreen';
@@ -74,6 +75,7 @@ export function HomeStackNavigator() {
       <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart' }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favorites' }} />
       <Stack.Screen name="MembershipPlans" component={MembershipPlansScreen} options={{ title: 'Membership plans' }} />
+      <Stack.Screen name="StorefrontAddon" component={StorefrontAddonScreen} options={{ title: 'Storefront add-on' }} />
       <Stack.Screen name="Profile" component={ProfileSettingsScreen} options={{ title: 'Profile & settings' }} />
       <Stack.Screen
         name="ProviderHub"

@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '../components/GradientBackground';
@@ -25,6 +26,20 @@ export function ProviderHubScreen({ navigation }: Props) {
   const canPost = subscription?.features?.can_post === true;
   const planTitle = subscription?.plan_title ?? 'User Member';
   const trialEnds = subscription?.trial_ends_at ? `Trial ends ${String(subscription.trial_ends_at).slice(0, 10)}` : null;
+  const hasBusiness = subscription?.has_business_membership === true;
+  const storefrontAddon = subscription?.storefront_addon ?? 'none';
+
+  const usageLine = useMemo(() => {
+    const lim = subscription?.usage?.marketplace_listings_limit ?? 0;
+    const rem = subscription?.usage?.marketplace_listings_remaining ?? 0;
+    if (!canPost || lim <= 0) {
+      return 'Upgrade for marketplace ad slots.';
+    }
+    if (rem <= 0) {
+      return 'At your plan limit for marketplace ads.';
+    }
+    return `${rem} marketplace ad${rem === 1 ? '' : 's'} left`;
+  }, [subscription, canPost]);
 
   const requireAvatar = (then: () => void) => {
     if (!canPost) {
@@ -77,7 +92,24 @@ export function ProviderHubScreen({ navigation }: Props) {
       iconBg: '#DCFCE7',
       iconColor: '#15803D',
       onPress: () =>
-        Alert.alert('Storefront add-on', 'Storefront is a separate add-on and is locked for this release.'),
+        requireAvatar(() => {
+          if (!hasBusiness) {
+            Alert.alert(
+              'Business plan required',
+              'Storefronts are for Starter, Growth, or Elite. Upgrade your membership, then choose a storefront add-on.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Membership plans', onPress: () => navigation.navigate('MembershipPlans') },
+              ]
+            );
+            return;
+          }
+          if (storefrontAddon !== 'small' && storefrontAddon !== 'large') {
+            navigation.navigate('StorefrontAddon');
+            return;
+          }
+          navigation.navigate('CreateStore', { seed: Date.now() });
+        }),
     },
     {
       key: 'directory',
@@ -105,13 +137,22 @@ export function ProviderHubScreen({ navigation }: Props) {
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.planCard}>
-            <View style={{ flex: 1 }}>
+            <View style={styles.planCardHeader}>
               <Text style={styles.planLabel}>Current plan</Text>
-              <Text style={styles.planTitle}>{planTitle}</Text>
-              {trialEnds ? <Text style={styles.planMeta}>{trialEnds}</Text> : null}
+              <Pressable onPress={() => navigation.navigate('MembershipPlans')} style={styles.planBtn}>
+                <Text style={styles.planBtnText}>Change plan</Text>
+              </Pressable>
             </View>
-            <Pressable onPress={() => navigation.navigate('MembershipPlans')} style={styles.planBtn}>
-              <Text style={styles.planBtnText}>Change plan</Text>
+            <Text style={styles.planTitle}>{planTitle}</Text>
+            {trialEnds ? <Text style={styles.planMeta}>{trialEnds}</Text> : null}
+            <Text style={styles.planUsage}>{usageLine}</Text>
+            <Pressable onPress={() => navigation.navigate('StorefrontAddon')} style={styles.addonRow} hitSlop={6}>
+              <Text style={styles.addonRowLabel}>
+                {storefrontAddon === 'small' || storefrontAddon === 'large'
+                  ? `Storefront · ${storefrontAddon === 'small' ? 'Small' : 'Large'}`
+                  : 'Storefront add-on'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </Pressable>
           </View>
           <Text style={styles.pageSub}>What would you like to post?</Text>
@@ -151,9 +192,6 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   planCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     backgroundColor: colors.white,
     borderRadius: 18,
     borderWidth: 1,
@@ -161,9 +199,25 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
+  planCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   planLabel: { fontSize: 11, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  planTitle: { marginTop: 3, fontSize: 17, fontWeight: '800', color: colors.text },
+  planTitle: { marginTop: 6, fontSize: 17, fontWeight: '800', color: colors.text },
   planMeta: { marginTop: 3, fontSize: 12, fontWeight: '700', color: colors.goldDark },
+  planUsage: { marginTop: 5, fontSize: 11, lineHeight: 15, fontWeight: '600', color: colors.textMuted },
+  addonRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+  },
+  addonRowLabel: { fontSize: 12, fontWeight: '800', color: colors.primaryDark },
   planBtn: { borderRadius: 999, backgroundColor: colors.primarySoft, paddingHorizontal: 12, paddingVertical: 8 },
   planBtnText: { fontSize: 12, fontWeight: '800', color: colors.primaryDark },
   card: {

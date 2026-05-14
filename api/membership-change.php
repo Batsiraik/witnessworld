@@ -30,10 +30,10 @@ $now = date('Y-m-d H:i:s');
 if ($plan === 'free') {
     $st = $pdo->prepare(
         'UPDATE users
-         SET membership_plan = ?, subscription_status = ?, grace_ends_at = NULL, stripe_payment_method_status = ?
+         SET membership_plan = ?, subscription_status = ?, grace_ends_at = NULL, stripe_payment_method_status = ?, storefront_addon = ?
          WHERE id = ?'
     );
-    $st->execute(['free', 'free', 'none', $userId]);
+    $st->execute(['free', 'free', 'none', 'none', $userId]);
 
     try {
         $pdo->prepare('UPDATE listings SET moderation_status = ? WHERE user_id = ? AND moderation_status = ?')
@@ -42,7 +42,7 @@ if ($plan === 'free') {
             ->execute(['suspended', $userId, 'approved']);
         $pdo->prepare('UPDATE directory_entries SET moderation_status = ? WHERE user_id = ? AND moderation_status = ?')
             ->execute(['suspended', $userId, 'approved']);
-    } catch (Throwable) {
+    } catch (\Throwable) {
         // Downgrade still succeeds; moderation tables may not exist in old installs.
     }
 } else {
@@ -51,12 +51,20 @@ if ($plan === 'free') {
     $status = in_array((string) ($user['subscription_status'] ?? ''), ['active', 'trialing', 'grace'], true)
         ? (string) $user['subscription_status']
         : 'trialing';
+    $prevPm = (string) ($user['stripe_payment_method_status'] ?? 'none');
+    $pmForPaid = $prevPm === 'attached' ? 'attached' : 'missing';
+    $planBusiness = ww_subscription_has_business_membership($plan);
+    $prevAddon = (string) ($user['storefront_addon'] ?? 'none');
+    $addonVal = 'none';
+    if ($planBusiness && ww_storefront_addon_valid($prevAddon) && in_array($prevAddon, ['small', 'large'], true)) {
+        $addonVal = $prevAddon;
+    }
     $st = $pdo->prepare(
         'UPDATE users
-         SET membership_plan = ?, subscription_status = ?, trial_started_at = COALESCE(trial_started_at, ?), trial_ends_at = ?, stripe_payment_method_status = ?
+         SET membership_plan = ?, subscription_status = ?, trial_started_at = COALESCE(trial_started_at, ?), trial_ends_at = ?, stripe_payment_method_status = ?, storefront_addon = ?
          WHERE id = ?'
     );
-    $st->execute([$plan, $status, $now, $trialEnd, 'missing', $userId]);
+    $st->execute([$plan, $status, $now, $trialEnd, $pmForPaid, $addonVal, $userId]);
 }
 
 $fresh = ww_user_from_token($pdo, $tok);

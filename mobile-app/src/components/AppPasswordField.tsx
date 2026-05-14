@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { colors } from '../theme/colors';
 
@@ -8,7 +8,10 @@ type Props = TextInputProps & {
   error?: string;
 };
 
-export function AppPasswordField({ label, error, style, ...rest }: Props) {
+export const AppPasswordField = forwardRef<TextInput, Props>(function AppPasswordField(
+  { label, error, style, ...rest },
+  ref
+) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -16,6 +19,7 @@ export function AppPasswordField({ label, error, style, ...rest }: Props) {
       <Text style={styles.label}>{label}</Text>
       <View style={[styles.row, error ? styles.rowError : null]}>
         <TextInput
+          ref={ref}
           placeholderTextColor={colors.textMuted}
           secureTextEntry={!visible}
           style={[styles.input, style]}
@@ -37,7 +41,7 @@ export function AppPasswordField({ label, error, style, ...rest }: Props) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 16 },

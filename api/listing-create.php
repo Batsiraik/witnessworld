@@ -26,6 +26,7 @@ if (($user['status'] ?? '') !== 'verified') {
     ww_json(['ok' => false, 'error' => 'Account must be verified to post a listing'], 403);
 }
 ww_subscription_require_posting($pdo, $user);
+ww_subscription_enforce_listing_cap($pdo, $user);
 
 $avatar = trim((string) ($user['avatar_url'] ?? ''));
 if ($avatar === '') {

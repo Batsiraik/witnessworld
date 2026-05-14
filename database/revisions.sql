@@ -332,3 +332,9 @@ ALTER TABLE users
   ADD COLUMN stripe_subscription_id VARCHAR(191) NULL AFTER stripe_customer_id,
   ADD COLUMN stripe_payment_method_status ENUM('none','missing','attached') NOT NULL DEFAULT 'none' AFTER stripe_subscription_id,
   ADD INDEX idx_users_membership (membership_plan, subscription_status);
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-14: Storefront add-on (Small / Large), separate from membership tier
+-- ---------------------------------------------------------------------------
+ALTER TABLE users
+  ADD COLUMN storefront_addon ENUM('none','small','large') NOT NULL DEFAULT 'none' AFTER stripe_payment_method_status;

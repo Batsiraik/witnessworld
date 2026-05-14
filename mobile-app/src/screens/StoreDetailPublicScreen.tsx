@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: GRID_GAP,
-    paddingHorizontal: 20,
+    paddingHorizontal: GRID_PAD,
     marginTop: 10,
   },
   productTile: surfaces.shopCard,

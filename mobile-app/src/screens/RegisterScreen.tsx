@@ -1,13 +1,17 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import type { MutableRefObject, RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
+  Keyboard,
+  type KeyboardEvent,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,20 +22,99 @@ import { GlassCard } from '../components/GlassCard';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { apiPost, setStoredToken } from '../api/client';
+import { apiGet, apiPost, setStoredToken } from '../api/client';
+import {
+  MEMBERSHIP_PLANS_FALLBACK,
+  MEMBERSHIP_TRIAL_DAYS_FALLBACK,
+  type PublicPlan,
+} from '../constants/membershipPlansFallback';
 import { DEFAULT_DIAL, type DialCountry } from '../constants/dialCodes';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
-const SIGNUP_PLANS = [
-  { key: 'free', title: 'Free', price: '$0', note: 'Browse and message' },
-  { key: 'plus', title: 'Plus', price: '$10/mo', note: '1 regular ad after trial' },
-  { key: 'starter', title: 'Starter', price: '$25/mo', note: '2 active ads' },
-  { key: 'growth', title: 'Growth', price: '$50/mo', note: 'Most Popular' },
-  { key: 'elite', title: 'Elite', price: '$150/mo', note: 'Done-For-You' },
+const VALID_PLAN_KEYS = ['free', 'plus', 'starter', 'growth', 'elite'] as const;
+type PlanKey = (typeof VALID_PLAN_KEYS)[number];
+
+function isPlanKey(k: string): k is PlanKey {
+  return (VALID_PLAN_KEYS as readonly string[]).includes(k);
+}
+
+function parsePublicPlans(raw: unknown): PublicPlan[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: PublicPlan[] = [];
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue;
+    const p = row as Record<string, unknown>;
+    const key = typeof p.key === 'string' ? p.key : '';
+    if (!isPlanKey(key)) continue;
+    const title = typeof p.title === 'string' ? p.title : key;
+    const price = typeof p.price === 'number' ? p.price : Number(p.price);
+    const badge = typeof p.badge === 'string' ? p.badge : undefined;
+    const features = Array.isArray(p.features)
+      ? p.features.filter((x): x is string => typeof x === 'string')
+      : [];
+    out.push({ key, title, price: Number.isFinite(price) ? price : 0, badge, features });
+  }
+  return out.length ? out : null;
+}
+
+function formatIllustrativeTrialEnd(trialDays: number): string {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + Math.max(0, trialDays));
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+/** Formats typing into YYYY-MM-DD (digits only, auto-inserts dashes). */
+function formatIsoDateAsUserTypes(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  const y = digits.slice(0, 4);
+  const mo = digits.slice(4, 6);
+  const da = digits.slice(6, 8);
+  if (digits.length <= 4) return y;
+  if (digits.length <= 6) return `${y}-${mo}`;
+  return `${y}-${mo}-${da}`;
+}
+
+const FIELD_ERROR_ORDER = [
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'username',
+  'dateOfBirth',
+  'memberType',
+  'baptismDate',
+  'congregation',
+  'password',
+  'confirm',
+  'agree',
 ] as const;
+
+function focusFirstValidationError(
+  errs: Record<string, string | undefined>,
+  refs: MutableRefObject<Partial<Record<(typeof FIELD_ERROR_ORDER)[number], TextInput | null>>>,
+  scroll: RefObject<ScrollView | null>
+): void {
+  for (const key of FIELD_ERROR_ORDER) {
+    if (!errs[key]) continue;
+    if (key === 'agree') {
+      requestAnimationFrame(() => {
+        scroll.current?.scrollToEnd({ animated: true });
+      });
+      return;
+    }
+    const input = refs.current[key];
+    if (input) {
+      requestAnimationFrame(() => {
+        input.focus();
+      });
+      return;
+    }
+  }
+}
 
 function parseDate(value: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
@@ -65,6 +148,29 @@ export function RegisterScreen({ navigation }: Props) {
     void setStoredToken(null);
   }, []);
 
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const fieldRefs = useRef<Partial<Record<(typeof FIELD_ERROR_ORDER)[number], TextInput | null>>>({});
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: KeyboardEvent) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const subShow = Keyboard.addListener(showEvt, onShow);
+    const subHide = Keyboard.addListener(hideEvt, onHide);
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
+
+  const scrollPasswordIntoView = () => {
+    requestAnimationFrame(() => {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    });
+  };
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -75,13 +181,48 @@ export function RegisterScreen({ navigation }: Props) {
   const [memberType, setMemberType] = useState('');
   const [baptismDate, setBaptismDate] = useState('');
   const [congregation, setCongregation] = useState('');
-  const [membershipPlan, setMembershipPlan] = useState<(typeof SIGNUP_PLANS)[number]['key']>('free');
+  const [membershipPlan, setMembershipPlan] = useState<PlanKey>('free');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [agreed, setAgreed] = useState(false);
-
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [loading, setLoading] = useState(false);
+
+  const [plans, setPlans] = useState<PublicPlan[]>([]);
+  const [trialDays, setTrialDays] = useState(MEMBERSHIP_TRIAL_DAYS_FALLBACK);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  const illustrationEnd = useMemo(() => formatIllustrativeTrialEnd(trialDays), [trialDays]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setPlansLoading(true);
+      try {
+        const data = await apiGet('membership-plans-public.php', false);
+        if (cancelled) return;
+        const parsed = parsePublicPlans(data.plans);
+        if (data.ok === true && parsed) {
+          setPlans(parsed);
+          const td = typeof data.trial_days === 'number' ? data.trial_days : Number(data.trial_days);
+          if (Number.isFinite(td) && td >= 0) setTrialDays(Math.min(365, Math.max(0, td)));
+        } else {
+          setPlans(MEMBERSHIP_PLANS_FALLBACK);
+          setTrialDays(MEMBERSHIP_TRIAL_DAYS_FALLBACK);
+        }
+      } catch {
+        if (!cancelled) {
+          setPlans(MEMBERSHIP_PLANS_FALLBACK);
+          setTrialDays(MEMBERSHIP_TRIAL_DAYS_FALLBACK);
+        }
+      } finally {
+        if (!cancelled) setPlansLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const submit = async () => {
     const next: Record<string, string | undefined> = {};
@@ -104,7 +245,10 @@ export function RegisterScreen({ navigation }: Props) {
       next.agree = 'Please confirm you have read and agree to the Privacy Policy and Terms and Conditions.';
     }
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) {
+      focusFirstValidationError(next, fieldRefs, scrollRef);
+      return;
+    }
 
     const em = email.trim().toLowerCase();
     const phone = `${dialCountry.dial}${phoneLocal.replace(/\D/g, '')}`;
@@ -146,17 +290,17 @@ export function RegisterScreen({ navigation }: Props) {
             else navigation.navigate('Welcome');
           }}
         />
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        <ScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.scroll, { paddingBottom: 32 + keyboardHeight }]}
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.scroll}
-            showsVerticalScrollIndicator={false}
-          >
             <GlassCard>
               <AppTextField
+                ref={(el) => {
+                  fieldRefs.current.firstName = el;
+                }}
                 label="First name"
                 value={firstName}
                 onChangeText={setFirstName}
@@ -164,6 +308,9 @@ export function RegisterScreen({ navigation }: Props) {
                 error={errors.firstName}
               />
               <AppTextField
+                ref={(el) => {
+                  fieldRefs.current.lastName = el;
+                }}
                 label="Last name"
                 value={lastName}
                 onChangeText={setLastName}
@@ -173,6 +320,9 @@ export function RegisterScreen({ navigation }: Props) {
 
               {/* TODO (backend): duplicate email check — see submit() comment block */}
               <AppTextField
+                ref={(el) => {
+                  fieldRefs.current.email = el;
+                }}
                 label="Email"
                 value={email}
                 onChangeText={setEmail}
@@ -184,8 +334,13 @@ export function RegisterScreen({ navigation }: Props) {
 
               <Text style={styles.fieldLabel}>Phone</Text>
               <View style={styles.phoneRow}>
-                <DialCodePicker value={dialCountry} onChange={setDialCountry} />
+                <View style={styles.dialWrap}>
+                  <DialCodePicker value={dialCountry} onChange={setDialCountry} />
+                </View>
                 <AppTextField
+                  ref={(el) => {
+                    fieldRefs.current.phone = el;
+                  }}
                   label=""
                   hideLabel
                   value={phoneLocal}
@@ -198,6 +353,9 @@ export function RegisterScreen({ navigation }: Props) {
 
               {/* TODO (backend): unique username, immutable after signup — see submit() comment block */}
               <AppTextField
+                ref={(el) => {
+                  fieldRefs.current.username = el;
+                }}
                 label="Username"
                 value={username}
                 onChangeText={(t) => setUsername(t.toLowerCase().replace(/\s/g, ''))}
@@ -213,14 +371,20 @@ export function RegisterScreen({ navigation }: Props) {
               </View>
 
               <AppTextField
-                label="Date of birth"
+                ref={(el) => {
+                  fieldRefs.current.dateOfBirth = el;
+                }}
+                label="Date of birth (YYYY-MM-DD)"
                 value={dateOfBirth}
-                onChangeText={setDateOfBirth}
-                placeholder="YYYY-MM-DD"
+                onChangeText={(t) => setDateOfBirth(formatIsoDateAsUserTypes(t))}
+                placeholder="2000-01-15"
                 keyboardType="numbers-and-punctuation"
                 error={errors.dateOfBirth}
               />
               <AppTextField
+                ref={(el) => {
+                  fieldRefs.current.memberType = el;
+                }}
                 label="I am a ..."
                 value={memberType}
                 onChangeText={setMemberType}
@@ -229,14 +393,20 @@ export function RegisterScreen({ navigation }: Props) {
                 error={errors.memberType}
               />
               <AppTextField
-                label="Baptism date"
+                ref={(el) => {
+                  fieldRefs.current.baptismDate = el;
+                }}
+                label="Baptism date (YYYY-MM-DD)"
                 value={baptismDate}
-                onChangeText={setBaptismDate}
-                placeholder="YYYY-MM-DD"
+                onChangeText={(t) => setBaptismDate(formatIsoDateAsUserTypes(t))}
+                placeholder="2010-06-01"
                 keyboardType="numbers-and-punctuation"
                 error={errors.baptismDate}
               />
               <AppTextField
+                ref={(el) => {
+                  fieldRefs.current.congregation = el;
+                }}
                 label="Congregation"
                 value={congregation}
                 onChangeText={setCongregation}
@@ -246,40 +416,90 @@ export function RegisterScreen({ navigation }: Props) {
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Membership plan</Text>
-                <Text style={styles.sectionHint}>
-                  Free needs no card. Paid plans start a trial now; Stripe card collection will be connected before auto-charge.
-                </Text>
+                {plansLoading ? (
+                  <View style={styles.plansLoadingRow}>
+                    <ActivityIndicator color={colors.primary} />
+                    <Text style={styles.sectionHint}>Loading plans…</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.trialIntro}>
+                      <Text style={styles.trialBold}>Paid plans</Text>
+                      {' include a '}
+                      <Text style={styles.trialBold}>{trialDays}-day free trial</Text>
+                      {' set by the site admin. '}
+                      <Text style={styles.trialBold}>You will not be charged</Text>
+                      {' until that trial ends. No charges run until after your trial period is over.'}
+                    </Text>
+                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
+                      Your personal trial end date appears in the app after you finish signup and verify. As an
+                      illustration only: if a paid trial started today, the last free day would be around{' '}
+                      <Text style={styles.trialBold}>{illustrationEnd}</Text>.
+                    </Text>
+                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
+                      <Text style={styles.trialBold}>Free</Text>
+                      {' is always $0/month — no subscription billing.'}
+                    </Text>
+                    <Text style={[styles.sectionHint, { marginTop: 10 }]}>
+                      Optional storefront add-on is chosen later from Create listing (not here).
+                    </Text>
+                  </>
+                )}
               </View>
-              <View style={styles.planGrid}>
-                {SIGNUP_PLANS.map((plan) => {
+
+              {!plansLoading &&
+                plans.map((plan) => {
                   const active = membershipPlan === plan.key;
                   return (
                     <Pressable
                       key={plan.key}
-                      onPress={() => setMembershipPlan(plan.key)}
-                      style={[styles.planChip, active && styles.planChipOn]}
+                      onPress={() => {
+                        if (isPlanKey(plan.key)) setMembershipPlan(plan.key);
+                      }}
+                      style={[styles.planCard, active && styles.planCardOn]}
                     >
-                      <Text style={[styles.planName, active && styles.planNameOn]}>{plan.title}</Text>
-                      <Text style={[styles.planPrice, active && styles.planPriceOn]}>{plan.price}</Text>
-                      <Text style={[styles.planNote, active && styles.planNoteOn]} numberOfLines={2}>
-                        {plan.note}
-                      </Text>
+                      <View style={styles.planCardTop}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.planCardTitle}>{plan.title}</Text>
+                          <Text style={styles.planCardPrice}>
+                            {plan.price === 0 ? '$0/month' : `$${plan.price}/month after trial`}
+                          </Text>
+                        </View>
+                        {plan.badge ? <Text style={styles.planBadge}>{plan.badge}</Text> : null}
+                      </View>
+                      {(plan.features ?? []).map((f) => (
+                        <Text key={f} style={styles.planFeature}>
+                          • {f}
+                        </Text>
+                      ))}
+                      <View style={[styles.planSelectPill, active && styles.planSelectPillOn]}>
+                        <Text style={[styles.planSelectText, active && styles.planSelectTextOn]}>
+                          {active ? 'Your selection' : 'Tap to select'}
+                        </Text>
+                      </View>
                     </Pressable>
                   );
                 })}
-              </View>
 
               <AppPasswordField
+                ref={(el) => {
+                  fieldRefs.current.password = el;
+                }}
                 label="Password"
                 value={password}
                 onChangeText={setPassword}
                 error={errors.password}
+                onFocus={scrollPasswordIntoView}
               />
               <AppPasswordField
+                ref={(el) => {
+                  fieldRefs.current.confirm = el;
+                }}
                 label="Confirm password"
                 value={confirm}
                 onChangeText={setConfirm}
                 error={errors.confirm}
+                onFocus={scrollPasswordIntoView}
               />
 
               <View style={styles.agreeRow}>
@@ -307,10 +527,9 @@ export function RegisterScreen({ navigation }: Props) {
               </View>
               {errors.agree ? <Text style={styles.agreeError}>{errors.agree}</Text> : null}
 
-              <PrimaryButton label="Create account" onPress={submit} loading={loading} />
-            </GlassCard>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            <PrimaryButton label="Create account" onPress={submit} loading={loading} />
+          </GlassCard>
+        </ScrollView>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -318,7 +537,6 @@ export function RegisterScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: 20 },
-  flex: { flex: 1 },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -333,24 +551,53 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   phoneRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 16 },
+  dialWrap: { flexShrink: 0 },
   section: { marginTop: 2, marginBottom: 14 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
   sectionHint: { fontSize: 13, lineHeight: 19, color: colors.textMuted, fontWeight: '500' },
-  planGrid: { gap: 10, marginBottom: 18 },
-  planChip: {
+  plansLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  trialIntro: { fontSize: 13, lineHeight: 20, color: colors.textMuted, fontWeight: '500' },
+  trialBold: { fontWeight: '800', color: colors.text },
+  planCard: {
+    marginBottom: 12,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    padding: 13,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    padding: 14,
   },
-  planChipOn: { borderColor: colors.primaryDark, backgroundColor: colors.primarySoft },
-  planName: { fontSize: 15, fontWeight: '800', color: colors.text },
-  planNameOn: { color: colors.primaryDark },
-  planPrice: { marginTop: 2, fontSize: 13, fontWeight: '800', color: colors.goldDark },
-  planPriceOn: { color: colors.primaryDark },
-  planNote: { marginTop: 3, fontSize: 12, fontWeight: '600', color: colors.textMuted },
-  planNoteOn: { color: colors.text },
+  planCardOn: { borderColor: colors.primaryDark, backgroundColor: colors.primarySoft },
+  planCardTop: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  planCardTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
+  planCardPrice: { marginTop: 3, fontSize: 12, fontWeight: '800', color: colors.textMuted },
+  planBadge: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    backgroundColor: colors.goldSoft,
+    color: colors.goldDark,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  planFeature: { marginTop: 6, fontSize: 12, lineHeight: 17, fontWeight: '600', color: colors.textMuted },
+  planSelectPill: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: 'rgba(11,18,32,0.06)',
+  },
+  planSelectPillOn: { backgroundColor: colors.primary },
+  planSelectText: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
+  planSelectTextOn: { color: colors.white },
   agreeRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8, marginBottom: 20 },
   checkbox: {
     width: 22,

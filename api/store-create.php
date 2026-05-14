@@ -26,14 +26,42 @@ if (!$user) {
 if (($user['status'] ?? '') !== 'verified') {
     ww_json(['ok' => false, 'error' => 'Account must be verified to open a store'], 403);
 }
-ww_json(['ok' => false, 'error' => 'Storefront is a separate add-on and is locked for this release.'], 402);
 
 $avatar = trim((string) ($user['avatar_url'] ?? ''));
 if ($avatar === '') {
     ww_json(['ok' => false, 'error' => 'Upload a profile photo in Profile & settings first'], 422);
 }
 
+ww_subscription_require_posting($pdo, $user);
+
+$planKey = ww_valid_membership_plan((string) ($user['membership_plan'] ?? 'free'));
+if (!ww_subscription_has_business_membership($planKey)) {
+    ww_json([
+        'ok' => false,
+        'error' => 'Online storefront requires a Business membership (Starter, Growth, or Elite).',
+    ], 402);
+}
+$addon = (string) ($user['storefront_addon'] ?? 'none');
+if (!in_array($addon, ['small', 'large'], true)) {
+    ww_json([
+        'ok' => false,
+        'error' => 'Choose a Storefront add-on from Create listing before opening a store.',
+    ], 402);
+}
+
 $userId = (int) $user['id'];
+
+try {
+    $dup = $pdo->prepare(
+        "SELECT id FROM stores WHERE user_id = ? AND moderation_status IN ('pending_approval','approved','suspended') LIMIT 1"
+    );
+    $dup->execute([$userId]);
+    if ($dup->fetchColumn()) {
+        ww_json(['ok' => false, 'error' => 'You already have a store. Manage it from My office.'], 409);
+    }
+} catch (\Throwable) {
+    // If stores table missing, later INSERT will surface the error.
+}
 $body = ww_read_json();
 
 $categoryId = null;

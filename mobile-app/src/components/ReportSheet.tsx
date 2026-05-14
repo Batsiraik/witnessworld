@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
+  type KeyboardEvent,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -24,6 +27,32 @@ export function ReportSheet({ visible, title, onClose, onSubmit }: Props) {
   const insets = useSafeAreaInsets();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: KeyboardEvent) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const subShow = Keyboard.addListener(showEvt, onShow);
+    const subHide = Keyboard.addListener(hideEvt, onHide);
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      setKeyboardHeight(0);
+      Keyboard.dismiss();
+    }
+  }, [visible]);
+
+  const handleClose = () => {
+    Keyboard.dismiss();
+    onClose();
+  };
 
   const submit = async () => {
     const t = reason.trim();
@@ -35,47 +64,59 @@ export function ReportSheet({ visible, title, onClose, onSubmit }: Props) {
     try {
       await onSubmit(t);
       setReason('');
+      Keyboard.dismiss();
       onClose();
     } finally {
       setBusy(false);
     }
   };
 
+  const sheetBottomPad = Math.max(28, insets.bottom + 12);
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <View style={styles.root}>
         <Pressable
-          style={[styles.sheet, { paddingBottom: Math.max(28, insets.bottom + 20) }]}
-          onPress={(e) => e.stopPropagation()}
-        >
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.hint}>Describe what is wrong. Our team will review.</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Reason for report…"
-            placeholderTextColor={colors.textMuted}
-            multiline
-            numberOfLines={5}
-            value={reason}
-            onChangeText={setReason}
-            textAlignVertical="top"
-          />
-          <PrimaryButton label={busy ? 'Sending…' : 'Submit report'} onPress={() => void submit()} loading={busy} />
-          <Pressable onPress={onClose} style={styles.cancel} disabled={busy}>
-            <Text style={styles.cancelText}>Cancel</Text>
+          style={StyleSheet.absoluteFill}
+          onPress={() => {
+            Keyboard.dismiss();
+            handleClose();
+          }}
+        />
+        <View style={[styles.sheetLift, { paddingBottom: keyboardHeight }]} pointerEvents="box-none">
+          <Pressable style={[styles.sheet, { paddingBottom: sheetBottomPad }]} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.hint}>Describe what is wrong. Our team will review.</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Reason for report…"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={5}
+              value={reason}
+              onChangeText={setReason}
+              textAlignVertical="top"
+            />
+            <PrimaryButton label={busy ? 'Sending…' : 'Submit report'} onPress={() => void submit()} loading={busy} />
+            <Pressable onPress={handleClose} style={styles.cancel} disabled={busy}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+            {busy ? <ActivityIndicator style={styles.spin} color={colors.primary} /> : null}
           </Pressable>
-          {busy ? <ActivityIndicator style={styles.spin} color={colors.primary} /> : null}
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
     backgroundColor: 'rgba(11,18,32,0.45)',
     justifyContent: 'flex-end',
+  },
+  sheetLift: {
+    width: '100%',
   },
   sheet: {
     width: '100%',
@@ -83,7 +124,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 22,
-    paddingBottom: 28,
     gap: 12,
   },
   title: { fontSize: 18, fontWeight: '800', color: colors.text },
