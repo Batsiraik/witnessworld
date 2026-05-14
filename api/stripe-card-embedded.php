@@ -1,3 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * In-app card setup — WebView (?t=…). Light template + SetupIntent + postMessage.
+ */
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lib/stripe_card_embed_session.php';
+
+$t = isset($_GET['t']) ? (string) $_GET['t'] : '';
+if (!preg_match('/^[a-f0-9]{64}$/', $t)) {
+    http_response_code(400);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Invalid link.';
+
+    exit;
+}
+
+$session = ww_stripe_embed_load($t);
+if (!$session) {
+    http_response_code(410);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'This setup link expired. Close it and open Add card again from the app.';
+
+    exit;
+}
+
+$pk = $session['publishable_key'];
+$clientSecret = $session['client_secret'];
+$setiId = $session['setup_intent_id'];
+$completeUrl = WW_API_BASE . '/stripe-card-embedded-complete.php';
+
+$pkJs = json_encode($pk, JSON_THROW_ON_ERROR);
+$csJs = json_encode($clientSecret, JSON_THROW_ON_ERROR);
+$tJs = json_encode($t, JSON_THROW_ON_ERROR);
+$setiJs = json_encode($setiId, JSON_THROW_ON_ERROR);
+$completeJs = json_encode($completeUrl, JSON_THROW_ON_ERROR);
+
+header('Content-Type: text/html; charset=utf-8');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+
+echo <<<HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -223,7 +267,7 @@
       Encrypted & secure · saved for membership billing
     </div>
 
-    <form id="payment-form">
+    <form id="payment-form" autocomplete="off">
       <!-- Card number field -->
       <div class="field-group">
         <div class="field-label">Card number</div>
@@ -266,10 +310,7 @@
     // ======================
     // Retrieve backend data (injected from PHP)
     // ======================
-    // IMPORTANT: these placeholders will be replaced by actual PHP values at runtime.
-    // For design preview we keep dummy strings but they will be overridden by server.
-    // Since it's a PHP template, all {$xxx} are replaced before delivering to browser.
-    // The code below uses the exact same variables as the original.
+    // Server injects publishable key, SetupIntent client secret, embed token, and API URLs below.
     let pk = {$pkJs};
     let clientSecret = {$csJs};
     let embedT = {$tJs};
@@ -520,3 +561,4 @@
 </script>
 </body>
 </html>
+HTML;
