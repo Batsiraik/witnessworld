@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 /**
- * In-app card setup — WebView (?t=…). Split Card Elements; grid min widths avoid squeezed iframes (caret vs text).
+ * In-app card setup — WebView (?t=…).
+ * Shell styled like PassDrive (dark card, split Elements, gradient CTA); payment logic stays SetupIntent + confirmCardSetup.
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/stripe_card_embed_session.php';
@@ -44,221 +45,115 @@ echo <<<HTML
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Add payment method</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Save payment method</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html {
-      color-scheme: light;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html { color-scheme: dark; }
     body {
-      font-family: "Helvetica Neue", Helvetica, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: #e2e8f0;
       min-height: 100vh;
-      padding: 24px 16px;
-      background: #f6f9fc;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
     }
-
-    .wrapper {
-      width: 100%;
-      max-width: 640px;
+    .card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 400px;
       margin: 0 auto;
+      border: 1px solid #334155;
     }
-
-    form {
-      padding: 30px;
-      margin-bottom: 20px;
-      margin-left: auto;
-      margin-right: auto;
-      width: 100%;
-      max-width: 600px;
-      background: #fff;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px 0 #e6ebf1;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    label {
-      font-weight: 500;
-      font-size: 14px;
-      display: block;
-      margin-bottom: 6px;
-      color: #32325d;
-    }
-
-    #card-errors {
-      color: #fa755a;
-      font-size: 14px;
-      line-height: 1.35;
-    }
-
-    /* No reserved “slot” when there is no message — old min-height + padding looked like random empty space. */
-    #card-errors:empty {
-      display: none;
-    }
-
-    #card-errors:not(:empty) {
-      margin-top: 8px;
-      padding-top: 2px;
-    }
-
-    /* Full width — the old 70% float + max-width 400px squeezed the iframe in WebViews (compressed text, clipped first digits). */
-    .form-row {
-      width: 100%;
-      min-width: 0;
-    }
-
-    .stripe-field-host {
-      background-color: white;
-      width: 100%;
-      padding: 14px 16px;
-      border-radius: 8px;
-      border: 1px solid #e3e8ee;
-      box-shadow: none;
-      -webkit-transition: border-color 0.12s ease;
-      transition: border-color 0.12s ease;
-      overflow: visible;
+    h1 { font-size: 20px; margin: 0 0 8px; color: #fff; font-weight: 700; }
+    .subtitle { font-size: 14px; color: #94a3b8; margin-bottom: 18px; line-height: 1.45; }
+    label { display: block; font-size: 14px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+    .card-field {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      margin-bottom: 12px;
       direction: ltr;
       touch-action: manipulation;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-
-    .stripe-field-host.is-focused {
-      border-color: #a0aec0;
-      box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.15);
-      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    /* PassDrive: field reads “active” while typing — :focus-within catches iframe focus; .is-focused is backup from Stripe events. */
+    .card-field:focus-within,
+    .card-field.is-focused {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.35);
     }
-
-    .stripe-field-host.is-invalid {
-      border-color: #fa755a;
-    }
-
-    .stripe-field-host .StripeElement--webkit-autofill {
-      background-color: #fefde5 !important;
-    }
-
-    /* minmax floor stops Stripe iframes from getting a width smaller than their layout (fixes CVC: digits left, caret far right). */
-    .stripe-row-split {
-      display: grid;
-      grid-template-columns: minmax(148px, 1fr) minmax(148px, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-      width: 100%;
-    }
-
-    .stripe-row-split > div {
-      min-width: 0;
-    }
-
+    .card-field.is-invalid { border-color: #f87171; }
+    .card-fields-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .card-fields-row .card-field { flex: 1 1 0; min-width: 148px; margin-bottom: 0; }
     @media (max-width: 380px) {
-      .stripe-row-split {
-        grid-template-columns: 1fr;
-      }
+      .card-fields-row { flex-direction: column; }
+      .card-fields-row .card-field { min-width: 0; }
     }
-
-    .field-label-sub {
-      font-weight: 500;
-      font-size: 13px;
-      display: block;
-      margin-bottom: 4px;
-      color: #32325d;
+    #card-errors {
+      color: #f87171;
+      font-size: 14px;
+      margin-bottom: 12px;
+      line-height: 1.35;
     }
-
-    .btn-Stripe {
-      border: none;
-      border-radius: 4px;
-      outline: none;
-      text-decoration: none;
-      color: #fff;
-      background: #15a99e;
-      white-space: nowrap;
-      display: inline-block;
-      height: 40px;
-      line-height: 40px;
-      padding: 0 14px;
-      box-shadow: 0 4px 6px rgba(50, 50, 93, .11), 0 1px 3px rgba(0, 0, 0, .08);
-      font-size: 15px;
+    #card-errors:empty { display: none; }
+    #card-errors:not(:empty) { min-height: 0; }
+    .autofill-hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin: -4px 0 12px;
+      padding: 8px 10px;
+      background: rgba(100, 116, 139, 0.2);
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
       font-weight: 600;
-      letter-spacing: 0.025em;
-      -webkit-transition: all 150ms ease;
-      transition: all 150ms ease;
-      margin-top: 14px;
-      align-self: flex-start;
+      border: none;
       cursor: pointer;
-      font-family: inherit;
     }
-
-    .btn-Stripe:hover:not(:disabled) {
-      box-shadow: 0 7px 14px rgba(50, 50, 93, .10), 0 3px 6px rgba(0, 0, 0, .08);
-      background-color: #11987c;
+    .btn-primary {
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      color: #fff;
     }
-
-    .btn-Stripe:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .cancel-wrap {
-      text-align: center;
-      margin-top: 16px;
-    }
-
-    .cancel-wrap a {
-      font-size: 15px;
-      color: #6b7c93;
-      text-decoration: none;
-    }
-
-    .cancel-wrap a:hover {
-      color: #32325d;
-    }
-
-    @media (max-width: 640px) {
-      form {
-        padding: 20px;
-      }
-      .btn-Stripe {
-        margin-top: 16px;
-        width: 100%;
-        align-self: stretch;
-      }
-    }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .cancel-wrap { text-align: center; margin-top: 18px; }
+    .cancel-wrap a { font-size: 15px; color: #94a3b8; text-decoration: none; font-weight: 500; }
+    .cancel-wrap a:hover { color: #e2e8f0; }
+    .card-field .StripeElement--webkit-autofill { background-color: #1e293b !important; }
   </style>
 </head>
 <body>
-  <div class="wrapper">
-    <form id="payment-form" autocomplete="off" dir="ltr">
-      <div class="form-row">
-        <label>Credit or debit card</label>
-        <div id="card-number-host" class="stripe-field-host"></div>
-        <div class="stripe-row-split">
-          <div>
-            <span class="field-label-sub">Expiry</span>
-            <div id="card-expiry-host" class="stripe-field-host"></div>
-          </div>
-          <div>
-            <span class="field-label-sub">CVC</span>
-            <div id="card-cvc-host" class="stripe-field-host"></div>
-          </div>
+  <div class="card">
+    <h1>Save payment method</h1>
+    <p class="subtitle">Secured by Stripe. We save this card for membership billing — no charge on this step unless your plan requires it.</p>
+    <form id="payment-form" autocomplete="off">
+      <label for="card-number">Card details</label>
+      <div id="card-number" class="card-field"></div>
+      <div class="card-fields-row">
+        <div>
+          <label for="card-expiry" style="margin-bottom:6px">Expiry</label>
+          <div id="card-expiry" class="card-field"></div>
         </div>
-        <div id="card-errors" role="alert"></div>
+        <div>
+          <label for="card-cvc" style="margin-bottom:6px">CVC</label>
+          <div id="card-cvc" class="card-field"></div>
+        </div>
       </div>
-      <button type="submit" class="btn-Stripe" id="submit-btn">Pay Now</button>
+      <p class="autofill-hint">Expiry looks wrong? Clear it and type MM/YY manually (e.g. 12/28).</p>
+      <div id="card-errors" role="alert"></div>
+      <button type="submit" class="btn btn-primary" id="submit-btn">Save card</button>
     </form>
-    <div class="cancel-wrap">
-      <a href="#" id="cancel-link">Cancel</a>
-    </div>
+    <div class="cancel-wrap"><a href="#" id="cancel-link">Cancel</a></div>
   </div>
 
 <script>
@@ -271,11 +166,11 @@ echo <<<HTML
 
     var errorEl = document.getElementById('card-errors');
     var submitBtn = document.getElementById('submit-btn');
-    var originalBtnText = 'Pay Now';
+    var originalBtnText = 'Save card';
 
-    var hostNumber = document.getElementById('card-number-host');
-    var hostExpiry = document.getElementById('card-expiry-host');
-    var hostCvc = document.getElementById('card-cvc-host');
+    var hostNumber = document.getElementById('card-number');
+    var hostExpiry = document.getElementById('card-expiry');
+    var hostCvc = document.getElementById('card-cvc');
 
     if (!pk || !clientSecret) {
       errorEl.textContent = 'Configuration error. Please close and try again.';
@@ -284,63 +179,52 @@ echo <<<HTML
     }
 
     var stripe = Stripe(pk);
-    /*
-     * Do not load webfonts into Elements from googleapis — in many in-app WebViews the iframe cannot use them,
-     * Stripe falls back to a broken condensed system font and digits look “squashed”. Use the OS UI font stack
-     * (Roboto on Android, SF on iOS, Segoe on Windows) which is already on the device.
-     */
     var elements = stripe.elements({ locale: 'auto' });
 
-    var elementStyle = {
+    /* PassDrive: only base color + fontSize; we add placeholder + :focus so empty vs typing matches their dark UI. */
+    var style = {
       base: {
-        color: '#0f172a',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif',
+        color: '#fff',
         fontSize: '16px',
-        lineHeight: '22px',
-        fontWeight: '500',
-        fontSmoothing: 'antialiased',
         '::placeholder': {
           color: '#94a3b8'
         },
         ':focus': {
-          color: '#0f172a',
+          color: '#fff',
           '::placeholder': {
-            color: '#94a3b8'
+            color: '#64748b'
           }
         }
       },
+      empty: {
+        color: '#94a3b8',
+        '::placeholder': {
+          color: '#94a3b8'
+        }
+      },
+      complete: {
+        color: '#fff',
+        '::placeholder': {
+          color: '#64748b'
+        }
+      },
       invalid: {
-        color: '#0f172a',
-        iconColor: '#64748b'
+        color: '#f87171',
+        iconColor: '#f87171'
       }
     };
 
-    var cardNumber = elements.create('cardNumber', {
-      style: elementStyle,
-      showIcon: false,
-      placeholder: '1234 5678 9012 3456'
-    });
-    var cardExpiry = elements.create('cardExpiry', {
-      style: elementStyle,
-      placeholder: 'MM / YY'
-    });
-    var cardCvc = elements.create('cardCvc', {
-      style: elementStyle,
-      placeholder: 'CVC'
-    });
+    var cardNumber = elements.create('cardNumber', { style: style });
+    var cardExpiry = elements.create('cardExpiry', { style: style, placeholder: 'MM/YY' });
+    var cardCvc = elements.create('cardCvc', { style: style });
 
-    cardNumber.mount('#card-number-host');
-    cardExpiry.mount('#card-expiry-host');
-    cardCvc.mount('#card-cvc-host');
+    cardNumber.mount('#card-number');
+    cardExpiry.mount('#card-expiry');
+    cardCvc.mount('#card-cvc');
 
     function wireFocus(el, host) {
-      el.on('focus', function () {
-        host.classList.add('is-focused');
-      });
-      el.on('blur', function () {
-        host.classList.remove('is-focused');
-      });
+      el.on('focus', function () { host.classList.add('is-focused'); });
+      el.on('blur', function () { host.classList.remove('is-focused'); });
     }
     wireFocus(cardNumber, hostNumber);
     wireFocus(cardExpiry, hostExpiry);
@@ -351,14 +235,11 @@ echo <<<HTML
       hostExpiry.classList.remove('is-invalid');
       hostCvc.classList.remove('is-invalid');
     }
-
     function hasAnyInvalidClass() {
       return hostNumber.classList.contains('is-invalid')
         || hostExpiry.classList.contains('is-invalid')
         || hostCvc.classList.contains('is-invalid');
     }
-
-    /** Do not touch the DOM on every valid keystroke — that caused janky typing in WebView. */
     function onFieldChange(event, type) {
       if (event.error) {
         clearFieldErrors();
@@ -366,17 +247,11 @@ echo <<<HTML
         if (type === 'cardExpiry') hostExpiry.classList.add('is-invalid');
         if (type === 'cardCvc') hostCvc.classList.add('is-invalid');
         var msg = event.error.message || '';
-        if (errorEl.textContent !== msg) {
-          errorEl.textContent = msg;
-        }
+        if (errorEl.textContent !== msg) errorEl.textContent = msg;
         return;
       }
-      if (errorEl.textContent !== '') {
-        errorEl.textContent = '';
-      }
-      if (hasAnyInvalidClass()) {
-        clearFieldErrors();
-      }
+      if (errorEl.textContent !== '') errorEl.textContent = '';
+      if (hasAnyInvalidClass()) clearFieldErrors();
     }
     cardNumber.on('change', function (e) { onFieldChange(e, 'cardNumber'); });
     cardExpiry.on('change', function (e) { onFieldChange(e, 'cardExpiry'); });
@@ -389,9 +264,7 @@ echo <<<HTML
         } else {
           console.log('[Bridge]', payload);
         }
-      } catch (err) {
-        console.warn('Failed to post message', err);
-      }
+      } catch (err) {}
     }
 
     document.getElementById('cancel-link').addEventListener('click', function (e) {
@@ -403,13 +276,11 @@ echo <<<HTML
       e.preventDefault();
       errorEl.textContent = '';
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Processing...';
+      submitBtn.textContent = 'Processing…';
 
       try {
         var result = await stripe.confirmCardSetup(clientSecret, {
-          payment_method: {
-            card: cardNumber
-          }
+          payment_method: { card: cardNumber }
         });
 
         if (result.error) {
@@ -437,11 +308,7 @@ echo <<<HTML
         });
 
         var data;
-        try {
-          data = await response.json();
-        } catch (err) {
-          data = { ok: false, error: 'Server error' };
-        }
+        try { data = await response.json(); } catch (err) { data = { ok: false, error: 'Server error' }; }
 
         if (data && data.ok === true) {
           postMessageToApp({ type: 'payment_success' });
