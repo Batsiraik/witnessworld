@@ -80,12 +80,9 @@ echo <<<HTML
       background: #fff;
       border-radius: 4px;
       box-shadow: 0 1px 3px 0 #e6ebf1;
-    }
-
-    form::after {
-      content: "";
-      display: table;
-      clear: both;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
     }
 
     label {
@@ -101,32 +98,29 @@ echo <<<HTML
       padding: 4px 0;
       color: #fa755a;
       font-size: 14px;
-      clear: both;
     }
 
+    /* Full width — the old 70% float + max-width 400px squeezed the iframe in WebViews (compressed text, clipped first digits). */
     .form-row {
-      width: 70%;
+      width: 100%;
       min-width: 0;
-      float: left;
     }
 
     #card-element {
       background-color: white;
       width: 100%;
       max-width: 400px;
-      min-height: 40px;
-      padding: 10px 12px;
+      /* Only pad the host — a small min-height + padding was clipping the iframe row (missing first digits, squashed placeholder). */
+      padding: 14px 16px;
       border-radius: 4px;
       border: 1px solid transparent;
       box-shadow: 0 1px 3px 0 #e6ebf1;
       -webkit-transition: box-shadow 150ms ease;
       transition: box-shadow 150ms ease;
+      overflow: visible;
     }
 
-    #card-element > div {
-      width: 100% !important;
-      min-width: 0;
-    }
+    /* Do not force width on Stripe’s inner root — it breaks their flex row (brand / input / Link) and distorts glyphs. */
 
     #card-element.is-focused {
       box-shadow: 0 1px 3px 0 #cfd7df;
@@ -158,9 +152,8 @@ echo <<<HTML
       letter-spacing: 0.025em;
       -webkit-transition: all 150ms ease;
       transition: all 150ms ease;
-      float: left;
-      margin-left: 12px;
-      margin-top: 28px;
+      margin-top: 20px;
+      align-self: flex-start;
       cursor: pointer;
       font-family: inherit;
     }
@@ -196,15 +189,13 @@ echo <<<HTML
       form {
         padding: 20px;
       }
-      .form-row {
-        width: 100%;
-        float: none;
-        margin-bottom: 8px;
+      #card-element {
+        max-width: none;
       }
       .btn-Stripe {
-        float: none;
-        margin: 16px 0 0;
+        margin-top: 16px;
         width: 100%;
+        align-self: stretch;
       }
     }
   </style>
@@ -249,7 +240,7 @@ echo <<<HTML
     var style = {
       base: {
         color: '#32325d',
-        lineHeight: '18px',
+        /* Let Stripe compute line-height from fontSize — fixed 18px inside a clipped host caused squashed / invisible text in WebView. */
         fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
         fontSmoothing: 'antialiased',
         fontSize: '16px',
@@ -263,7 +254,7 @@ echo <<<HTML
       }
     };
 
-    var card = elements.create('card', { style: style });
+    var card = elements.create('card', { style: style, disableLink: true });
     card.mount('#card-element');
 
     card.on('focus', function () {
