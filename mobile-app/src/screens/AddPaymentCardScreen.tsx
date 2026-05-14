@@ -21,17 +21,14 @@ import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddPaymentCard'>;
 
-type Phase = 'loading' | 'checkout' | 'error' | 'post_cancel' | 'finished';
-
-const RETURN_MARK = 'stripe-setup-return.php';
-const CANCEL_MARK = 'stripe-setup-cancel.php';
+type Phase = 'loading' | 'embed' | 'error' | 'post_cancel' | 'finished';
 
 export function AddPaymentCardScreen({ navigation, route }: Props) {
   const returnTo = route.params?.returnTo ?? 'pop';
   const signupFlow = returnTo === 'register_complete';
 
   const [phase, setPhase] = useState<Phase>('loading');
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState('');
   const [skipBusy, setSkipBusy] = useState(false);
   const [showWeb, setShowWeb] = useState(false);
@@ -55,7 +52,7 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
     if (completedRef.current) return;
     completedRef.current = true;
     setShowWeb(false);
-    setCheckoutUrl(null);
+    setEmbedUrl(null);
     setPhase('finished');
     setTimeout(() => {
       Alert.alert('Saved', 'Your payment method is on file.', [
@@ -103,34 +100,39 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleStripeUrl = useCallback(
-    (url: string) => {
-      if (url.includes(RETURN_MARK) && url.includes('session_id=')) {
-        promptSaveSuccess();
-        return;
-      }
-      if (url.includes(CANCEL_MARK)) {
-        setShowWeb(false);
-        setCheckoutUrl(null);
-        completedRef.current = false;
-        setPhase('post_cancel');
-      }
-    },
-    [promptSaveSuccess]
-  );
-
   const handleWebMessage = useCallback(
     (raw: string) => {
       try {
-        const j = JSON.parse(raw) as { ww?: string; ok?: boolean };
-        if (j.ww !== 'stripe_setup') return;
-        if (j.ok === true) {
+        const j = JSON.parse(raw) as {
+          type?: string;
+          ww?: string;
+          ok?: boolean;
+          message?: string;
+        };
+        if (j.type === 'payment_success' || j.type === 'ww_stripe_card_saved') {
           promptSaveSuccess();
-        } else {
+          return;
+        }
+        if (j.type === 'payment_cancelled') {
           setShowWeb(false);
-          setCheckoutUrl(null);
+          setEmbedUrl(null);
           completedRef.current = false;
           setPhase('post_cancel');
+          return;
+        }
+        if (j.type === 'payment_error') {
+          const msg = typeof j.message === 'string' && j.message.trim() ? j.message : 'Could not save card.';
+          Alert.alert('Card', msg);
+          return;
+        }
+        if (j.ww === 'stripe_setup') {
+          if (j.ok === true) promptSaveSuccess();
+          else {
+            setShowWeb(false);
+            setEmbedUrl(null);
+            completedRef.current = false;
+            setPhase('post_cancel');
+          }
         }
       } catch {
         /* non-JSON messages ignored */
@@ -139,19 +141,19 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
     [promptSaveSuccess]
   );
 
-  const startCheckout = useCallback(async () => {
+  const startEmbed = useCallback(async () => {
     setLoadError('');
     setPhase('loading');
-    setCheckoutUrl(null);
+    setEmbedUrl(null);
     setShowWeb(false);
     setWvBusy(true);
     completedRef.current = false;
     try {
-      const d = await apiPost('stripe-checkout-setup-session.php', {}, true);
+      const d = await apiPost('stripe-card-embed-init.php', {}, true);
       const url = typeof d.url === 'string' ? d.url : '';
-      if (!url) throw new Error('No checkout URL from server.');
-      setCheckoutUrl(url);
-      setPhase('checkout');
+      if (!url) throw new Error('No card form URL from server.');
+      setEmbedUrl(url);
+      setPhase('embed');
       setShowWeb(true);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Could not start card setup.');
@@ -160,8 +162,8 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
   }, []);
 
   useEffect(() => {
-    void startCheckout();
-  }, [startCheckout]);
+    void startEmbed();
+  }, [startEmbed]);
 
   return (
     <GradientBackground>
@@ -186,14 +188,14 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
         {phase === 'loading' ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.muted}>Opening secure checkout…</Text>
+            <Text style={styles.muted}>Loading secure card form…</Text>
           </View>
         ) : null}
 
         {phase === 'error' ? (
           <View style={styles.center}>
             <Text style={styles.errorText}>{loadError}</Text>
-            <PrimaryButton label="Try again" onPress={() => void startCheckout()} style={styles.closeBtn} />
+            <PrimaryButton label="Try again" onPress={() => void startEmbed()} style={styles.closeBtn} />
             <PrimaryButton label="Close" onPress={onBack} variant="outline" style={styles.skipBtn} />
             {signupFlow ? (
               <PrimaryButton
@@ -216,7 +218,7 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
         {phase === 'post_cancel' && !showWeb ? (
           <View style={styles.center}>
             <Text style={styles.muted}>Card setup was cancelled or the window was closed.</Text>
-            <PrimaryButton label="Open card form again" onPress={() => void startCheckout()} style={styles.closeBtn} />
+            <PrimaryButton label="Open card form again" onPress={() => void startEmbed()} style={styles.closeBtn} />
             <PrimaryButton label="Close" onPress={onBack} variant="outline" style={styles.skipBtn} />
             {signupFlow ? (
               <PrimaryButton
@@ -230,7 +232,7 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
           </View>
         ) : null}
 
-        {phase === 'checkout' && checkoutUrl && showWeb ? (
+        {phase === 'embed' && embedUrl && showWeb ? (
           <View style={styles.webWrap}>
             {wvBusy ? (
               <View style={styles.wvOverlay}>
@@ -238,20 +240,15 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
               </View>
             ) : null}
             <WebView
-              key={checkoutUrl}
-              source={{ uri: checkoutUrl }}
+              key={embedUrl}
+              source={{ uri: embedUrl }}
               style={styles.webview}
               onLoadStart={() => setWvBusy(true)}
-              onLoadEnd={(e) => {
-                setWvBusy(false);
-                const u = e.nativeEvent.url;
-                if (u) handleStripeUrl(u);
-              }}
-              onNavigationStateChange={(nav) => {
-                if (nav.url) handleStripeUrl(nav.url);
-              }}
+              onLoadEnd={() => setWvBusy(false)}
               onMessage={(ev) => handleWebMessage(ev.nativeEvent.data)}
               javaScriptEnabled
+              domStorageEnabled
+              originWhitelist={['*']}
               setSupportMultipleWindows={false}
               sharedCookiesEnabled
               thirdPartyCookiesEnabled
