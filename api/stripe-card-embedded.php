@@ -120,11 +120,14 @@ echo <<<HTML
 
     /* Stripe iframe container styling — clean borders, soft focus */
     .stripe-input {
+      display: flex;
+      align-items: center;
+      min-height: 48px;
       background: #ffffff;
       border: 1.5px solid #e2edf2;
       border-radius: 20px;
-      padding: 12px 16px;
-      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.4, 1);
+      padding: 10px 14px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     }
 
@@ -228,12 +231,8 @@ echo <<<HTML
       border-top: 1px solid #ecf3f8;
     }
 
-    /* improve placeholder / text inside Stripe iframes via default appearance – 
-       Stripe uses its own internal placeholders (Card number, MM / YY, CVC) but we
-       can nudge the container background and font smoothing */
-    .stripe-input iframe {
-      vertical-align: middle;
-      font-family: inherit;
+    .stripe-input > div {
+      width: 100%;
     }
 
     /* small responsive */
@@ -317,68 +316,30 @@ echo <<<HTML
     let setupIntentId = {$setiJs};
     let completeUrl = {$completeJs};
     
-    // Fallback guard (just in case something is undefined, but server ensures valid)
     if (!pk || !clientSecret) {
       document.getElementById('card-errors').innerText = 'Configuration error. Please close and try again.';
       document.getElementById('card-errors').style.display = 'block';
+      return;
     }
 
-    // Initialize Stripe with publishable key
     const stripe = Stripe(pk);
-    const elements = stripe.elements({
-      fonts: [],
-      locale: 'auto'
-    });
+    const elements = stripe.elements();
 
-    // Create individual card components – with custom styling to achieve
-    // clean & modern "light" look, no dark blue, neutral borders, consistent fonts
-    // We'll style placeholder text, input text, and more via style options.
-    // This also ensures typing preview (like card number, expiry) appears crisp and modern.
+    /* Minimal Stripe style — let Stripe set line-height/metrics (fixes ugly typing preview). */
     const elementStyle = {
       base: {
-        fontSize: '16px',
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, sans-serif',
-        fontSmoothing: 'antialiased',
         color: '#1e293b',
-        fontWeight: '450',
-        '::placeholder': {
-          color: '#a5b7ca',
-          fontWeight: '400',
-          fontSize: '15px',
-        },
-        ':focus': {
-          color: '#0f172a',
-        },
-        ':-webkit-autofill': {
-          color: '#1f2a3e',
-        },
+        fontSize: '16px'
       },
       invalid: {
-        color: '#d0302f',
-        iconColor: '#d0302f',
-        '::placeholder': {
-          color: '#f2bfbf',
-        }
-      },
-      complete: {
-        color: '#1f2f47',
+        color: '#1e293b',
+        iconColor: '#64748b'
       }
     };
 
-    // Create each element with the refined style & individual placeholders
-    const cardNumber = elements.create('cardNumber', {
-      style: elementStyle,
-      showIcon: true,       // subtle card brand icon (clean & helpful)
-      placeholder: '1234 5678 9012 3456',
-    });
-    const cardExpiry = elements.create('cardExpiry', {
-      style: elementStyle,
-      placeholder: 'MM / YY',
-    });
-    const cardCvc = elements.create('cardCvc', {
-      style: elementStyle,
-      placeholder: 'CVC',
-    });
+    const cardNumber = elements.create('cardNumber', { style: elementStyle });
+    const cardExpiry = elements.create('cardExpiry', { style: elementStyle });
+    const cardCvc = elements.create('cardCvc', { style: elementStyle });
 
     // Mount the fields into dedicated containers
     cardNumber.mount('#card-number');
@@ -423,30 +384,16 @@ echo <<<HTML
       errorElement.style.display = 'none';
     }
 
-    // Listen to change events for each field to clear error when typing
-    function clearErrorOnChange() {
-      hideError();
-    }
-    cardNumber.on('change', clearErrorOnChange);
-    cardExpiry.on('change', clearErrorOnChange);
-    cardCvc.on('change', clearErrorOnChange);
-
-    // Global error handler for individual field errors (like incomplete)
-    cardNumber.on('change', (event) => {
+    function onFieldChange(event) {
       if (event.error) {
         showError(event.error.message);
-      } else if (!event.empty && !event.complete) {
+      } else {
         hideError();
       }
-    });
-    cardExpiry.on('change', (event) => {
-      if (event.error) showError(event.error.message);
-      else if (!event.empty && !event.complete) hideError();
-    });
-    cardCvc.on('change', (event) => {
-      if (event.error) showError(event.error.message);
-      else if (!event.empty && !event.complete) hideError();
-    });
+    }
+    cardNumber.on('change', onFieldChange);
+    cardExpiry.on('change', onFieldChange);
+    cardCvc.on('change', onFieldChange);
 
     // Communicate with React Native WebView
     function postMessageToApp(payload) {
