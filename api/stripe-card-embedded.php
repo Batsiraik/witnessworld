@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * In-app card setup — WebView (?t=…). Classic single Stripe Card Element + SetupIntent.
+ * In-app card setup — WebView (?t=…). Split Card Elements (number / expiry / CVC) + SetupIntent.
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/stripe_card_embed_session.php';
@@ -95,7 +95,8 @@ echo <<<HTML
 
     #card-errors {
       min-height: 20px;
-      padding: 4px 0;
+      padding: 8px 0 0;
+      margin-top: 12px;
       color: #fa755a;
       font-size: 14px;
     }
@@ -106,11 +107,9 @@ echo <<<HTML
       min-width: 0;
     }
 
-    #card-element {
+    .stripe-field-host {
       background-color: white;
       width: 100%;
-      max-width: 400px;
-      /* Only pad the host — a small min-height + padding was clipping the iframe row (missing first digits, squashed placeholder). */
       padding: 14px 16px;
       border-radius: 4px;
       border: 1px solid transparent;
@@ -120,18 +119,37 @@ echo <<<HTML
       overflow: visible;
     }
 
-    /* Do not force width on Stripe’s inner root — it breaks their flex row (brand / input / Link) and distorts glyphs. */
-
-    #card-element.is-focused {
+    .stripe-field-host.is-focused {
       box-shadow: 0 1px 3px 0 #cfd7df;
     }
 
-    #card-element.is-invalid {
+    .stripe-field-host.is-invalid {
       border-color: #fa755a;
     }
 
-    #card-element .StripeElement--webkit-autofill {
+    .stripe-field-host .StripeElement--webkit-autofill {
       background-color: #fefde5 !important;
+    }
+
+    .stripe-row-split {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .stripe-row-split > div {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .field-label-sub {
+      font-weight: 500;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 6px;
+      color: #32325d;
     }
 
     .btn-Stripe {
@@ -189,9 +207,6 @@ echo <<<HTML
       form {
         padding: 20px;
       }
-      #card-element {
-        max-width: none;
-      }
       .btn-Stripe {
         margin-top: 16px;
         width: 100%;
@@ -204,8 +219,18 @@ echo <<<HTML
   <div class="wrapper">
     <form id="payment-form" autocomplete="off">
       <div class="form-row">
-        <label for="card-element">Credit or debit card</label>
-        <div id="card-element"></div>
+        <label>Credit or debit card</label>
+        <div id="card-number-host" class="stripe-field-host"></div>
+        <div class="stripe-row-split">
+          <div>
+            <span class="field-label-sub">Expiry</span>
+            <div id="card-expiry-host" class="stripe-field-host"></div>
+          </div>
+          <div>
+            <span class="field-label-sub">CVC</span>
+            <div id="card-cvc-host" class="stripe-field-host"></div>
+          </div>
+        </div>
         <div id="card-errors" role="alert"></div>
       </div>
       <button type="submit" class="btn-Stripe" id="submit-btn">Pay Now</button>
@@ -224,9 +249,12 @@ echo <<<HTML
     var completeUrl = {$completeJs};
 
     var errorEl = document.getElementById('card-errors');
-    var cardHost = document.getElementById('card-element');
     var submitBtn = document.getElementById('submit-btn');
     var originalBtnText = 'Pay Now';
+
+    var hostNumber = document.getElementById('card-number-host');
+    var hostExpiry = document.getElementById('card-expiry-host');
+    var hostCvc = document.getElementById('card-cvc-host');
 
     if (!pk || !clientSecret) {
       errorEl.textContent = 'Configuration error. Please close and try again.';
@@ -237,42 +265,86 @@ echo <<<HTML
     var stripe = Stripe(pk);
     var elements = stripe.elements({ locale: 'auto' });
 
-    var style = {
+    /* Placeholders look worse on focus in some WebViews — hide them while focused; keep typed text color stable. */
+    var elementStyle = {
       base: {
         color: '#32325d',
-        /* Let Stripe compute line-height from fontSize — fixed 18px inside a clipped host caused squashed / invisible text in WebView. */
         fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
         fontSmoothing: 'antialiased',
-        fontSize: '16px',
+        fontSize: '17px',
         '::placeholder': {
-          color: '#aab7c4'
+          color: '#aab7c4',
+          fontSmoothing: 'antialiased'
+        },
+        ':focus': {
+          color: '#32325d',
+          '::placeholder': {
+            color: 'transparent'
+          }
         }
       },
       invalid: {
         color: '#fa755a',
-        iconColor: '#fa755a'
+        iconColor: '#fa755a',
+        ':focus': {
+          '::placeholder': {
+            color: 'transparent'
+          }
+        }
       }
     };
 
-    var card = elements.create('card', { style: style, disableLink: true });
-    card.mount('#card-element');
-
-    card.on('focus', function () {
-      cardHost.classList.add('is-focused');
+    var cardNumber = elements.create('cardNumber', {
+      style: elementStyle,
+      showIcon: true,
+      placeholder: '1234 5678 9012 3456'
     });
-    card.on('blur', function () {
-      cardHost.classList.remove('is-focused');
+    var cardExpiry = elements.create('cardExpiry', {
+      style: elementStyle,
+      placeholder: 'MM / YY'
+    });
+    var cardCvc = elements.create('cardCvc', {
+      style: elementStyle,
+      placeholder: 'CVC'
     });
 
-    card.on('change', function (event) {
+    cardNumber.mount('#card-number-host');
+    cardExpiry.mount('#card-expiry-host');
+    cardCvc.mount('#card-cvc-host');
+
+    function wireFocus(el, host) {
+      el.on('focus', function () {
+        host.classList.add('is-focused');
+      });
+      el.on('blur', function () {
+        host.classList.remove('is-focused');
+      });
+    }
+    wireFocus(cardNumber, hostNumber);
+    wireFocus(cardExpiry, hostExpiry);
+    wireFocus(cardCvc, hostCvc);
+
+    function clearFieldErrors() {
+      hostNumber.classList.remove('is-invalid');
+      hostExpiry.classList.remove('is-invalid');
+      hostCvc.classList.remove('is-invalid');
+    }
+
+    function onFieldChange(event, type) {
       if (event.error) {
-        cardHost.classList.add('is-invalid');
+        clearFieldErrors();
+        if (type === 'cardNumber') hostNumber.classList.add('is-invalid');
+        if (type === 'cardExpiry') hostExpiry.classList.add('is-invalid');
+        if (type === 'cardCvc') hostCvc.classList.add('is-invalid');
         errorEl.textContent = event.error.message;
       } else {
-        cardHost.classList.remove('is-invalid');
+        clearFieldErrors();
         errorEl.textContent = '';
       }
-    });
+    }
+    cardNumber.on('change', function (e) { onFieldChange(e, 'cardNumber'); });
+    cardExpiry.on('change', function (e) { onFieldChange(e, 'cardExpiry'); });
+    cardCvc.on('change', function (e) { onFieldChange(e, 'cardCvc'); });
 
     function postMessageToApp(payload) {
       try {
@@ -300,7 +372,7 @@ echo <<<HTML
       try {
         var result = await stripe.confirmCardSetup(clientSecret, {
           payment_method: {
-            card: card
+            card: cardNumber
           }
         });
 
