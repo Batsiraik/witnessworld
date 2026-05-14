@@ -79,7 +79,8 @@
     "extra": {
       "eas": {
         "projectId": "72d60af4-52cf-4180-874f-ff6aae3a890b"
-      }
+      },
+      "useDemoCardCapture": true
     }
   }
 }
