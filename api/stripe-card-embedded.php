@@ -52,7 +52,18 @@ echo <<<HTML
     h1 { font-size: 1.15rem; margin: 0 0 10px; font-weight: 700; }
     .field { margin-bottom: 14px; }
     .field label { display: block; font-size: 0.8rem; font-weight: 700; color: #1a2332; margin-bottom: 6px; letter-spacing: 0.02em; }
-    .stripe-box { background: #fff; padding: 14px 16px; border-radius: 10px; border: 1px solid #c5cad8; min-height: 54px; box-shadow: inset 0 1px 2px rgba(11, 18, 32, 0.04); }
+    /* Flex centers Stripe’s iframe so text doesn’t sit at the top with empty space below (common in WebViews). */
+    .stripe-box {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid #c5cad8;
+      min-height: 48px;
+      box-shadow: inset 0 1px 2px rgba(11, 18, 32, 0.04);
+    }
+    .stripe-box > * { flex: 1; width: 100%; min-width: 0; min-height: 24px; }
     .stripe-box:focus-within { border-color: #3b5bdb; box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.2); }
     .row2 { display: flex; gap: 12px; }
     .row2 .field { flex: 1; min-width: 0; margin-bottom: 14px; }
@@ -93,60 +104,39 @@ echo <<<HTML
   var completeUrl = {$completeJs};
   var stripe = Stripe(pk);
   var elements = stripe.elements();
+  /* WebView + Stripe iframe: avoid system-ui (weak synthetic weights); keep fontSize/lineHeight tight so partial input doesn’t look tiny at the top. */
+  var fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
   var phMain = {
-    color: '#0f172a',
-    fontWeight: '700',
-    fontSize: '18px',
-    letterSpacing: '0.02em',
+    color: '#3f4f63',
+    fontWeight: '600',
+    fontSize: '16px',
+    letterSpacing: '0.01em',
     fontSmoothing: 'antialiased'
   };
   var fieldStyle = {
     base: {
-      color: '#0b1220',
-      fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-      fontSize: '18px',
-      lineHeight: '28px',
-      fontWeight: '600',
+      color: '#32325d',
+      fontFamily: fontStack,
+      fontSize: '16px',
+      lineHeight: '24px',
+      fontWeight: '500',
       fontSmoothing: 'antialiased',
-      iconColor: '#1e293b',
+      letterSpacing: '0.02em',
+      iconColor: '#8898aa',
+      padding: '4px 0',
       '::placeholder': phMain,
-      ':-webkit-autofill': { color: '#0b1220' }
+      ':-webkit-autofill': { color: '#32325d' }
     },
     invalid: {
-      color: '#b42318',
-      iconColor: '#b42318',
-      '::placeholder': { color: '#475569', fontWeight: '700', fontSize: '18px' }
+      color: '#df1b41',
+      iconColor: '#df1b41',
+      '::placeholder': { color: '#697386', fontWeight: '600', fontSize: '16px' }
     },
-    complete: { color: '#0b1220', iconColor: '#1a7f37' }
-  };
-  var cvcStyle = {
-    base: {
-      color: '#0b1220',
-      fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-      fontSize: '20px',
-      lineHeight: '30px',
-      fontWeight: '600',
-      fontSmoothing: 'antialiased',
-      iconColor: '#1e293b',
-      '::placeholder': {
-        color: '#0f172a',
-        fontWeight: '800',
-        fontSize: '20px',
-        letterSpacing: '0.08em',
-        fontSmoothing: 'antialiased'
-      },
-      ':-webkit-autofill': { color: '#0b1220' }
-    },
-    invalid: {
-      color: '#b42318',
-      iconColor: '#b42318',
-      '::placeholder': { color: '#475569', fontWeight: '700', fontSize: '20px', letterSpacing: '0.06em' }
-    },
-    complete: { color: '#0b1220', iconColor: '#1a7f37' }
+    complete: { color: '#32325d', iconColor: '#1a7f37' }
   };
   var cardNumber = elements.create('cardNumber', { style: fieldStyle, placeholder: '1234 1234 1234 1234' });
   var cardExpiry = elements.create('cardExpiry', { style: fieldStyle, placeholder: 'MM / YY' });
-  var cardCvc = elements.create('cardCvc', { style: cvcStyle, placeholder: '123' });
+  var cardCvc = elements.create('cardCvc', { style: fieldStyle, placeholder: '123' });
   cardNumber.mount('#card-number-element');
   cardExpiry.mount('#card-expiry-element');
   cardCvc.mount('#card-cvc-element');
