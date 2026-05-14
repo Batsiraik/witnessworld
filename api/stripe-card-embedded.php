@@ -120,15 +120,17 @@ echo <<<HTML
       border-radius: 8px;
       border: 1px solid #e3e8ee;
       box-shadow: none;
-      -webkit-transition: border-color 150ms ease, box-shadow 150ms ease;
-      transition: border-color 150ms ease, box-shadow 150ms ease;
+      -webkit-transition: border-color 0.12s ease;
+      transition: border-color 0.12s ease;
       overflow: visible;
       direction: ltr;
+      touch-action: manipulation;
     }
 
     .stripe-field-host.is-focused {
       border-color: #a0aec0;
       box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.15);
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
     }
 
     .stripe-field-host.is-invalid {
@@ -290,8 +292,8 @@ echo <<<HTML
       base: {
         color: '#1e293b',
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        fontSize: '18px',
-        lineHeight: '26px',
+        fontSize: '17px',
+        lineHeight: '24px',
         '::placeholder': {
           color: '#94a3b8'
         },
@@ -302,9 +304,10 @@ echo <<<HTML
           }
         }
       },
+      /* Same hue as base while typing — avoids red “flash” on partial input; full red only when Stripe marks invalid. */
       invalid: {
-        color: '#dc2626',
-        iconColor: '#dc2626'
+        color: '#1e293b',
+        iconColor: '#64748b'
       }
     };
 
@@ -344,16 +347,30 @@ echo <<<HTML
       hostCvc.classList.remove('is-invalid');
     }
 
+    function hasAnyInvalidClass() {
+      return hostNumber.classList.contains('is-invalid')
+        || hostExpiry.classList.contains('is-invalid')
+        || hostCvc.classList.contains('is-invalid');
+    }
+
+    /** Do not touch the DOM on every valid keystroke — that caused janky typing in WebView. */
     function onFieldChange(event, type) {
       if (event.error) {
         clearFieldErrors();
         if (type === 'cardNumber') hostNumber.classList.add('is-invalid');
         if (type === 'cardExpiry') hostExpiry.classList.add('is-invalid');
         if (type === 'cardCvc') hostCvc.classList.add('is-invalid');
-        errorEl.textContent = event.error.message;
-      } else {
-        clearFieldErrors();
+        var msg = event.error.message || '';
+        if (errorEl.textContent !== msg) {
+          errorEl.textContent = msg;
+        }
+        return;
+      }
+      if (errorEl.textContent !== '') {
         errorEl.textContent = '';
+      }
+      if (hasAnyInvalidClass()) {
+        clearFieldErrors();
       }
     }
     cardNumber.on('change', function (e) { onFieldChange(e, 'cardNumber'); });
