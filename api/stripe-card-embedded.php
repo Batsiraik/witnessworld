@@ -53,20 +53,21 @@ echo <<<HTML
     .field { margin-bottom: 14px; }
     .field label { display: block; font-size: 0.8rem; font-weight: 700; color: #1a2332; margin-bottom: 6px; letter-spacing: 0.02em; }
     .stripe-box {
-      display: flex;
-      align-items: center;
       background: #fff;
-      padding: 0 18px;
+      padding: 16px 18px;
       border-radius: 14px;
       border: 1.5px solid #c8cfdd;
-      height: 58px;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      min-height: 64px;
+      display: flex;
+      align-items: center;
     }
 
-    .stripe-box > * {
-      flex: 1;
+    .stripe-box > div {
       width: 100%;
-      min-width: 0;
+    }
+
+    .stripe-box iframe {
+      height: 28px !important;
     }
 
     .stripe-box:focus-within {
@@ -112,36 +113,23 @@ echo <<<HTML
   var completeUrl = {$completeJs};
   var stripe = Stripe(pk);
   var elements = stripe.elements();
-  var fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
-  var phMain = {
-    color: '#9aa4b2',
-    fontWeight: '500',
-    fontSize: '18px',
-    letterSpacing: '0.01em'
-  };
-
   var fieldStyle = {
     base: {
       color: '#111827',
-      fontFamily: fontStack,
-      fontSize: '18px',
-      lineHeight: '58px',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '22px',
+      lineHeight: '28px',
       fontWeight: '600',
       fontSmoothing: 'antialiased',
-      letterSpacing: '0.01em',
-      iconColor: '#64748b',
-      '::placeholder': phMain,
-      ':-webkit-autofill': {
-        color: '#111827'
+      letterSpacing: '0px',
+      '::placeholder': {
+        color: '#9ca3af',
+        fontSize: '18px',
+        fontWeight: '500'
       }
     },
     invalid: {
-      color: '#b42318',
-      iconColor: '#b42318'
-    },
-    complete: {
-      color: '#111827',
-      iconColor: '#15803d'
+      color: '#111827'
     }
   };
   var cardNumber = elements.create('cardNumber', {
