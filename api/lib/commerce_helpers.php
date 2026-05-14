@@ -152,6 +152,152 @@ function ww_commerce_row(array $row): array
     ];
 }
 
+/**
+ * Live subject snapshot for order detail (buyer + seller). Null if subject was removed or not visible.
+ *
+ * @return array<string, mixed>|null
+ */
+function ww_commerce_subject_preview(PDO $pdo, string $subjectType, int $subjectId): ?array
+{
+    $subjectType = strtolower(trim($subjectType));
+    $base = [
+        'kind' => $subjectType,
+        'title' => '',
+        'hero_image_url' => null,
+        'subtitle' => null,
+        'description' => null,
+        'specifications' => null,
+        'gallery_urls' => [],
+        'meta_line' => null,
+        'store_name' => null,
+    ];
+
+    try {
+        if ($subjectType === 'listing') {
+            $st = $pdo->prepare(
+                'SELECT title, description, media_url, portfolio_urls_json, listing_type, price_amount, is_free, pricing_type, currency
+                 FROM listings WHERE id = ? AND moderation_status = ? LIMIT 1'
+            );
+            $st->execute([$subjectId, 'approved']);
+            $r = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$r) {
+                return null;
+            }
+            $base['title'] = (string) $r['title'];
+            $base['hero_image_url'] = $r['media_url'] ? (string) $r['media_url'] : null;
+            $base['description'] = (string) $r['description'];
+            $gallery = [];
+            if (!empty($r['portfolio_urls_json'])) {
+                $decoded = json_decode((string) $r['portfolio_urls_json'], true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $u) {
+                        if (is_string($u) && $u !== '') {
+                            $gallery[] = $u;
+                        }
+                    }
+                }
+            }
+            $base['gallery_urls'] = array_slice($gallery, 0, 12);
+            $lt = (string) ($r['listing_type'] ?? '');
+            $typeLabel = $lt === 'service' ? 'Service' : ($lt === 'classified' ? 'Classified' : ucfirst($lt));
+            $cur = (string) ($r['currency'] ?: 'USD');
+            if ((int) ($r['is_free'] ?? 0) === 1) {
+                $base['meta_line'] = $typeLabel . ' · FREE';
+            } elseif ($r['price_amount'] !== null) {
+                $pa = (string) $r['price_amount'];
+                $suffix = ($r['pricing_type'] ?? '') === 'hourly' ? '/hr' : '';
+                $base['meta_line'] = $typeLabel . ' · ' . $cur . ' ' . $pa . $suffix;
+            } else {
+                $base['meta_line'] = $typeLabel;
+            }
+            $base['subtitle'] = $base['meta_line'];
+
+            return $base;
+        }
+
+        if ($subjectType === 'product') {
+            $st = $pdo->prepare(
+                'SELECT p.name, p.description, p.specifications, p.image_url, p.price_amount, p.currency, s.name AS store_name
+                 FROM store_products p
+                 INNER JOIN stores s ON s.id = p.store_id
+                 WHERE p.id = ? AND p.moderation_status = ? AND s.moderation_status = ?
+                 LIMIT 1'
+            );
+            $st->execute([$subjectId, 'approved', 'approved']);
+            $r = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$r) {
+                return null;
+            }
+            $base['title'] = (string) $r['name'];
+            $base['hero_image_url'] = $r['image_url'] ? (string) $r['image_url'] : null;
+            $base['description'] = $r['description'] ? (string) $r['description'] : null;
+            $base['specifications'] = $r['specifications'] ? (string) $r['specifications'] : null;
+            $base['store_name'] = (string) ($r['store_name'] ?? '');
+            if ($base['hero_image_url']) {
+                $base['gallery_urls'] = [$base['hero_image_url']];
+            }
+            $cur = (string) ($r['currency'] ?: 'USD');
+            if ($r['price_amount'] !== null) {
+                $base['meta_line'] = $cur . ' ' . (string) $r['price_amount'] . ' · ' . $base['store_name'];
+            } else {
+                $base['meta_line'] = $base['store_name'];
+            }
+            $base['subtitle'] = $base['meta_line'];
+
+            return $base;
+        }
+
+        if ($subjectType === 'directory_entry') {
+            $st = $pdo->prepare(
+                'SELECT business_name, description, logo_url FROM directory_entries WHERE id = ? AND moderation_status = ? LIMIT 1'
+            );
+            $st->execute([$subjectId, 'approved']);
+            $r = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$r) {
+                return null;
+            }
+            $base['title'] = (string) $r['business_name'];
+            $base['hero_image_url'] = $r['logo_url'] ? (string) $r['logo_url'] : null;
+            $base['description'] = $r['description'] ? (string) $r['description'] : null;
+            if ($base['hero_image_url']) {
+                $base['gallery_urls'] = [$base['hero_image_url']];
+            }
+            $base['meta_line'] = 'Business directory';
+            $base['subtitle'] = $base['meta_line'];
+
+            return $base;
+        }
+
+        if ($subjectType === 'member') {
+            $st = $pdo->prepare(
+                'SELECT username, first_name, last_name, avatar_url FROM users WHERE id = ? AND status = ? LIMIT 1'
+            );
+            $st->execute([$subjectId, 'verified']);
+            $r = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$r) {
+                return null;
+            }
+            $name = trim((string) ($r['first_name'] ?? '') . ' ' . (string) ($r['last_name'] ?? ''));
+            if ($name === '') {
+                $name = '@' . (string) ($r['username'] ?? '');
+            }
+            $base['title'] = $name;
+            $base['hero_image_url'] = $r['avatar_url'] ? (string) $r['avatar_url'] : null;
+            if ($base['hero_image_url']) {
+                $base['gallery_urls'] = [$base['hero_image_url']];
+            }
+            $base['meta_line'] = 'Member profile';
+            $base['subtitle'] = '@' . (string) ($r['username'] ?? '');
+
+            return $base;
+        }
+    } catch (Throwable) {
+        return null;
+    }
+
+    return null;
+}
+
 function ww_commerce_notify(PDO $pdo, int $userId, string $subject, string $body, int $requestId): void
 {
     try {

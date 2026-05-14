@@ -79,6 +79,8 @@ CREATE TABLE users (
   stripe_customer_id VARCHAR(191) NULL,
   stripe_subscription_id VARCHAR(191) NULL,
   stripe_payment_method_status ENUM('none','missing','attached') NOT NULL DEFAULT 'none',
+  stripe_pm_last4 VARCHAR(4) NULL DEFAULT NULL,
+  stripe_pm_brand VARCHAR(32) NULL DEFAULT NULL,
   storefront_addon ENUM('none','small','large') NOT NULL DEFAULT 'none',
   status ENUM(
     'pending_otp',
@@ -556,6 +558,7 @@ CREATE TABLE content_reviews (
   CONSTRAINT fk_crev_reviewer FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_crev_seller FOREIGN KEY (seller_user_id) REFERENCES users(id) ON DELETE SET NULL,
   UNIQUE KEY uq_crev_request (request_id),
+  UNIQUE KEY uq_crev_reviewer_subject (reviewer_user_id, subject_type, subject_id),
   INDEX idx_crev_subject (subject_type, subject_id, status, created_at),
   INDEX idx_crev_seller (seller_user_id, status),
   INDEX idx_crev_rating (rating)

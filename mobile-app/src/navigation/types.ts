@@ -20,6 +20,9 @@ export type HomeStackParamList = {
         subjectId?: number;
       }
     | undefined;
+  CartCheckout: undefined;
+  Orders: undefined;
+  OrderDetail: { id: number };
   Favorites: undefined;
   MembershipPlans: undefined;
   StorefrontAddon: undefined;
@@ -85,6 +88,8 @@ export type RootStackParamList = {
   RecoverPassword: { email: string; resetToken: string };
   Register: undefined;
   RegisterOtp: { email: string };
+  /** In-app card capture (Stripe RN); no browser. */
+  AddPaymentCard: { returnTo?: 'register_complete' | 'pop'; email?: string } | undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   /** Tab shell lives under Dashboard; use nested navigate for tab routes (e.g. OfficeTab, HomeTab). */

@@ -4,6 +4,9 @@ import type { HomeStackParamList } from './types';
 /** Detail routes on the main Home tab stack (not root index screens like Classifieds). */
 export const HOME_STACK_DETAIL_ROUTES = new Set<string>([
   'Cart',
+  'CartCheckout',
+  'Orders',
+  'OrderDetail',
   'Favorites',
   'ListingDetail',
   'MemberPublicProfile',

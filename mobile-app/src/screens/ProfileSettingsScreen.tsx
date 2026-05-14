@@ -1,7 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { apiLogout, apiPost, apiUploadAvatar, setStoredToken } from '../api/client';
 import { AppPasswordField } from '../components/AppPasswordField';
 import { GlassCard } from '../components/GlassCard';
@@ -40,8 +40,24 @@ type Props =
   | NativeStackScreenProps<HomeStackParamList, 'Profile'>
   | NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
 
+function formatCardBrand(brand: string | null | undefined): string {
+  if (!brand) return 'Card';
+  const b = brand.toLowerCase();
+  const map: Record<string, string> = {
+    visa: 'Visa',
+    mastercard: 'Mastercard',
+    amex: 'American Express',
+    discover: 'Discover',
+    unionpay: 'UnionPay',
+    jcb: 'JCB',
+    diners: 'Diners Club',
+  };
+  return map[b] ?? brand.charAt(0).toUpperCase() + brand.slice(1).toLowerCase();
+}
+
 export function ProfileSettingsScreen(_props: Props) {
-  const { user, refreshProfile, stackNavigation, supportAvailable, supportEmail } = useDashboardContext();
+  const { user, subscription, refreshProfile, stackNavigation, supportAvailable, supportEmail } =
+    useDashboardContext();
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarUploadPct, setAvatarUploadPct] = useState<number | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -52,11 +68,18 @@ export function ProfileSettingsScreen(_props: Props) {
   const [delEmail, setDelEmail] = useState('');
   const [delPhone, setDelPhone] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [billingBusy, setBillingBusy] = useState(false);
 
   const avatarUri =
     user?.avatar_url && String(user.avatar_url).trim() !== '' ? String(user.avatar_url) : null;
   const displayName =
     [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() || 'Member';
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshProfile();
+    }, [refreshProfile])
+  );
 
   const goExplore = (screen: ExploreKey) => {
     stackNavigation.navigate('Dashboard', {
@@ -70,6 +93,41 @@ export function ProfileSettingsScreen(_props: Props) {
       screen: 'OfficeTab',
       params: { screen: 'MyOffice' },
     });
+  };
+
+  const openAddCardInApp = () => {
+    stackNavigation.navigate('AddPaymentCard', {
+      returnTo: 'pop',
+      email: typeof user?.email === 'string' ? user.email : undefined,
+    });
+  };
+
+  const confirmRemovePaymentMethod = () => {
+    Alert.alert(
+      'Remove payment method?',
+      'Without a card on file we cannot renew your membership when your current access or trial ends. Listings that depend on an active paid plan may go offline when that period expires. You can add a new card anytime before then.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove card',
+          style: 'destructive',
+          onPress: () => void removePaymentMethod(),
+        },
+      ]
+    );
+  };
+
+  const removePaymentMethod = async () => {
+    setBillingBusy(true);
+    try {
+      await apiPost('billing-payment-method-remove.php', {}, true);
+      await refreshProfile();
+      Alert.alert('Payment method', 'Your card was removed from this account.');
+    } catch (e) {
+      Alert.alert('Could not remove card', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setBillingBusy(false);
+    }
   };
 
   const signOut = async () => {
@@ -186,6 +244,9 @@ export function ProfileSettingsScreen(_props: Props) {
             <Text style={styles.pageTitle}>Profile & settings</Text>
             <Text style={styles.pageSub}>{displayName}</Text>
 
+            <PrimaryButton label="Manage my listings & office" onPress={goOffice} style={styles.manageCta} />
+            <Text style={styles.manageCtaHint}>Listings, store, products, and directory — same place as My office below.</Text>
+
             <View style={styles.nbBox}>
               <Text style={styles.nbLabel}>NB</Text>
               <Text style={styles.nbText}>
@@ -193,6 +254,54 @@ export function ProfileSettingsScreen(_props: Props) {
                 {supportEmail ? ` at ${supportEmail}` : ''}. Or send a message to the Support in App Chat. These details cannot be updated from the app.
               </Text>
             </View>
+
+            <GlassCard style={styles.card}>
+              <Text style={styles.sectionTitle}>Payment method</Text>
+              <Text style={styles.sectionHint}>
+                Membership billing after your trial. Card details are entered on the next screen inside the app
+                (Stripe). Test mode: 4242 4242 4242 4242, any future expiry, any CVC.
+              </Text>
+              {(() => {
+                const plan = subscription?.plan ?? 'free';
+                const pm = subscription?.stripe_payment_method_status ?? 'none';
+                const card = subscription?.payment_method;
+                const hasCard = pm === 'attached';
+                if (hasCard) {
+                  return (
+                    <View style={styles.paymentBlock}>
+                      <Text style={styles.paymentMain}>
+                        {card?.last4
+                          ? `${formatCardBrand(card?.brand)} ···· ${card.last4}`
+                          : 'Card on file'}
+                      </Text>
+                      <PrimaryButton
+                        label="Add or replace card"
+                        onPress={openAddCardInApp}
+                        style={styles.paymentBtn}
+                      />
+                      <PrimaryButton
+                        label="Remove card"
+                        variant="outline"
+                        onPress={confirmRemovePaymentMethod}
+                        disabled={billingBusy}
+                        style={styles.paymentBtn}
+                      />
+                    </View>
+                  );
+                }
+                return (
+                  <View style={styles.paymentBlock}>
+                    <Text style={styles.paymentMain}>{plan === 'free' ? 'None' : 'Not on file'}</Text>
+                    <Text style={styles.paymentSub}>
+                      {plan === 'free'
+                        ? 'Free plan — no subscription charges. You can still add a card so upgrades go smoothly.'
+                        : 'Add a card so your paid plan can continue after the trial. You are not charged until after the trial ends.'}
+                    </Text>
+                    <PrimaryButton label="Add card" onPress={openAddCardInApp} style={styles.paymentBtn} />
+                  </View>
+                );
+              })()}
+            </GlassCard>
 
             <GlassCard style={styles.card}>
               <Text style={styles.sectionTitle}>Browse marketplace</Text>
@@ -390,6 +499,17 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 },
   pageTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
   pageSub: { fontSize: 14, color: colors.textMuted, marginTop: 4, marginBottom: 8, fontWeight: '500' },
+  manageCta: { marginTop: 8 },
+  manageCtaHint: {
+    marginTop: 10,
+    marginBottom: 4,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
   nbBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -403,6 +523,10 @@ const styles = StyleSheet.create({
   },
   nbLabel: { fontSize: 12, fontWeight: '900', color: '#B45309', letterSpacing: 0.5 },
   nbText: { flex: 1, fontSize: 13, lineHeight: 20, color: colors.text, fontWeight: '600' },
+  paymentBlock: { marginTop: 4 },
+  paymentMain: { fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 8 },
+  paymentSub: { marginTop: 8, fontSize: 13, lineHeight: 20, color: colors.textMuted, fontWeight: '600' },
+  paymentBtn: { marginTop: 12 },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',

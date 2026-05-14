@@ -7,7 +7,9 @@ import { apiGet, getStoredToken } from '../api/client';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { GradientBackground } from '../components/GradientBackground';
 import { VerificationLockOverlay } from '../components/VerificationLockOverlay';
+import { CartFloatingBar } from '../components/CartFloatingBar';
 import { DashboardProvider, type DashboardUser, type SubscriptionInfo } from '../context/DashboardContext';
+import { ShoppingCartProvider } from '../context/ShoppingCartContext';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import type { RootStackParamList } from '../navigation/types';
@@ -133,17 +135,20 @@ export function DashboardScreen({ navigation }: Props) {
           refreshProfile={refreshProfile}
           stackNavigation={navigation}
         >
-          <View style={styles.fill}>
-            <MainTabNavigator />
-            <VerificationLockOverlay
-              visible={lockUnverified && isDashboardFocused}
-              variant={overlayVariant}
-              supportEmail={supportEmail}
-              supportAvailable={supportAvailable}
-              onMessageSupport={() => navigation.navigate('SupportChat', {})}
-              onRecheckStatus={refreshProfile}
-            />
-          </View>
+          <ShoppingCartProvider>
+            <View style={styles.fill}>
+              <MainTabNavigator />
+              <CartFloatingBar />
+              <VerificationLockOverlay
+                visible={lockUnverified && isDashboardFocused}
+                variant={overlayVariant}
+                supportEmail={supportEmail}
+                supportAvailable={supportAvailable}
+                onMessageSupport={() => navigation.navigate('SupportChat', {})}
+                onRecheckStatus={refreshProfile}
+              />
+            </View>
+          </ShoppingCartProvider>
         </DashboardProvider>
       ) : (
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>

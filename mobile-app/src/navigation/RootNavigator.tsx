@@ -11,6 +11,7 @@ import { ForgotPasswordOtpScreen } from '../screens/ForgotPasswordOtpScreen';
 import { RecoverPasswordScreen } from '../screens/RecoverPasswordScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { RegisterOtpScreen } from '../screens/RegisterOtpScreen';
+import { AddPaymentCardScreen } from '../screens/AddPaymentCardScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { TermsOfServiceScreen } from '../screens/TermsOfServiceScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -110,6 +111,7 @@ export function RootNavigator() {
       <Stack.Screen name="RecoverPassword" component={RecoverPasswordScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />
+      <Stack.Screen name="AddPaymentCard" component={AddPaymentCardScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />

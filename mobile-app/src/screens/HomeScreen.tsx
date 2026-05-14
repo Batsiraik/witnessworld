@@ -567,6 +567,19 @@ export function HomeScreen({ navigation }: Props) {
                 <Ionicons name="heart-outline" size={22} color={colors.text} />
               </Pressable>
               <Pressable
+                accessibilityLabel="My orders"
+                onPress={() => {
+                  if (isGuest) {
+                    showGuestPrompt();
+                    return;
+                  }
+                  navigation.navigate('Orders');
+                }}
+                style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="receipt-outline" size={22} color={colors.text} />
+              </Pressable>
+              <Pressable
                 accessibilityLabel="Notifications"
                 onPress={() => {
                   /* Reserved for future push / notification center */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
+require_once __DIR__ . '/lib/subscription_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -49,4 +50,5 @@ ww_json([
     'ok' => true,
     'token' => $token,
     'user' => ww_user_public($fresh ?: []),
+    'subscription' => ww_subscription_payload($pdo, $fresh ?: []),
 ]);

@@ -99,3 +99,69 @@ function ww_reviews_payload(PDO $pdo, string $subjectType, int $subjectId): arra
         'reviews' => ww_review_recent($pdo, $subjectType, $subjectId, 5),
     ];
 }
+
+/**
+ * Resolve the provider / seller user id for a public review subject (approved content only).
+ *
+ * @throws RuntimeException when the subject is missing or not visible
+ */
+function ww_review_resolve_seller_user_id(PDO $pdo, string $subjectType, int $subjectId): int
+{
+    if ($subjectType === 'listing') {
+        $st = $pdo->prepare('SELECT user_id FROM listings WHERE id = ? AND moderation_status = ? LIMIT 1');
+        $st->execute([$subjectId, 'approved']);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$r) {
+            throw new RuntimeException('Listing not found');
+        }
+        return (int) $r['user_id'];
+    }
+
+    if ($subjectType === 'product') {
+        $st = $pdo->prepare(
+            'SELECT s.user_id
+             FROM store_products p
+             INNER JOIN stores s ON s.id = p.store_id
+             WHERE p.id = ? AND p.moderation_status = ? AND s.moderation_status = ?
+             LIMIT 1'
+        );
+        $st->execute([$subjectId, 'approved', 'approved']);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$r) {
+            throw new RuntimeException('Product not found');
+        }
+        return (int) $r['user_id'];
+    }
+
+    if ($subjectType === 'store') {
+        $st = $pdo->prepare('SELECT user_id FROM stores WHERE id = ? AND moderation_status = ? LIMIT 1');
+        $st->execute([$subjectId, 'approved']);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$r) {
+            throw new RuntimeException('Store not found');
+        }
+        return (int) $r['user_id'];
+    }
+
+    if ($subjectType === 'directory_entry') {
+        $st = $pdo->prepare('SELECT user_id FROM directory_entries WHERE id = ? AND moderation_status = ? LIMIT 1');
+        $st->execute([$subjectId, 'approved']);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$r) {
+            throw new RuntimeException('Business listing not found');
+        }
+        return (int) $r['user_id'];
+    }
+
+    if ($subjectType === 'member') {
+        $st = $pdo->prepare('SELECT id FROM users WHERE id = ? AND status = ? LIMIT 1');
+        $st->execute([$subjectId, 'verified']);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$r) {
+            throw new RuntimeException('Member not found');
+        }
+        return (int) $r['id'];
+    }
+
+    throw new RuntimeException('Invalid review subject');
+}

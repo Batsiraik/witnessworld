@@ -23,6 +23,7 @@ export type SubscriptionInfo = {
   trial_ends_at?: string | null;
   grace_ends_at?: string | null;
   stripe_payment_method_status?: string;
+  payment_method?: { brand?: string | null; last4?: string | null } | null;
   features?: {
     can_post?: boolean;
     max_active_ads?: number;

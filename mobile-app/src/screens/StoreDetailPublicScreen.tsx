@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,7 +17,9 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
+import { SubjectReviewCTA } from '../components/SubjectReviewCTA';
 import { useDashboardContext } from '../context/DashboardContext';
+import { useShoppingCart } from '../context/ShoppingCartContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
@@ -56,6 +58,7 @@ type Store = {
 export function StoreDetailPublicScreen({ navigation, route }: Props) {
   const { id } = route.params;
   const { user, isGuest, showGuestPrompt } = useDashboardContext();
+  const { addProduct } = useShoppingCart();
   const tileW = useGridTileWidth();
   const myId = user?.id ?? 0;
   const [store, setStore] = useState<Store | null>(null);
@@ -125,6 +128,16 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
     }
   };
 
+  const refreshStore = useCallback(async () => {
+    try {
+      const data = await apiGet(`store-public-detail.php?id=${id}&products_limit=60`, false);
+      const S = data.store as Store | undefined;
+      if (S) setStore(S);
+    } catch {
+      /* keep */
+    }
+  }, [id]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -141,6 +154,25 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
       ),
     });
   }, [navigation, favoriteOn, favoriteBusy]);
+
+  const addStoreProductToCart = (p: ProductMini) => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
+    addProduct({
+      subject_type: 'product',
+      subject_id: p.id,
+      title: p.name,
+      image_url: p.image_url,
+      unit_price: p.price_amount,
+      currency: p.currency,
+    });
+    Alert.alert('Added to cart', 'Continue shopping or open your cart to checkout.', [
+      { text: 'OK', style: 'cancel' },
+      { text: 'View cart', onPress: () => navigation.navigate('Cart') },
+    ]);
+  };
 
   const contact = async () => {
     if (!store) return;
@@ -203,6 +235,13 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
           {store.delivery_notes ? <Text style={styles.body}>{store.delivery_notes}</Text> : null}
           <Text style={styles.body}>{store.description}</Text>
           <ReviewsBlock summary={store.review_summary} reviews={store.reviews} />
+          <SubjectReviewCTA
+            subjectType="store"
+            subjectId={store.id}
+            sellerUserId={store.seller.user_id}
+            subjectTitle={store.name}
+            onPosted={refreshStore}
+          />
 
           <Text style={styles.section}>Products</Text>
           {store.products.length === 0 ? (
@@ -228,7 +267,10 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
                       )}
                       {canAddToCart ? (
                         <Pressable
-                          onPress={() => navigation.push('Cart', { subjectType: 'product', subjectId: p.id })}
+                          onPress={(e) => {
+                            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                            addStoreProductToCart(p);
+                          }}
                           style={({ pressed }) => [styles.productCartBtn, pressed && styles.pCartBtnPressed]}
                           accessibilityRole="button"
                           accessibilityLabel="Add to cart"

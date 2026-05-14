@@ -1,6 +1,7 @@
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
@@ -36,10 +37,16 @@ function confirmPlanChange(title: string, message: string): Promise<boolean> {
 }
 
 export function MembershipPlansScreen({ navigation }: Props) {
-  const { subscription, refreshProfile } = useDashboardContext();
+  const { subscription, refreshProfile, stackNavigation, user } = useDashboardContext();
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
   const plans = ((subscription?.plans ?? []) as Plan[]).filter((p) => p && typeof p.key === 'string');
   const currentPlan = subscription?.plan ?? 'free';
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshProfile();
+    }, [refreshProfile])
+  );
 
   const choosePlan = async (planKey: string) => {
     if (planKey === currentPlan) return;
@@ -56,7 +63,7 @@ export function MembershipPlansScreen({ navigation }: Props) {
       if (hadCard) {
         msg = `Switch to ${title} at $${price}/month?\n\nYour saved payment method stays on file. Your next charge for this plan is expected on ${trialEndLabel} (typically after your trial ends, unless you are already past trial).`;
       } else {
-        msg = `Start a ${trialDays}-day trial on ${title}. After the trial: $${price}/month.\n\nNext, you can add a card in secure checkout so billing can continue after the trial. You are not charged until after the trial.`;
+        msg = `Start a ${trialDays}-day trial on ${title}. After the trial: $${price}/month.\n\nNext, you can add a card on the next screen (inside the app) so billing can continue after the trial. You are not charged until after the trial.`;
       }
 
       const ok = await confirmPlanChange('Confirm plan', msg);
@@ -101,18 +108,10 @@ export function MembershipPlansScreen({ navigation }: Props) {
           {
             text: 'Add card',
             onPress: () => {
-              void (async () => {
-                try {
-                  const r = await apiPost('stripe-checkout-setup-session.php', {}, true);
-                  const url = typeof r.url === 'string' ? r.url : '';
-                  if (!url) throw new Error('No checkout URL returned.');
-                  await Linking.openURL(url);
-                } catch (e) {
-                  Alert.alert('Could not open checkout', e instanceof Error ? e.message : 'Try again.');
-                } finally {
-                  navigation.goBack();
-                }
-              })();
+              stackNavigation.navigate('AddPaymentCard', {
+                returnTo: 'pop',
+                email: typeof user?.email === 'string' ? user.email : undefined,
+              });
             },
           },
         ]
@@ -130,7 +129,9 @@ export function MembershipPlansScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.title}>Choose your plan</Text>
           <Text style={styles.lead}>
-            Paid plans include a free trial. If you do not already have a card on file, you will be prompted to add one after choosing a paid plan so billing can continue after the trial.
+            Paid plans include a free trial. Free plan never asks for a card. If you already saved a card, switching
+            paid plans does not ask again; if you are on Free and choose a paid plan, you will be prompted to add a
+            card after confirming (unless one is already on file).
           </Text>
           <Text style={styles.note}>Storefront = separate add-on.</Text>
           {plans.map((plan) => {

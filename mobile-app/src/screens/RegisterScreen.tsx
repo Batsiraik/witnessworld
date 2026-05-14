@@ -424,21 +424,24 @@ export function RegisterScreen({ navigation }: Props) {
                 ) : (
                   <>
                     <Text style={styles.trialIntro}>
-                      <Text style={styles.trialBold}>Paid plans</Text>
-                      {' include a '}
-                      <Text style={styles.trialBold}>{trialDays}-day free trial</Text>
-                      {' set by the site admin. '}
-                      <Text style={styles.trialBold}>You will not be charged</Text>
-                      {' until that trial ends. No charges run until after your trial period is over.'}
-                    </Text>
-                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
-                      Your personal trial end date appears in the app after you finish signup and verify. As an
-                      illustration only: if a paid trial started today, the last free day would be around{' '}
-                      <Text style={styles.trialBold}>{illustrationEnd}</Text>.
-                    </Text>
-                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
                       <Text style={styles.trialBold}>Free</Text>
-                      {' is always $0/month — no subscription billing.'}
+                      {' is $0/month — no subscription billing and '}
+                      <Text style={styles.trialBold}>no card</Text>
+                      {' is collected. After you verify your email, you go straight into the app.'}
+                    </Text>
+                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
+                      <Text style={styles.trialBold}>Paid plans</Text>
+                      {' start your '}
+                      <Text style={styles.trialBold}>{trialDays}-day free trial</Text>
+                      {' when you create the account. '}
+                      <Text style={styles.trialBold}>You are not charged</Text>
+                      {' until after that trial ends. Right after email verification, the app will offer '}
+                      <Text style={styles.trialBold}>in-app Stripe card form</Text>
+                      {' to save a card in the app (Stripe test cards while the server uses test keys). If you skip it, you can add a card anytime under Profile → Payment method or when you change plan.'}
+                    </Text>
+                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
+                      Your exact trial end date appears in the app after signup. Illustration only — last free day
+                      if the trial started today: <Text style={styles.trialBold}>{illustrationEnd}</Text>.
                     </Text>
                     <Text style={[styles.sectionHint, { marginTop: 10 }]}>
                       Optional storefront add-on is chosen later from Create listing (not here).

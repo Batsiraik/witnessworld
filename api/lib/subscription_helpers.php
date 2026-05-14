@@ -188,13 +188,25 @@ function ww_subscription_payload(PDO $pdo, array $user): array
         $addonTitle = (string) $addonCatalog[$addon]['title'];
     }
 
+    $pmStatus = (string) ($user['stripe_payment_method_status'] ?? 'none');
+    $paymentMethod = null;
+    if ($pmStatus === 'attached') {
+        $l4 = trim((string) ($user['stripe_pm_last4'] ?? ''));
+        $br = strtolower(trim((string) ($user['stripe_pm_brand'] ?? '')));
+        $paymentMethod = [
+            'brand' => $br !== '' ? $br : null,
+            'last4' => $l4 !== '' ? $l4 : null,
+        ];
+    }
+
     return [
         'plan' => $planKey,
         'status' => $status,
         'plan_title' => (string) $plan['title'],
         'trial_ends_at' => $user['trial_ends_at'] ?? null,
         'grace_ends_at' => $user['grace_ends_at'] ?? null,
-        'stripe_payment_method_status' => (string) ($user['stripe_payment_method_status'] ?? 'none'),
+        'stripe_payment_method_status' => $pmStatus,
+        'payment_method' => $paymentMethod,
         'storefront_addon' => $addon,
         'storefront_addon_title' => $addonTitle,
         'storefront_addon_monthly' => $addonMonthly,

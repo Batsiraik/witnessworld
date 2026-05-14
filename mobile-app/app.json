@@ -3,6 +3,7 @@
     "name": "Witness World Connect",
     "slug": "witnessworld",
     "version": "1.0.0",
+    "scheme": "witnessworldconnect",
     "orientation": "portrait",
     "icon": "./assets/logo.jpg",
     "userInterfaceStyle": "light",
@@ -65,7 +66,14 @@
       ],
       "expo-image",
       "expo-video",
-      "expo-font"
+      "expo-font",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.witnessworldconnect",
+          "enableGooglePay": false
+        }
+      ]
     ],
     "extra": {
       "eas": {

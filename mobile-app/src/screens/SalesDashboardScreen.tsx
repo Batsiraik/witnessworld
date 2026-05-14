@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import { useDashboardContext } from '../context/DashboardContext';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -37,6 +38,7 @@ function statusLabel(s: string): string {
 }
 
 export function SalesDashboardScreen(_: Props) {
+  const { stackNavigation } = useDashboardContext();
   const [rows, setRows] = useState<SaleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [trackingById, setTrackingById] = useState<Record<number, string>>({});
@@ -93,7 +95,7 @@ export function SalesDashboardScreen(_: Props) {
             <View style={styles.header}>
               <Text style={styles.title}>Sales dashboard</Text>
               <Text style={styles.body}>
-                Accept requests only when you can fulfill them. Keep WWC chat records and update shipping or delivery status.
+                Tap a row to open the full order — photos, listing text, buyer notes, and message — before you accept.
               </Text>
             </View>
           }
@@ -111,22 +113,33 @@ export function SalesDashboardScreen(_: Props) {
               .join(', ');
             return (
               <View style={styles.card}>
-                <View style={styles.top}>
-                  <Text style={styles.cardTitle}>{item.subject_title}</Text>
-                  <Text style={styles.status}>{statusLabel(item.status)}</Text>
-                </View>
-                <Text style={styles.meta}>Buyer: {item.buyer_name}</Text>
-                {item.buyer_email ? <Text style={styles.meta}>Email: {item.buyer_email}</Text> : null}
-                {item.buyer_phone ? <Text style={styles.meta}>Phone: {item.buyer_phone}</Text> : null}
-                {item.unit_price ? (
-                  <Text style={styles.meta}>
-                    {item.currency} {item.unit_price} × {item.quantity}
-                  </Text>
-                ) : null}
-                {shippingLine ? (
-                  <Text style={styles.details}>Ship to {item.shipping_name || item.buyer_name}: {shippingLine}</Text>
-                ) : null}
-                {item.project_brief ? <Text style={styles.details}>{item.project_brief}</Text> : null}
+                <Pressable
+                  onPress={() =>
+                    stackNavigation.navigate('Dashboard', {
+                      screen: 'HomeTab',
+                      params: { screen: 'OrderDetail', params: { id: item.id } },
+                    })
+                  }
+                  style={({ pressed }) => [styles.cardTap, pressed && styles.cardPressed]}
+                >
+                  <View style={styles.top}>
+                    <Text style={styles.cardTitle}>{item.subject_title}</Text>
+                    <Text style={styles.status}>{statusLabel(item.status)}</Text>
+                  </View>
+                  <Text style={styles.tapHint}>Tap for full preview, photos & message</Text>
+                  <Text style={styles.meta}>Buyer: {item.buyer_name}</Text>
+                  {item.buyer_email ? <Text style={styles.meta}>Email: {item.buyer_email}</Text> : null}
+                  {item.buyer_phone ? <Text style={styles.meta}>Phone: {item.buyer_phone}</Text> : null}
+                  {item.unit_price ? (
+                    <Text style={styles.meta}>
+                      {item.currency} {item.unit_price} × {item.quantity}
+                    </Text>
+                  ) : null}
+                  {shippingLine ? (
+                    <Text style={styles.details}>Ship to {item.shipping_name || item.buyer_name}: {shippingLine}</Text>
+                  ) : null}
+                  {item.project_brief ? <Text style={styles.details}>{item.project_brief}</Text> : null}
+                </Pressable>
                 {['accepted', 'in_progress', 'ready'].includes(item.status) ? (
                   <TextInput
                     value={trackingById[item.id] ?? item.tracking_number ?? ''}
@@ -184,14 +197,17 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 10 },
   body: { color: colors.textMuted, fontSize: 14, lineHeight: 21, fontWeight: '600' },
   empty: { marginTop: 24, textAlign: 'center', color: colors.textMuted, fontWeight: '700' },
-  card: { backgroundColor: colors.white, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.line },
+  card: { backgroundColor: colors.white, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
+  cardTap: { padding: 16, paddingBottom: 8 },
+  cardPressed: { opacity: 0.96 },
   top: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   cardTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.text },
   status: { fontSize: 12, fontWeight: '800', color: colors.goldDark, textTransform: 'capitalize' },
+  tapHint: { marginTop: 6, fontSize: 12, fontWeight: '700', color: colors.primaryDark },
   meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, fontWeight: '600' },
   details: { marginTop: 10, fontSize: 13, lineHeight: 19, color: colors.text, fontWeight: '600' },
-  input: { marginTop: 12, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: colors.text },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  input: { marginHorizontal: 16, marginTop: 8, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: colors.text },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, paddingHorizontal: 16, paddingBottom: 16 },
   btn: { borderRadius: 999, backgroundColor: colors.primarySoft, paddingHorizontal: 12, paddingVertical: 8 },
   btnText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
   mutedBtn: { backgroundColor: 'rgba(11, 18, 32, 0.06)' },

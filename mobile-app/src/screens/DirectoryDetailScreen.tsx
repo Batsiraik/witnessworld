@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
+import { SubjectReviewCTA } from '../components/SubjectReviewCTA';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
@@ -60,6 +61,16 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
   const [msgBusy, setMsgBusy] = useState(false);
   const [favoriteOn, setFavoriteOn] = useState(false);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
+
+  const refreshEntry = useCallback(async () => {
+    try {
+      const data = await apiGet(`directory-detail.php?id=${id}`, false);
+      const E = data.entry as Entry | undefined;
+      if (E) setEntry(E);
+    } catch {
+      /* keep */
+    }
+  }, [id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -248,6 +259,13 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
             </>
           ) : null}
           <ReviewsBlock summary={entry.review_summary} reviews={entry.reviews} />
+          <SubjectReviewCTA
+            subjectType="directory_entry"
+            subjectId={entry.id}
+            sellerUserId={entry.owner_user_id}
+            subjectTitle={entry.business_name}
+            onPosted={refreshEntry}
+          />
 
           <Text style={styles.section}>Listed by</Text>
           <Text style={styles.body}>

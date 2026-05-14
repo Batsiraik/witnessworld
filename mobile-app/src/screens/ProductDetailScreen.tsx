@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,7 +17,9 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
+import { SubjectReviewCTA } from '../components/SubjectReviewCTA';
 import { useDashboardContext } from '../context/DashboardContext';
+import { useShoppingCart } from '../context/ShoppingCartContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
@@ -53,6 +55,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const id =
     typeof rawId === 'number' && Number.isFinite(rawId) ? Math.floor(rawId) : Math.floor(Number(rawId));
   const { user, isGuest, showGuestPrompt } = useDashboardContext();
+  const { addProduct } = useShoppingCart();
   const myId = user?.id ?? 0;
   const [row, setRow] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,7 +121,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     };
   }, [id, isGuest]);
 
-  const toggleFavorite = async () => {
+  const toggleFavorite = useCallback(async () => {
     if (isGuest) {
       showGuestPrompt();
       return;
@@ -132,7 +135,50 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     } finally {
       setFavoriteBusy(false);
     }
-  };
+  }, [isGuest, showGuestPrompt, id, favoriteBusy, favoriteOn]);
+
+  const addToCartFromProduct = useCallback(() => {
+    if (!row) return;
+    if (isGuest) {
+      showGuestPrompt();
+      return;
+    }
+    if (row.seller.user_id === myId) return;
+    if (row.product.moderation_status === 'pending_approval') return;
+    addProduct({
+      subject_type: 'product',
+      subject_id: row.product.id,
+      title: row.product.name,
+      image_url: row.product.image_url,
+      unit_price: row.product.price_amount,
+      currency: row.product.currency,
+    });
+    Alert.alert('Added to cart', 'You can review everything before checkout.', [
+      { text: 'Keep shopping', style: 'cancel' },
+      { text: 'View cart', onPress: () => navigation.navigate('Cart') },
+    ]);
+  }, [row, isGuest, showGuestPrompt, myId, addProduct, navigation]);
+
+  const refreshProduct = useCallback(async () => {
+    if (!Number.isFinite(id) || id <= 0) return;
+    try {
+      const j = await apiGet(`product-public-detail.php?id=${id}`, false);
+      const product = j.product as Payload['product'] | undefined;
+      const store = j.store as Payload['store'] | undefined;
+      const seller = j.seller as Payload['seller'] | undefined;
+      if (product && store && seller) {
+        setRow({
+          product,
+          store,
+          seller,
+          review_summary: j.review_summary as ReviewSummary | undefined,
+          reviews: Array.isArray(j.reviews) ? (j.reviews as ReviewRow[]) : [],
+        });
+      }
+    } catch {
+      /* keep */
+    }
+  }, [id]);
 
   useLayoutEffect(() => {
     const canAddToCart =
@@ -155,7 +201,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           </Pressable>
           {canAddToCart === true ? (
             <Pressable
-              onPress={() => navigation.push('Cart', { subjectType: 'product', subjectId: product.id })}
+              onPress={addToCartFromProduct}
               style={headerCartStyles.wrap}
               hitSlop={12}
               accessibilityRole="button"
@@ -167,7 +213,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
         </View>
       ),
     });
-  }, [navigation, row, myId, isGuest, favoriteOn, favoriteBusy]);
+  }, [navigation, row, myId, isGuest, favoriteOn, favoriteBusy, toggleFavorite, addToCartFromProduct]);
 
   const contact = async () => {
     if (!row) return;
@@ -223,6 +269,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const loc = [store.location_country_name, store.location_us_state].filter(Boolean).join(' · ');
   const pendingApproval = product.moderation_status === 'pending_approval';
   const ownerPreview = pendingApproval && seller.user_id === myId;
+  const canAddToCart = !isGuest && seller.user_id !== myId && !pendingApproval;
 
   return (
     <GradientBackground>
@@ -246,7 +293,15 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           <Text style={styles.price}>
             {product.currency} {product.price_amount}
           </Text>
+          {canAddToCart ? <PrimaryButton label="Add to cart" onPress={addToCartFromProduct} style={{ marginTop: 16 }} /> : null}
           <ReviewsBlock summary={row.review_summary} reviews={row.reviews} />
+          <SubjectReviewCTA
+            subjectType="product"
+            subjectId={product.id}
+            sellerUserId={seller.user_id}
+            subjectTitle={product.name}
+            onPosted={refreshProduct}
+          />
 
           <Pressable onPress={openStore} style={({ pressed }) => [styles.storeCard, pressed && styles.pressed]}>
             <RemoteImage url={store.logo_url} style={styles.storeLogo} contentFit="cover" />

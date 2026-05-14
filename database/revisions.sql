@@ -338,3 +338,17 @@ ALTER TABLE users
 -- ---------------------------------------------------------------------------
 ALTER TABLE users
   ADD COLUMN storefront_addon ENUM('none','small','large') NOT NULL DEFAULT 'none' AFTER stripe_payment_method_status;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-14: One published-style review row per reviewer per subject (direct + post-order)
+-- Fails if duplicate (reviewer, subject_type, subject_id) already exists; clean duplicates first if needed.
+-- ---------------------------------------------------------------------------
+ALTER TABLE content_reviews
+  ADD UNIQUE KEY uq_crev_reviewer_subject (reviewer_user_id, subject_type, subject_id);
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-14: Card display (last4 / brand) for profile; updated when Checkout setup completes
+-- ---------------------------------------------------------------------------
+ALTER TABLE users
+  ADD COLUMN stripe_pm_last4 VARCHAR(4) NULL DEFAULT NULL AFTER stripe_payment_method_status,
+  ADD COLUMN stripe_pm_brand VARCHAR(32) NULL DEFAULT NULL AFTER stripe_pm_last4;

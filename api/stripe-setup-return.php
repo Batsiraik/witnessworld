@@ -62,16 +62,6 @@ if (is_string($setupIntent)) {
 $pmRaw = $setupIntent->payment_method ?? null;
 $pmId = is_string($pmRaw) ? $pmRaw : (string) ($pmRaw->id ?? '');
 
-if ($customerId !== '' && $pmId !== '') {
-    try {
-        $stripe->customers->update($customerId, [
-            'invoice_settings' => ['default_payment_method' => $pmId],
-        ]);
-    } catch (\Throwable) {
-        // Still mark attached in our database.
-    }
-}
-
 $pdo = witnessworld_pdo();
 $st = $pdo->prepare('SELECT id, stripe_customer_id FROM users WHERE id = ? LIMIT 1');
 $st->execute([$userId]);
@@ -90,10 +80,9 @@ if ($dbCust !== '' && $customerId !== '' && $dbCust !== $customerId) {
 }
 
 $custToStore = $customerId !== '' ? $customerId : ($dbCust !== '' ? $dbCust : null);
-$upd = $pdo->prepare(
-    'UPDATE users SET stripe_payment_method_status = ?, stripe_customer_id = ? WHERE id = ?'
-);
-$upd->execute(['attached', $custToStore, $userId]);
+
+require_once __DIR__ . '/lib/stripe_payment_method_sync.php';
+ww_stripe_sync_user_payment_method($pdo, $stripe, $userId, $custToStore, $pmId);
 
 echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Card saved</title></head><body style="font-family:system-ui,sans-serif;padding:24px;line-height:1.5">';
 echo '<h1 style="font-size:1.25rem">Payment method saved</h1>';

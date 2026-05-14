@@ -19,6 +19,7 @@ import { ListingVideoBlock } from '../components/ListingVideoBlock';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
+import { SubjectReviewCTA } from '../components/SubjectReviewCTA';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
@@ -162,6 +163,16 @@ export function ListingDetailScreen({ navigation, route }: Props) {
       cancelled = true;
     };
   }, [id, isGuest]);
+
+  const refreshListing = useCallback(async () => {
+    try {
+      const data = await apiGet(`listing-public-detail.php?id=${id}`, false);
+      const L = data.listing as Listing | undefined;
+      if (L) setListing(L);
+    } catch {
+      /* keep */
+    }
+  }, [id]);
 
   const toggleFavorite = async () => {
     if (isGuest) {
@@ -389,6 +400,13 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           <Text style={styles.subHeading}>Description</Text>
           <Text style={styles.body}>{descriptionText}</Text>
           <ReviewsBlock summary={listing.review_summary} reviews={listing.reviews} />
+          <SubjectReviewCTA
+            subjectType="listing"
+            subjectId={listing.id}
+            sellerUserId={listing.seller.user_id}
+            subjectTitle={listing.title}
+            onPosted={refreshListing}
+          />
 
           {portfolioUrls.length > 0 ? (
             <>

@@ -19,6 +19,8 @@ export type ReviewRow = {
 type Props = {
   summary?: ReviewSummary | null;
   reviews?: ReviewRow[] | null;
+  /** Shown when there are no review rows yet (under the header). */
+  emptyHint?: string;
 };
 
 function stars(n: number): string {
@@ -26,10 +28,13 @@ function stars(n: number): string {
   return '★'.repeat(rating) + '☆'.repeat(5 - rating);
 }
 
-export function ReviewsBlock({ summary, reviews }: Props) {
+export function ReviewsBlock({ summary, reviews, emptyHint }: Props) {
   const count = summary?.count ?? 0;
   const avg = summary?.average ?? null;
   const list = Array.isArray(reviews) ? reviews : [];
+  const hint =
+    emptyHint ??
+    'Ratings and written feedback from members show here — including work booked outside the app.';
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
@@ -37,20 +42,17 @@ export function ReviewsBlock({ summary, reviews }: Props) {
         <Text style={styles.score}>{count > 0 && avg != null ? `${avg.toFixed(1)} (${count})` : 'No reviews yet'}</Text>
       </View>
       {count > 0 && avg != null ? <Text style={styles.stars}>{stars(avg)}</Text> : null}
-      {list.length === 0 ? (
-        <Text style={styles.empty}>Completed buyers can leave a review after the request is marked complete.</Text>
-      ) : (
-        list.map((r) => (
-          <View key={r.id} style={styles.review}>
-            <View style={styles.reviewTop}>
-              <Text style={styles.reviewAuthor}>{r.reviewer_label || r.reviewer_username || 'WWC member'}</Text>
-              <Text style={styles.reviewStars}>{stars(r.rating)}</Text>
-            </View>
-            {r.title ? <Text style={styles.reviewTitle}>{r.title}</Text> : null}
-            {r.body ? <Text style={styles.reviewBody}>{r.body}</Text> : null}
+      {list.length === 0 ? <Text style={styles.empty}>{hint}</Text> : null}
+      {list.map((r) => (
+        <View key={r.id} style={styles.review}>
+          <View style={styles.reviewTop}>
+            <Text style={styles.reviewAuthor}>{r.reviewer_label || r.reviewer_username || 'WWC member'}</Text>
+            <Text style={styles.reviewStars}>{stars(r.rating)}</Text>
           </View>
-        ))
-      )}
+          {r.title ? <Text style={styles.reviewTitle}>{r.title}</Text> : null}
+          {r.body ? <Text style={styles.reviewBody}>{r.body}</Text> : null}
+        </View>
+      ))}
     </View>
   );
 }

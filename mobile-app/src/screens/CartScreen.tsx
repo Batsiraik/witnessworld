@@ -1,36 +1,17 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet, apiPost } from '../api/client';
+import { apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
+import { useShoppingCart } from '../context/ShoppingCartContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Cart'>;
-
-type RequestRow = {
-  id: number;
-  subject_title: string;
-  request_type: string;
-  status: string;
-  quantity: number;
-  unit_price: string | null;
-  currency: string;
-  seller_label: string;
-  seller_username: string | null;
-  subject_type: 'product' | 'listing' | 'directory_entry' | 'member';
-  subject_id: number;
-  created_at: string;
-  tracking_number?: string | null;
-};
-
-function labelForStatus(s: string): string {
-  return s.replace(/_/g, ' ');
-}
 
 function subjectCopy(subjectType?: string): { title: string; brief: string; needsShipping: boolean } {
   if (subjectType === 'product') {
@@ -54,6 +35,21 @@ function subjectCopy(subjectType?: string): { title: string; brief: string; need
   };
 }
 
+function formatMoney(amount: number, currency: string): string {
+  const cur = currency || 'USD';
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: cur }).format(amount);
+  } catch {
+    return `${cur} ${amount.toFixed(2)}`;
+  }
+}
+
+function parseAmount(amount: string | null): number {
+  if (amount == null || amount === '') return 0;
+  const n = Number.parseFloat(amount);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function CartScreen({ navigation, route }: Props) {
   const params = route.params;
   const subjectType = params?.subjectType;
@@ -61,8 +57,7 @@ export function CartScreen({ navigation, route }: Props) {
   const isRequestForm = Boolean(subjectType && subjectId);
   const copy = useMemo(() => subjectCopy(subjectType), [subjectType]);
   const { user, isGuest, showGuestPrompt } = useDashboardContext();
-  const [rows, setRows] = useState<RequestRow[]>([]);
-  const [loading, setLoading] = useState(!isRequestForm);
+  const { lines, subtotals, unitCount, setLineQuantity, removeLine } = useShoppingCart();
   const [submitting, setSubmitting] = useState(false);
   const [buyerName, setBuyerName] = useState(
     [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim()
@@ -80,35 +75,12 @@ export function CartScreen({ navigation, route }: Props) {
   const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('');
   const [ack, setAck] = useState(false);
-  const [reviewTarget, setReviewTarget] = useState<RequestRow | null>(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewTitle, setReviewTitle] = useState('');
-  const [reviewBody, setReviewBody] = useState('');
-  const [reviewBusy, setReviewBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    if (isRequestForm) return;
-    if (isGuest) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await apiGet('commerce-requests-list.php?role=buyer', true);
-      setRows(Array.isArray(data.requests) ? (data.requests as RequestRow[]) : []);
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [isGuest, isRequestForm]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load])
-  );
+  const summaryLines = useMemo(() => {
+    const entries = Object.entries(subtotals).filter(([, v]) => v > 0);
+    if (entries.length === 0) return '—';
+    return entries.map(([c, v]) => formatMoney(v, c)).join(' · ');
+  }, [subtotals]);
 
   const submit = async () => {
     if (isGuest) {
@@ -167,49 +139,7 @@ export function CartScreen({ navigation, route }: Props) {
     }
   };
 
-  const action = async (requestId: number, nextAction: string) => {
-    try {
-      await apiPost('commerce-request-action.php', { request_id: requestId, action: nextAction }, true);
-      await load();
-    } catch (e) {
-      Alert.alert('Could not update', e instanceof Error ? e.message : 'Try again.');
-    }
-  };
-
-  const openReview = (item: RequestRow) => {
-    setReviewTarget(item);
-    setReviewRating(5);
-    setReviewTitle('');
-    setReviewBody('');
-  };
-
-  const submitReview = async () => {
-    if (!reviewTarget) return;
-    if (!reviewBody.trim()) {
-      Alert.alert('Review required', 'Please write a short review.');
-      return;
-    }
-    setReviewBusy(true);
-    try {
-      await apiPost(
-        'content-review-create.php',
-        {
-          request_id: reviewTarget.id,
-          rating: reviewRating,
-          title: reviewTitle.trim(),
-          body: reviewBody.trim(),
-        },
-        true
-      );
-      Alert.alert('Review posted', 'Thanks for helping other members make safer choices.');
-      setReviewTarget(null);
-    } catch (e) {
-      Alert.alert('Could not post review', e instanceof Error ? e.message : 'Try again.');
-    } finally {
-      setReviewBusy(false);
-    }
-  };
-
+  /** Deep link: single listing / directory / product request (not multi-cart). */
   if (isRequestForm) {
     return (
       <GradientBackground>
@@ -260,103 +190,92 @@ export function CartScreen({ navigation, route }: Props) {
     );
   }
 
+  if (isGuest) {
+    return (
+      <GradientBackground>
+        <SafeAreaView style={styles.safe} edges={['bottom']}>
+          <View style={styles.box}>
+            <Text style={styles.title}>Cart</Text>
+            <Text style={styles.body}>Sign in to save items and send checkout requests to sellers.</Text>
+            <PrimaryButton label="Sign in or create account" onPress={showGuestPrompt} />
+            <PrimaryButton label="My orders" variant="outline" onPress={() => navigation.navigate('Orders')} style={{ marginTop: 12 }} />
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
+    );
+  }
+
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : isGuest ? (
-          <View style={styles.box}>
-            <Text style={styles.title}>My requests</Text>
-            <Text style={styles.body}>Sign in to view product orders and hire requests.</Text>
-            <PrimaryButton label="Sign in or create account" onPress={showGuestPrompt} />
-          </View>
-        ) : (
-          <FlatList
-            data={rows}
-            keyExtractor={(item) => String(item.id)}
-            contentContainerStyle={styles.list}
-            ListHeaderComponent={
-              <View style={styles.listHead}>
-                <Text style={styles.title}>My requests</Text>
-                <Text style={styles.body}>Track your product orders, local meetup requests, and service hires.</Text>
-              </View>
-            }
-            ListEmptyComponent={<Text style={styles.empty}>No requests yet. Start from a product, service, or business listing.</Text>}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <View style={styles.cardTop}>
-                  <Text style={styles.cardTitle}>{item.subject_title}</Text>
-                  <Text style={styles.status}>{labelForStatus(item.status)}</Text>
-                </View>
-                <Text style={styles.meta}>Seller: {item.seller_label || item.seller_username || 'WWC seller'}</Text>
-                {item.unit_price ? (
-                  <Text style={styles.meta}>
-                    {item.currency} {item.unit_price} × {item.quantity}
-                  </Text>
-                ) : null}
-                {item.tracking_number ? <Text style={styles.meta}>Tracking: {item.tracking_number}</Text> : null}
-                <View style={styles.actions}>
-                  {['new', 'accepted'].includes(item.status) ? (
-                    <Pressable onPress={() => void action(item.id, 'cancel')} style={styles.smallBtn}>
-                      <Text style={styles.smallBtnText}>Cancel</Text>
-                    </Pressable>
-                  ) : null}
-                  {['shipped', 'ready', 'in_progress'].includes(item.status) ? (
-                    <Pressable onPress={() => void action(item.id, 'delivered')} style={styles.smallBtn}>
-                      <Text style={styles.smallBtnText}>Mark received</Text>
-                    </Pressable>
-                  ) : null}
-                  {['delivered', 'ready'].includes(item.status) ? (
-                    <Pressable onPress={() => void action(item.id, 'complete')} style={styles.smallBtn}>
-                      <Text style={styles.smallBtnText}>Complete</Text>
-                    </Pressable>
-                  ) : null}
-                  {item.status === 'completed' ? (
-                    <Pressable onPress={() => openReview(item)} style={styles.smallBtn}>
-                      <Text style={styles.smallBtnText}>Leave review</Text>
-                    </Pressable>
-                  ) : null}
-                  {!['completed', 'cancelled', 'declined'].includes(item.status) ? (
-                    <Pressable onPress={() => void action(item.id, 'dispute')} style={[styles.smallBtn, styles.dangerBtn]}>
-                      <Text style={[styles.smallBtnText, styles.dangerText]}>Dispute</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-            )}
-          />
-        )}
-        <Modal visible={reviewTarget != null} transparent animationType="fade" onRequestClose={() => setReviewTarget(null)}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.reviewModal}>
-              <Text style={styles.reviewModalTitle}>Review {reviewTarget?.subject_title}</Text>
-              <View style={styles.starRow}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Pressable key={n} onPress={() => setReviewRating(n)} hitSlop={8}>
-                    <Text style={[styles.starPick, n <= reviewRating && styles.starPickOn]}>★</Text>
-                  </Pressable>
-                ))}
-              </View>
-              <TextInput value={reviewTitle} onChangeText={setReviewTitle} placeholder="Title (optional)" style={styles.input} />
-              <TextInput
-                value={reviewBody}
-                onChangeText={setReviewBody}
-                placeholder="Tell other members how it went."
-                multiline
-                style={[styles.input, styles.textArea]}
-              />
-              <View style={styles.modalActions}>
-                <Pressable onPress={() => setReviewTarget(null)} style={[styles.smallBtn, styles.mutedBtn]}>
-                  <Text style={styles.mutedBtnText}>Cancel</Text>
-                </Pressable>
-                <PrimaryButton label="Post review" onPress={() => void submitReview()} loading={reviewBusy} style={styles.reviewSubmit} />
-              </View>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Text style={styles.title}>Cart</Text>
+          <Text style={styles.body}>Review what you are about to request from each store. Checkout creates one order per line.</Text>
+
+          {lines.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.empty}>Your cart is empty.</Text>
+              <PrimaryButton label="Browse online stores" onPress={() => navigation.navigate('Stores')} />
+              <PrimaryButton label="My orders" variant="outline" onPress={() => navigation.navigate('Orders')} style={{ marginTop: 12 }} />
             </View>
-          </View>
-        </Modal>
+          ) : (
+            <>
+              {lines.map((line) => (
+                <View key={`${line.subject_type}:${line.subject_id}`} style={styles.lineCard}>
+                  <View style={styles.lineRow}>
+                    {line.image_url ? (
+                      <RemoteImage url={line.image_url} style={styles.lineImg} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.lineImg, styles.lineImgPh]} />
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.lineTitle} numberOfLines={2}>
+                        {line.title}
+                      </Text>
+                      <Text style={styles.linePrice}>
+                        {line.currency} {line.unit_price ?? '—'} × {line.quantity}
+                      </Text>
+                      <View style={styles.qtyRow}>
+                        <Pressable
+                          onPress={() => {
+                            if (line.quantity <= 1) removeLine('product', line.subject_id);
+                            else setLineQuantity('product', line.subject_id, line.quantity - 1);
+                          }}
+                          style={styles.qtyBtn}
+                          hitSlop={6}
+                        >
+                          <Text style={styles.qtyBtnText}>−</Text>
+                        </Pressable>
+                        <Text style={styles.qtyVal}>{line.quantity}</Text>
+                        <Pressable
+                          onPress={() => setLineQuantity('product', line.subject_id, line.quantity + 1)}
+                          style={styles.qtyBtn}
+                          hitSlop={6}
+                        >
+                          <Text style={styles.qtyBtnText}>+</Text>
+                        </Pressable>
+                        <Pressable onPress={() => removeLine('product', line.subject_id)} style={styles.removeBtn} hitSlop={6}>
+                          <Text style={styles.removeBtnText}>Remove</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              ))}
+
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>Summary</Text>
+                <Text style={styles.summaryLine}>
+                  {unitCount} item{unitCount === 1 ? '' : 's'} in {lines.length} line{lines.length === 1 ? '' : 's'}
+                </Text>
+                <Text style={styles.summaryTotal}>{summaryLines}</Text>
+              </View>
+
+              <PrimaryButton label="Review shipping & checkout" onPress={() => navigation.navigate('CartCheckout')} />
+              <PrimaryButton label="My orders" variant="outline" onPress={() => navigation.navigate('Orders')} style={{ marginTop: 12 }} />
+            </>
+          )}
+        </ScrollView>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -364,11 +283,10 @@ export function CartScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scroll: { padding: 20, paddingBottom: 34 },
+  scroll: { padding: 20, paddingBottom: 40 },
   box: { flex: 1, paddingHorizontal: 24, paddingTop: 24, justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 14 },
-  body: { fontSize: 16, lineHeight: 24, fontWeight: '600', color: colors.textMuted },
+  body: { fontSize: 16, lineHeight: 24, fontWeight: '600', color: colors.textMuted, marginBottom: 16 },
   section: { marginTop: 18, marginBottom: 8, fontSize: 14, fontWeight: '800', color: colors.text },
   input: {
     marginTop: 10,
@@ -387,27 +305,44 @@ const styles = StyleSheet.create({
   checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: colors.primaryDark, marginTop: 2 },
   checkboxOn: { backgroundColor: colors.primaryDark },
   ackText: { flex: 1, fontSize: 13, lineHeight: 19, color: colors.textMuted, fontWeight: '600' },
-  list: { padding: 18, paddingBottom: 34 },
-  listHead: { marginBottom: 14 },
-  empty: { marginTop: 24, textAlign: 'center', color: colors.textMuted, fontWeight: '700' },
-  card: { backgroundColor: colors.white, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.line },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  cardTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.text },
-  status: { fontSize: 12, fontWeight: '800', color: colors.goldDark, textTransform: 'capitalize' },
-  meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, fontWeight: '600' },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  smallBtn: { borderRadius: 999, backgroundColor: colors.primarySoft, paddingHorizontal: 12, paddingVertical: 7 },
-  smallBtnText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
-  dangerBtn: { backgroundColor: 'rgba(220, 38, 38, 0.1)' },
-  dangerText: { color: colors.danger },
-  mutedBtn: { backgroundColor: 'rgba(11, 18, 32, 0.06)' },
-  mutedBtnText: { color: colors.textMuted, fontSize: 12, fontWeight: '800' },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(11,18,32,0.48)', justifyContent: 'center', padding: 20 },
-  reviewModal: { backgroundColor: colors.white, borderRadius: 22, padding: 18 },
-  reviewModalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  starRow: { flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 4 },
-  starPick: { fontSize: 30, color: 'rgba(11,18,32,0.16)' },
-  starPickOn: { color: colors.gold },
-  modalActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
-  reviewSubmit: { flex: 1 },
+  emptyBox: { marginTop: 24 },
+  empty: { textAlign: 'center', color: colors.textMuted, fontWeight: '700', marginBottom: 20 },
+  lineCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  lineRow: { flexDirection: 'row', gap: 12 },
+  lineImg: { width: 64, height: 64, borderRadius: 12, backgroundColor: colors.primarySoft },
+  lineImgPh: { backgroundColor: colors.line },
+  lineTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
+  linePrice: { marginTop: 4, fontSize: 14, fontWeight: '700', color: colors.primaryDark },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 },
+  qtyBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyBtnText: { fontSize: 20, fontWeight: '800', color: colors.primaryDark, marginTop: -2 },
+  qtyVal: { fontSize: 16, fontWeight: '800', color: colors.text, minWidth: 28, textAlign: 'center' },
+  removeBtn: { marginLeft: 'auto' },
+  removeBtnText: { fontSize: 13, fontWeight: '800', color: colors.danger },
+  summaryCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  summaryTitle: { fontSize: 14, fontWeight: '800', color: colors.text, marginBottom: 8 },
+  summaryLine: { fontSize: 14, color: colors.textMuted, fontWeight: '600' },
+  summaryTotal: { fontSize: 18, fontWeight: '800', color: colors.primaryDark, marginTop: 8 },
 });

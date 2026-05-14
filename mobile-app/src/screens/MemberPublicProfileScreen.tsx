@@ -1,5 +1,5 @@
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
 import { ReportSheet } from '../components/ReportSheet';
 import { ReviewsBlock, type ReviewRow, type ReviewSummary } from '../components/ReviewsBlock';
+import { SubjectReviewCTA } from '../components/SubjectReviewCTA';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -59,6 +60,17 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
       id: listingId,
     });
   };
+
+  const refreshMember = useCallback(async () => {
+    try {
+      const data = await apiGet(`member-public.php?user_id=${userId}`, false);
+      const m = data.member as Member | undefined;
+      if (m) setMember(m);
+    } catch {
+      /* keep */
+    }
+  }, [userId]);
+
   const [member, setMember] = useState<Member | null>(null);
   const [listings, setListings] = useState<ListingMini[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,6 +164,13 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
           />
 
           <ReviewsBlock summary={member.review_summary} reviews={member.reviews} />
+          <SubjectReviewCTA
+            subjectType="member"
+            subjectId={userId}
+            sellerUserId={member.user_id}
+            subjectTitle={member.label}
+            onPosted={refreshMember}
+          />
 
           <Text style={styles.section}>Marketplace listings</Text>
           {listings.length === 0 ? (

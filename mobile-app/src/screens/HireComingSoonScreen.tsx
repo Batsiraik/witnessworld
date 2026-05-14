@@ -1,30 +1,69 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiPost } from '../api/client';
+import { apiGet, apiPost, getStoredToken } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { useDashboardContext } from '../context/DashboardContext';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HireComingSoon'>;
 
-export function HireComingSoonScreen({ route }: Props) {
+export function HireComingSoonScreen({ route, navigation }: Props) {
   const u = route.params?.username?.trim();
   const peerUserId = route.params?.peerUserId;
-  const { user, isGuest, showGuestPrompt, stackNavigation } = useDashboardContext();
-  const [buyerName, setBuyerName] = useState([user?.first_name, user?.last_name].filter(Boolean).join(' ').trim());
-  const [buyerEmail, setBuyerEmail] = useState(user?.email ?? '');
-  const [buyerPhone, setBuyerPhone] = useState(user?.phone ?? '');
+
+  /** This screen is on the root stack (outside DashboardProvider); load session directly. */
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [signedIn, setSignedIn] = useState(false);
+  const [buyerName, setBuyerName] = useState('');
+  const [buyerEmail, setBuyerEmail] = useState('');
+  const [buyerPhone, setBuyerPhone] = useState('');
   const [brief, setBrief] = useState('');
   const [ack, setAck] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setSessionLoading(true);
+      try {
+        const tok = await getStoredToken();
+        if (!tok) {
+          if (!cancelled) setSignedIn(false);
+          return;
+        }
+        const data = await apiGet('me.php', true);
+        const row = data.user as Record<string, unknown> | undefined;
+        if (cancelled || !row) return;
+        setSignedIn(true);
+        const first = typeof row.first_name === 'string' ? row.first_name : '';
+        const last = typeof row.last_name === 'string' ? row.last_name : '';
+        setBuyerName([first, last].filter(Boolean).join(' ').trim());
+        setBuyerEmail(typeof row.email === 'string' ? row.email : '');
+        setBuyerPhone(typeof row.phone === 'string' ? row.phone : '');
+      } catch {
+        if (!cancelled) setSignedIn(false);
+      } finally {
+        if (!cancelled) setSessionLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const promptSignIn = () => {
+    Alert.alert('Sign in required', 'Please sign in to send a hire request.', [
+      { text: 'Cancel', style: 'cancel', onPress: () => navigation.goBack() },
+      { text: 'Sign in', onPress: () => navigation.navigate('Login') },
+    ]);
+  };
+
   const submit = async () => {
-    if (isGuest) {
-      showGuestPrompt();
+    if (!signedIn) {
+      promptSignIn();
       return;
     }
     if (!peerUserId || peerUserId <= 0) {
@@ -56,7 +95,7 @@ export function HireComingSoonScreen({ route }: Props) {
         true
       );
       Alert.alert('Request sent', 'The member has been notified in the app and by email.');
-      stackNavigation.navigate('Dashboard', { screen: 'HomeTab', params: { screen: 'Cart' } });
+      navigation.navigate('Dashboard', { screen: 'HomeTab', params: { screen: 'Cart' } });
     } catch (e) {
       Alert.alert('Could not send request', e instanceof Error ? e.message : 'Please try again.');
     } finally {
@@ -67,31 +106,45 @@ export function HireComingSoonScreen({ route }: Props) {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <View style={styles.box}>
-            <Text style={styles.title}>{u ? `Hire ${u}` : 'Send hire request'}</Text>
-            <Text style={styles.body}>
-              Tell this member what you need. WWC keeps a request record so admin can review scams, disputes, or suspicious behavior.
-            </Text>
-            <TextInput value={buyerName} onChangeText={setBuyerName} placeholder="Your name" style={styles.input} />
-            <TextInput value={buyerEmail} onChangeText={setBuyerEmail} placeholder="Email" keyboardType="email-address" style={styles.input} />
-            <TextInput value={buyerPhone} onChangeText={setBuyerPhone} placeholder="Phone / WhatsApp" style={styles.input} />
-            <TextInput
-              value={brief}
-              onChangeText={setBrief}
-              placeholder="Describe the work, timeline, budget, and anything important."
-              multiline
-              style={[styles.input, styles.textArea]}
-            />
-            <Pressable onPress={() => setAck((v) => !v)} style={styles.ackRow}>
-              <View style={[styles.checkbox, ack && styles.checkboxOn]} />
-              <Text style={styles.ackText}>
-                I will keep communication inside WWC, avoid off-platform payment pressure, and report suspicious behavior.
-              </Text>
-            </Pressable>
-            <PrimaryButton label="Send hire request" onPress={() => void submit()} loading={submitting} />
+        {sessionLoading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        </ScrollView>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scroll}>
+            <View style={styles.box}>
+              <Text style={styles.title}>{u ? `Hire ${u}` : 'Send hire request'}</Text>
+              <Text style={styles.body}>
+                Tell this member what you need. WWC keeps a request record so admin can review scams, disputes, or
+                suspicious behavior.
+              </Text>
+              <TextInput value={buyerName} onChangeText={setBuyerName} placeholder="Your name" style={styles.input} />
+              <TextInput
+                value={buyerEmail}
+                onChangeText={setBuyerEmail}
+                placeholder="Email"
+                keyboardType="email-address"
+                style={styles.input}
+              />
+              <TextInput value={buyerPhone} onChangeText={setBuyerPhone} placeholder="Phone / WhatsApp" style={styles.input} />
+              <TextInput
+                value={brief}
+                onChangeText={setBrief}
+                placeholder="Describe the work, timeline, budget, and anything important."
+                multiline
+                style={[styles.input, styles.textArea]}
+              />
+              <Pressable onPress={() => setAck((v) => !v)} style={styles.ackRow}>
+                <View style={[styles.checkbox, ack && styles.checkboxOn]} />
+                <Text style={styles.ackText}>
+                  I will keep communication inside WWC, avoid off-platform payment pressure, and report suspicious
+                  behavior.
+                </Text>
+              </Pressable>
+              <PrimaryButton label="Send hire request" onPress={() => void submit()} loading={submitting} />
+            </View>
+          </ScrollView>
+        )}
       </SafeAreaView>
     </GradientBackground>
   );
@@ -99,6 +152,7 @@ export function HireComingSoonScreen({ route }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   scroll: { padding: 20, paddingBottom: 34 },
   box: { flex: 1, paddingHorizontal: 4, paddingTop: 24 },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 14 },

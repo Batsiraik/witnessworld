@@ -30,7 +30,7 @@ $now = date('Y-m-d H:i:s');
 if ($plan === 'free') {
     $st = $pdo->prepare(
         'UPDATE users
-         SET membership_plan = ?, subscription_status = ?, grace_ends_at = NULL, stripe_payment_method_status = ?, storefront_addon = ?
+         SET membership_plan = ?, subscription_status = ?, grace_ends_at = NULL, stripe_payment_method_status = ?, stripe_pm_last4 = NULL, stripe_pm_brand = NULL, storefront_addon = ?
          WHERE id = ?'
     );
     $st->execute(['free', 'free', 'none', 'none', $userId]);
@@ -59,9 +59,10 @@ if ($plan === 'free') {
     if ($planBusiness && ww_storefront_addon_valid($prevAddon) && in_array($prevAddon, ['small', 'large'], true)) {
         $addonVal = $prevAddon;
     }
+    $clearPmCols = $pmForPaid === 'missing' ? ', stripe_pm_last4 = NULL, stripe_pm_brand = NULL' : '';
     $st = $pdo->prepare(
         'UPDATE users
-         SET membership_plan = ?, subscription_status = ?, trial_started_at = COALESCE(trial_started_at, ?), trial_ends_at = ?, stripe_payment_method_status = ?, storefront_addon = ?
+         SET membership_plan = ?, subscription_status = ?, trial_started_at = COALESCE(trial_started_at, ?), trial_ends_at = ?, stripe_payment_method_status = ?, storefront_addon = ?' . $clearPmCols . '
          WHERE id = ?'
     );
     $st->execute([$plan, $status, $now, $trialEnd, $pmForPaid, $addonVal, $userId]);

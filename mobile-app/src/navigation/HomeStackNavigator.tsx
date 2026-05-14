@@ -21,6 +21,9 @@ import { DirectoryDetailScreen } from '../screens/DirectoryDetailScreen';
 import { DirectoryScreen } from '../screens/DirectoryScreen';
 import { ProviderHubScreen } from '../screens/ProviderHubScreen';
 import { CartScreen } from '../screens/CartScreen';
+import { CartCheckoutScreen } from '../screens/CartCheckoutScreen';
+import { OrdersScreen } from '../screens/OrdersScreen';
+import { OrderDetailScreen } from '../screens/OrderDetailScreen';
 import { colors } from '../theme/colors';
 import type { HomeStackParamList } from './types';
 
@@ -73,6 +76,9 @@ export function HomeStackNavigator() {
       <Stack.Screen name="StoreDetailPublic" component={StoreDetailPublicScreen} options={{ title: 'Store' }} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product' }} />
       <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart' }} />
+      <Stack.Screen name="CartCheckout" component={CartCheckoutScreen} options={{ title: 'Checkout' }} />
+      <Stack.Screen name="Orders" component={OrdersScreen} options={{ title: 'My orders' }} />
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order' }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favorites' }} />
       <Stack.Screen name="MembershipPlans" component={MembershipPlansScreen} options={{ title: 'Membership plans' }} />
       <Stack.Screen name="StorefrontAddon" component={StorefrontAddonScreen} options={{ title: 'Storefront add-on' }} />
