@@ -166,14 +166,6 @@ require __DIR__ . '/partials/shell_open.php';
   <input type="hidden" name="name" id="rename-name" />
 </form>
 
-<script>
-function renameCategory(id, current) {
-  var name = prompt('New name for "' + current + '":', current);
-  if (!name || name.trim() === '' || name.trim() === current) return;
-  document.getElementById('rename-cat-id').value = id;
-  document.getElementById('rename-name').value = name.trim();
-  document.getElementById('rename-form').submit();
-}
-</script>
+<?php require __DIR__ . '/partials/category_rename_modal.php'; ?>
 
 <?php require __DIR__ . '/partials/shell_close.php'; ?>
