@@ -54,7 +54,7 @@ echo <<<HTML
     .field label { display: block; font-size: 0.8rem; font-weight: 700; color: #1a2332; margin-bottom: 6px; letter-spacing: 0.02em; }
     .stripe-box {
       background: #fff;
-      padding: 0 18px;
+      padding: 0 14px;
       border-radius: 14px;
       border: 1.5px solid #c8cfdd;
       height: 56px;
@@ -117,15 +117,14 @@ echo <<<HTML
     base: {
       color: '#111827',
       fontFamily: 'Arial, sans-serif',
-      fontSize: '20px',
+      fontSize: '18px',
       lineHeight: '28px',
-      fontWeight: '600',
-      fontSmoothing: 'antialiased',
+      fontWeight: '500',
       letterSpacing: '0px',
       '::placeholder': {
         color: '#9ca3af',
         fontSize: '17px',
-        fontWeight: '500'
+        fontWeight: '400'
       }
     },
     invalid: {
