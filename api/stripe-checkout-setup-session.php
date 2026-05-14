@@ -54,6 +54,8 @@ $cancelUrl = WW_API_BASE . '/stripe-setup-cancel.php';
 try {
     $session = $stripe->checkout->sessions->create([
         'mode' => 'setup',
+        /** Required on current Stripe API versions for Checkout Session (even setup-only flows). */
+        'currency' => 'usd',
         'customer' => $customerId,
         'client_reference_id' => (string) $userId,
         'success_url' => $successUrl,
