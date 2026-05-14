@@ -93,16 +93,24 @@ echo <<<HTML
       font-weight: 500;
       font-size: 14px;
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: #32325d;
     }
 
     #card-errors {
-      min-height: 20px;
-      padding: 8px 0 0;
-      margin-top: 12px;
       color: #fa755a;
       font-size: 14px;
+      line-height: 1.35;
+    }
+
+    /* No reserved “slot” when there is no message — old min-height + padding looked like random empty space. */
+    #card-errors:empty {
+      display: none;
+    }
+
+    #card-errors:not(:empty) {
+      margin-top: 8px;
+      padding-top: 2px;
     }
 
     /* Full width — the old 70% float + max-width 400px squeezed the iframe in WebViews (compressed text, clipped first digits). */
@@ -143,8 +151,8 @@ echo <<<HTML
     .stripe-row-split {
       display: grid;
       grid-template-columns: minmax(148px, 1fr) minmax(148px, 1fr);
-      gap: 14px;
-      margin-top: 16px;
+      gap: 10px;
+      margin-top: 12px;
       width: 100%;
     }
 
@@ -162,7 +170,7 @@ echo <<<HTML
       font-weight: 500;
       font-size: 13px;
       display: block;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       color: #32325d;
     }
 
@@ -184,7 +192,7 @@ echo <<<HTML
       letter-spacing: 0.025em;
       -webkit-transition: all 150ms ease;
       transition: all 150ms ease;
-      margin-top: 20px;
+      margin-top: 14px;
       align-self: flex-start;
       cursor: pointer;
       font-family: inherit;
@@ -310,7 +318,7 @@ echo <<<HTML
 
     var cardNumber = elements.create('cardNumber', {
       style: elementStyle,
-      showIcon: true,
+      showIcon: false,
       placeholder: '1234 5678 9012 3456'
     });
     var cardExpiry = elements.create('cardExpiry', {
