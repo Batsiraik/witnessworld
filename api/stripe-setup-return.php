@@ -87,4 +87,9 @@ ww_stripe_sync_user_payment_method($pdo, $stripe, $userId, $custToStore, $pmId);
 echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Card saved</title></head><body style="font-family:system-ui,sans-serif;padding:24px;line-height:1.5">';
 echo '<h1 style="font-size:1.25rem">Payment method saved</h1>';
 echo '<p>You can close this window and return to the app. Your profile will show the card as on file after you refresh.</p>';
+$p = json_encode(['ww' => 'stripe_setup', 'ok' => true], JSON_UNESCAPED_UNICODE);
+if ($p === false) {
+    $p = '{}';
+}
+echo '<script>(function(){var p=' . $p . ';try{if(window.ReactNativeWebView&&window.ReactNativeWebView.postMessage){window.ReactNativeWebView.postMessage(JSON.stringify(p));}}catch(e){}})();</script>';
 echo '</body></html>';
