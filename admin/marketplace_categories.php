@@ -143,11 +143,7 @@ require __DIR__ . '/partials/shell_open.php';
                   <button type="submit" class="text-sm font-semibold text-brand hover:text-brand-dark"><?= (int) $r['is_active'] ? 'Hide' : 'Show' ?></button>
                 </form>
                 <button type="button" class="text-sm font-semibold text-slate-600 hover:text-slate-900" onclick="renameCategory(<?= (int) $r['id'] ?>, <?= htmlspecialchars(json_encode((string) $r['name'], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8') ?>)">Rename</button>
-                <form method="post" class="inline" onsubmit="return confirm('Delete this category? Listings using it will become uncategorised.')">
-                  <input type="hidden" name="action" value="delete" />
-                  <input type="hidden" name="cat_id" value="<?= (int) $r['id'] ?>" />
-                  <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-800">Delete</button>
-                </form>
+                <button type="button" class="text-sm font-semibold text-red-600 hover:text-red-800" onclick="confirmDeleteCategory(<?= (int) $r['id'] ?>, <?= htmlspecialchars(json_encode((string) $r['name'], JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8') ?>)">Delete</button>
               </div>
             </td>
           </tr>
@@ -167,5 +163,10 @@ require __DIR__ . '/partials/shell_open.php';
 </form>
 
 <?php require __DIR__ . '/partials/category_rename_modal.php'; ?>
+
+<?php
+$ww_category_delete_modal_warning = 'Delete this category? Listings using it will become uncategorised.';
+require __DIR__ . '/partials/category_delete_modal.php';
+?>
 
 <?php require __DIR__ . '/partials/shell_close.php'; ?>
