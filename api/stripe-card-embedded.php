@@ -52,19 +52,27 @@ echo <<<HTML
     h1 { font-size: 1.15rem; margin: 0 0 10px; font-weight: 700; }
     .field { margin-bottom: 14px; }
     .field label { display: block; font-size: 0.8rem; font-weight: 700; color: #1a2332; margin-bottom: 6px; letter-spacing: 0.02em; }
-    /* Flex centers Stripe’s iframe so text doesn’t sit at the top with empty space below (common in WebViews). */
     .stripe-box {
       display: flex;
       align-items: center;
       background: #fff;
-      padding: 8px 14px;
-      border-radius: 10px;
-      border: 1px solid #c5cad8;
-      min-height: 48px;
-      box-shadow: inset 0 1px 2px rgba(11, 18, 32, 0.04);
+      padding: 0 18px;
+      border-radius: 14px;
+      border: 1.5px solid #c8cfdd;
+      height: 58px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
-    .stripe-box > * { flex: 1; width: 100%; min-width: 0; min-height: 24px; }
-    .stripe-box:focus-within { border-color: #3b5bdb; box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.2); }
+
+    .stripe-box > * {
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .stripe-box:focus-within {
+      border-color: #3b5bdb;
+      box-shadow: 0 0 0 4px rgba(59, 91, 219, 0.16);
+    }
     .row2 { display: flex; gap: 12px; }
     .row2 .field { flex: 1; min-width: 0; margin-bottom: 14px; }
     #card-errors { color: #b42318; font-size: 0.9rem; min-height: 1.35em; margin: 0 0 12px; font-weight: 600; }
@@ -104,39 +112,52 @@ echo <<<HTML
   var completeUrl = {$completeJs};
   var stripe = Stripe(pk);
   var elements = stripe.elements();
-  /* WebView + Stripe iframe: avoid system-ui (weak synthetic weights); keep fontSize/lineHeight tight so partial input doesn’t look tiny at the top. */
   var fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
   var phMain = {
-    color: '#3f4f63',
-    fontWeight: '600',
-    fontSize: '16px',
-    letterSpacing: '0.01em',
-    fontSmoothing: 'antialiased'
+    color: '#9aa4b2',
+    fontWeight: '500',
+    fontSize: '18px',
+    letterSpacing: '0.01em'
   };
+
   var fieldStyle = {
     base: {
-      color: '#32325d',
+      color: '#111827',
       fontFamily: fontStack,
-      fontSize: '16px',
-      lineHeight: '24px',
-      fontWeight: '500',
+      fontSize: '18px',
+      lineHeight: '58px',
+      fontWeight: '600',
       fontSmoothing: 'antialiased',
-      letterSpacing: '0.02em',
-      iconColor: '#8898aa',
-      padding: '4px 0',
+      letterSpacing: '0.01em',
+      iconColor: '#64748b',
       '::placeholder': phMain,
-      ':-webkit-autofill': { color: '#32325d' }
+      ':-webkit-autofill': {
+        color: '#111827'
+      }
     },
     invalid: {
-      color: '#df1b41',
-      iconColor: '#df1b41',
-      '::placeholder': { color: '#697386', fontWeight: '600', fontSize: '16px' }
+      color: '#b42318',
+      iconColor: '#b42318'
     },
-    complete: { color: '#32325d', iconColor: '#1a7f37' }
+    complete: {
+      color: '#111827',
+      iconColor: '#15803d'
+    }
   };
-  var cardNumber = elements.create('cardNumber', { style: fieldStyle, placeholder: '1234 1234 1234 1234' });
-  var cardExpiry = elements.create('cardExpiry', { style: fieldStyle, placeholder: 'MM / YY' });
-  var cardCvc = elements.create('cardCvc', { style: fieldStyle, placeholder: '123' });
+  var cardNumber = elements.create('cardNumber', {
+    style: fieldStyle,
+    placeholder: 'Card number'
+  });
+
+  var cardExpiry = elements.create('cardExpiry', {
+    style: fieldStyle,
+    placeholder: 'MM / YY'
+  });
+
+  var cardCvc = elements.create('cardCvc', {
+    style: fieldStyle,
+    placeholder: 'CVC'
+  });
   cardNumber.mount('#card-number-element');
   cardExpiry.mount('#card-expiry-element');
   cardCvc.mount('#card-cvc-element');

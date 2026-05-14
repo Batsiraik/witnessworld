@@ -1,0 +1,59 @@
+# EAS Build reads `.easignore` only from the **git repository root** (not from mobile-app/).
+# When this file exists, EAS prioritizes it over `.gitignore` — include every ignore rule you still need.
+# https://docs.expo.dev/build-reference/easignore/
+
+# --- Repo root `.gitignore` (keep in sync) ---
+admin/includes/config.local.php
+api/config.local.php
+Thumbs.db
+.DS_Store
+*.log
+
+# --- PHP / web app — not part of the Expo upload ---
+/vendor/
+/admin/
+/api/
+/uploads/
+/database/
+/docs/
+/assets/
+composer.json
+composer.lock
+index.html
+logo_ww.jpeg
+
+# --- mobile-app/ — same rules as mobile-app/.gitignore (paths from repo root) ---
+mobile-app/node_modules/
+mobile-app/.expo/
+mobile-app/dist/
+mobile-app/web-build/
+mobile-app/expo-env.d.ts
+mobile-app/.kotlin/
+mobile-app/*.orig.*
+mobile-app/*.jks
+mobile-app/*.p8
+mobile-app/*.p12
+mobile-app/*.key
+mobile-app/*.mobileprovision
+mobile-app/.metro-health-check*
+mobile-app/npm-debug.*
+mobile-app/yarn-debug.*
+mobile-app/yarn-error.*
+mobile-app/*.pem
+mobile-app/.env*.local
+mobile-app/*.tsbuildinfo
+mobile-app/ios/
+mobile-app/android/
+
+# --- mobile-app/ — extra (secrets & local noise; was in mobile-app/.easignore) ---
+mobile-app/.env
+mobile-app/.env.*
+!mobile-app/.env.example
+mobile-app/.vscode/
+mobile-app/.idea/
+
+# --- OS / IDE (anywhere in repo) ---
+**/.DS_Store
+**/Thumbs.db
+**/.idea/
+**/.vscode/
