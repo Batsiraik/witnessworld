@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 /**
- * In-app card setup — WebView (?t=…). UI matches PassDrive payment_embedded (dark card + .card-field + Stripe style).
- * Witness World: no discount; SetupIntent + postMessage (not createToken / charge).
+ * In-app card setup — WebView (?t=…).
+ * Stripe Card Elements with default appearance (no style / placeholder options).
+ * Witness World: SetupIntent + postMessage.
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/stripe_card_embed_session.php';
@@ -51,49 +52,36 @@ echo <<<HTML
   <title>Add card</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
+    /* Page chrome only — no styling of Stripe field iframes (Stripe defaults). */
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #0f172a; color: #e2e8f0; min-height: 100vh; -webkit-text-size-adjust: 100%; }
-    .card { background: #1e293b; border-radius: 16px; padding: 24px; max-width: 400px; margin: 0 auto; border: 1px solid #334155; }
-    h1 { font-size: 20px; margin: 0 0 8px; color: #fff; }
-    .price { font-size: 18px; color: #38bdf8; font-weight: 600; margin-bottom: 16px; }
-    label { display: block; font-size: 14px; color: #94a3b8; margin-bottom: 6px; }
-    input[type="text"] { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 16px; margin-bottom: 12px; }
-    .card-field { padding: 14px; border-radius: 12px; border: 1px solid #475569; background: #0f172a; margin-bottom: 12px; }
-    .card-field > div { width: 100%; }
-    .card-fields-row { display: flex; gap: 12px; margin-bottom: 12px; }
-    .card-fields-row .card-field { flex: 1; margin-bottom: 0; min-width: 0; }
-    #card-errors { color: #f87171; font-size: 14px; margin-bottom: 12px; min-height: 20px; }
-    .btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; }
-    .btn-primary { background: linear-gradient(90deg, #3b82f6, #8b5cf6); color: #fff; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .discount-row { display: flex; gap: 8px; margin-bottom: 16px; }
-    .discount-row input { flex: 1; margin-bottom: 0; }
-    .btn-apply { padding: 14px 20px; background: #475569; color: #fff; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; }
-    .success { color: #4ade80; font-size: 14px; margin-bottom: 8px; }
-    .error { color: #f87171; font-size: 14px; margin-bottom: 8px; }
-    .autofill-hint { font-size: 12px; color: #94a3b8; margin: -4px 0 12px; padding: 8px 10px; background: rgba(100,116,139,0.2); border-radius: 8px; line-height: 1.4; }
-    a.cancel { display: block; text-align: center; margin-top: 16px; color: #94a3b8; font-size: 15px; font-weight: 600; text-decoration: none; }
-    a.cancel:active { color: #e2e8f0; }
+    body { margin: 0; padding: 16px; background: #fff; color: #1f2937; }
+    main { max-width: 28rem; margin: 0 auto; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.5rem; font-weight: 600; }
+    p.lead { margin: 0 0 1rem; font-size: 0.9rem; color: #4b5563; }
+    .split { display: flex; gap: 12px; }
+    .split > div { flex: 1; min-width: 0; }
+    #card-number { margin-bottom: 12px; }
+    .split { margin-bottom: 12px; }
+    #card-errors { margin: 12px 0; min-height: 1.25em; color: #b91c1c; font-size: 0.875rem; }
+    button[type="submit"] { margin-top: 4px; }
+    a.cancel { display: inline-block; margin-top: 16px; font-size: 0.9rem; color: #4b5563; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Pay with Master/Visa Card</h1>
-    <p class="price">Save card for membership billing · processed by Stripe</p>
-
+  <main>
+    <h1>Add payment method</h1>
+    <p class="lead">Your card is saved for membership billing. Fields below are shown by Stripe with default styling.</p>
     <form id="payment-form" autocomplete="off">
-      <label>Card details</label>
-      <div id="card-number" class="card-field"></div>
-      <div class="card-fields-row">
-        <div id="card-expiry" class="card-field"></div>
-        <div id="card-cvc" class="card-field"></div>
+      <div id="card-number"></div>
+      <div class="split">
+        <div id="card-expiry"></div>
+        <div id="card-cvc"></div>
       </div>
-      <p class="autofill-hint">Expiry shows wrong? Clear it and type MM/YY manually (e.g. 12/28).</p>
-      <div id="card-errors"></div>
-      <button type="submit" class="btn btn-primary" id="submit-btn">Save card</button>
+      <div id="card-errors" role="alert"></div>
+      <button type="submit" id="submit-btn">Save card</button>
     </form>
     <a href="#" class="cancel" id="cancel-link">Cancel</a>
-  </div>
+  </main>
 
   <script>
 (function () {
@@ -104,10 +92,9 @@ echo <<<HTML
   var completeUrl = {$completeJs};
   var stripe = Stripe(pk);
   var elements = stripe.elements();
-  var style = { base: { color: '#fff', fontSize: '16px' } };
-  var cardNumber = elements.create('cardNumber', { style: style });
-  var cardExpiry = elements.create('cardExpiry', { style: style, placeholder: 'MM/YY' });
-  var cardCvc = elements.create('cardCvc', { style: style });
+  var cardNumber = elements.create('cardNumber');
+  var cardExpiry = elements.create('cardExpiry');
+  var cardCvc = elements.create('cardCvc');
   cardNumber.mount('#card-number');
   cardExpiry.mount('#card-expiry');
   cardCvc.mount('#card-cvc');
