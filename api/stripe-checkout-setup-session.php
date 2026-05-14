@@ -62,8 +62,13 @@ try {
             'metadata' => ['user_id' => (string) $userId],
         ],
     ]);
-} catch (\Throwable) {
-    ww_json(['ok' => false, 'error' => 'Could not start card setup. Try again later.'], 500);
+} catch (\Throwable $e) {
+    error_log('[stripe-checkout-setup-session] ' . $e->getMessage());
+    $msg = 'Could not start card setup. Try again later.';
+    if (defined('WW_API_DEBUG') && WW_API_DEBUG) {
+        $msg .= ' (' . $e->getMessage() . ')';
+    }
+    ww_json(['ok' => false, 'error' => $msg], 500);
 }
 
 $url = $session->url ?? '';
