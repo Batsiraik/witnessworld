@@ -52,7 +52,7 @@ echo <<<HTML
     h1 { font-size: 1.15rem; margin: 0 0 10px; font-weight: 700; }
     .field { margin-bottom: 14px; }
     .field label { display: block; font-size: 0.8rem; font-weight: 700; color: #1a2332; margin-bottom: 6px; letter-spacing: 0.02em; }
-    .stripe-box { background: #fff; padding: 14px 16px; border-radius: 10px; border: 1px solid #c5cad8; min-height: 52px; box-shadow: inset 0 1px 2px rgba(11, 18, 32, 0.04); }
+    .stripe-box { background: #fff; padding: 14px 16px; border-radius: 10px; border: 1px solid #c5cad8; min-height: 54px; box-shadow: inset 0 1px 2px rgba(11, 18, 32, 0.04); }
     .stripe-box:focus-within { border-color: #3b5bdb; box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.2); }
     .row2 { display: flex; gap: 12px; }
     .row2 .field { flex: 1; min-width: 0; margin-bottom: 14px; }
@@ -93,24 +93,60 @@ echo <<<HTML
   var completeUrl = {$completeJs};
   var stripe = Stripe(pk);
   var elements = stripe.elements();
+  var phMain = {
+    color: '#0f172a',
+    fontWeight: '700',
+    fontSize: '18px',
+    letterSpacing: '0.02em',
+    fontSmoothing: 'antialiased'
+  };
   var fieldStyle = {
     base: {
       color: '#0b1220',
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-      fontSize: '17px',
-      lineHeight: '26px',
-      fontWeight: '500',
+      fontSize: '18px',
+      lineHeight: '28px',
+      fontWeight: '600',
       fontSmoothing: 'antialiased',
-      iconColor: '#3d4a5c',
-      '::placeholder': { color: '#4a5568', fontWeight: '500' },
+      iconColor: '#1e293b',
+      '::placeholder': phMain,
       ':-webkit-autofill': { color: '#0b1220' }
     },
-    invalid: { color: '#b42318', iconColor: '#b42318', '::placeholder': { color: '#9ca3af' } },
+    invalid: {
+      color: '#b42318',
+      iconColor: '#b42318',
+      '::placeholder': { color: '#475569', fontWeight: '700', fontSize: '18px' }
+    },
+    complete: { color: '#0b1220', iconColor: '#1a7f37' }
+  };
+  var cvcStyle = {
+    base: {
+      color: '#0b1220',
+      fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+      fontSize: '20px',
+      lineHeight: '30px',
+      fontWeight: '600',
+      fontSmoothing: 'antialiased',
+      iconColor: '#1e293b',
+      '::placeholder': {
+        color: '#0f172a',
+        fontWeight: '800',
+        fontSize: '20px',
+        letterSpacing: '0.08em',
+        fontSmoothing: 'antialiased'
+      },
+      ':-webkit-autofill': { color: '#0b1220' }
+    },
+    invalid: {
+      color: '#b42318',
+      iconColor: '#b42318',
+      '::placeholder': { color: '#475569', fontWeight: '700', fontSize: '20px', letterSpacing: '0.06em' }
+    },
     complete: { color: '#0b1220', iconColor: '#1a7f37' }
   };
   var cardNumber = elements.create('cardNumber', { style: fieldStyle, placeholder: '1234 1234 1234 1234' });
   var cardExpiry = elements.create('cardExpiry', { style: fieldStyle, placeholder: 'MM / YY' });
-  var cardCvc = elements.create('cardCvc', { style: fieldStyle, placeholder: '123' });
+  var cardCvc = elements.create('cardCvc', { style: cvcStyle, placeholder: '123' });
   cardNumber.mount('#card-number-element');
   cardExpiry.mount('#card-expiry-element');
   cardCvc.mount('#card-cvc-element');
