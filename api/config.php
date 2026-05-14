@@ -36,3 +36,11 @@ if (is_file($wwLocalConfig)) {
 if (!defined('WW_API_DEBUG')) {
     define('WW_API_DEBUG', false);
 }
+
+/**
+ * Client demo only: when true, “Add card” opens a static fake form (no Stripe, no card stored).
+ * Set in `config.local.php`: define('WW_FAKE_STRIPE_CARD', true); — turn off after the demo.
+ */
+if (!defined('WW_FAKE_STRIPE_CARD')) {
+    define('WW_FAKE_STRIPE_CARD', false);
+}

@@ -16,6 +16,23 @@ if (!$tok) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
 }
 
+$pdo = witnessworld_pdo();
+$user = ww_user_from_token($pdo, $tok);
+if (!$user) {
+    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
+}
+
+$userId = (int) $user['id'];
+
+if (defined('WW_FAKE_STRIPE_CARD') && WW_FAKE_STRIPE_CARD) {
+    $demoUrl = rtrim(WW_PUBLIC_BASE, '/') . '/api/stripe-card-embedded-demo.php';
+    ww_json([
+        'ok' => true,
+        'url' => $demoUrl,
+        'demo' => true,
+    ]);
+}
+
 if (!defined('WW_STRIPE_SECRET_KEY')) {
     ww_json(['ok' => false, 'error' => 'Billing is not configured on this server.'], 503);
 }
@@ -24,13 +41,6 @@ if ($sk === '' || !str_starts_with($sk, 'sk_')) {
     ww_json(['ok' => false, 'error' => 'Billing is not configured on this server.'], 503);
 }
 
-$pdo = witnessworld_pdo();
-$user = ww_user_from_token($pdo, $tok);
-if (!$user) {
-    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
-}
-
-$userId = (int) $user['id'];
 $pk = ww_stripe_publishable_key($pdo);
 if ($pk === '' || !str_starts_with($pk, 'pk_')) {
     ww_json(['ok' => false, 'error' => 'Stripe publishable key is not configured (admin settings or WW_STRIPE_PUBLISHABLE_KEY).'], 503);
