@@ -43,6 +43,53 @@ if (!$user) {
 $userId = (int) $user['id'];
 $stripe = new \Stripe\StripeClient($sk);
 
+$testCard = [
+    'number' => '4242424242424242',
+    'exp_month' => 12,
+    'exp_year' => 2034,
+    'cvc' => '123',
+];
+
+/**
+ * Some Stripe accounts block PaymentMethods::create with raw PAN; SetupIntent + confirm often still works in test mode.
+ * If both fail, check PHP error log and Stripe Dashboard → Settings → "Handle card information" / API version.
+ *
+ * @throws \Throwable
+ */
+$resolveTestPaymentMethodId = static function (\Stripe\StripeClient $stripe, string $customerId) use ($testCard): string {
+    try {
+        $si = $stripe->setupIntents->create([
+            'customer' => $customerId,
+            'payment_method_types' => ['card'],
+            'usage' => 'off_session',
+            'payment_method_data' => [
+                'type' => 'card',
+                'card' => $testCard,
+            ],
+            'confirm' => true,
+        ]);
+        $status = (string) ($si->status ?? '');
+        if ($status !== 'succeeded') {
+            throw new \RuntimeException('SetupIntent status is ' . $status . ' (expected succeeded).');
+        }
+        $rawPm = $si->payment_method ?? null;
+        $pmId = is_string($rawPm) ? $rawPm : (string) ($rawPm->id ?? '');
+        if ($pmId === '') {
+            throw new \RuntimeException('SetupIntent has no payment_method id.');
+        }
+
+        return $pmId;
+    } catch (\Throwable) {
+        $pm = $stripe->paymentMethods->create([
+            'type' => 'card',
+            'card' => $testCard,
+        ]);
+        $stripe->paymentMethods->attach($pm->id, ['customer' => $customerId]);
+
+        return (string) $pm->id;
+    }
+};
+
 try {
     $customerId = ww_stripe_ensure_customer($stripe, $pdo, $user);
 
@@ -55,24 +102,19 @@ try {
         ]);
     }
 
-    $pm = $stripe->paymentMethods->create([
-        'type' => 'card',
-        'card' => [
-            'number' => '4242424242424242',
-            'exp_month' => 12,
-            'exp_year' => 2034,
-            'cvc' => '123',
-        ],
-    ]);
-
-    $stripe->paymentMethods->attach($pm->id, ['customer' => $customerId]);
-    ww_stripe_sync_user_payment_method($pdo, $stripe, $userId, $customerId, $pm->id);
+    $pmId = $resolveTestPaymentMethodId($stripe, $customerId);
+    ww_stripe_sync_user_payment_method($pdo, $stripe, $userId, $customerId, $pmId);
 
     $fresh = ww_user_from_token($pdo, $tok);
     ww_json([
         'ok' => true,
         'subscription' => ww_subscription_payload($pdo, $fresh ?: $user),
     ]);
-} catch (\Throwable) {
-    ww_json(['ok' => false, 'error' => 'Could not attach test card. Try again later.'], 500);
+} catch (\Throwable $e) {
+    error_log('[stripe-demo-attach-test-card] ' . $e->getMessage());
+    $hint = 'Could not attach test card. Check the server PHP error log for details.';
+    if (defined('WW_API_DEBUG') && WW_API_DEBUG) {
+        $hint .= ' Stripe/API: ' . $e->getMessage();
+    }
+    ww_json(['ok' => false, 'error' => $hint], 500);
 }
