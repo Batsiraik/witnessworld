@@ -48,20 +48,38 @@ echo <<<HTML
   <script src="https://js.stripe.com/v3/"></script>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 16px; background: #f6f7fb; color: #0b1220; }
-    h1 { font-size: 1.1rem; margin: 0 0 12px; }
-    #card-element { background: #fff; padding: 12px 14px; border-radius: 10px; border: 1px solid #d7dbe8; margin-bottom: 14px; }
-    #card-errors { color: #b42318; font-size: 0.875rem; min-height: 1.25em; margin-bottom: 10px; }
-    button { width: 100%; padding: 14px 16px; border: 0; border-radius: 10px; background: #3b5bdb; color: #fff; font-weight: 700; font-size: 1rem; cursor: pointer; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; background: #f0f2f7; color: #0b1220; -webkit-text-size-adjust: 100%; }
+    h1 { font-size: 1.15rem; margin: 0 0 10px; font-weight: 700; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 0.8rem; font-weight: 700; color: #1a2332; margin-bottom: 6px; letter-spacing: 0.02em; }
+    .stripe-box { background: #fff; padding: 14px 16px; border-radius: 10px; border: 1px solid #c5cad8; min-height: 52px; box-shadow: inset 0 1px 2px rgba(11, 18, 32, 0.04); }
+    .stripe-box:focus-within { border-color: #3b5bdb; box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.2); }
+    .row2 { display: flex; gap: 12px; }
+    .row2 .field { flex: 1; min-width: 0; margin-bottom: 14px; }
+    #card-errors { color: #b42318; font-size: 0.9rem; min-height: 1.35em; margin: 0 0 12px; font-weight: 600; }
+    button { width: 100%; padding: 15px 16px; border: 0; border-radius: 10px; background: #3b5bdb; color: #fff; font-weight: 700; font-size: 1.05rem; cursor: pointer; }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .cancel { display: block; text-align: center; margin-top: 14px; color: #5c6478; font-size: 0.9rem; text-decoration: none; }
+    .cancel { display: block; text-align: center; margin-top: 14px; color: #3d4a5c; font-size: 0.95rem; font-weight: 600; text-decoration: none; }
   </style>
 </head>
 <body>
   <h1>Secure card details</h1>
-  <p style="font-size:0.9rem;color:#5c6478;margin:0 0 14px;">Processed by Stripe. Your card is saved for membership billing only.</p>
+  <p style="font-size:0.92rem;color:#3d4a5c;margin:0 0 18px;line-height:1.45;">Processed by Stripe. Your card is saved for membership billing only.</p>
   <form id="payment-form">
-    <div id="card-element"></div>
+    <div class="field">
+      <label for="card-number-element">Card number</label>
+      <div id="card-number-element" class="stripe-box"></div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="card-expiry-element">Expiry</label>
+        <div id="card-expiry-element" class="stripe-box"></div>
+      </div>
+      <div class="field">
+        <label for="card-cvc-element">CVC</label>
+        <div id="card-cvc-element" class="stripe-box"></div>
+      </div>
+    </div>
     <div id="card-errors" role="alert"></div>
     <button type="submit" id="submit">Save card</button>
   </form>
@@ -75,8 +93,27 @@ echo <<<HTML
   var completeUrl = {$completeJs};
   var stripe = Stripe(pk);
   var elements = stripe.elements();
-  var card = elements.create('card', { hidePostalCode: true });
-  card.mount('#card-element');
+  var fieldStyle = {
+    base: {
+      color: '#0b1220',
+      fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+      fontSize: '17px',
+      lineHeight: '26px',
+      fontWeight: '500',
+      fontSmoothing: 'antialiased',
+      iconColor: '#3d4a5c',
+      '::placeholder': { color: '#4a5568', fontWeight: '500' },
+      ':-webkit-autofill': { color: '#0b1220' }
+    },
+    invalid: { color: '#b42318', iconColor: '#b42318', '::placeholder': { color: '#9ca3af' } },
+    complete: { color: '#0b1220', iconColor: '#1a7f37' }
+  };
+  var cardNumber = elements.create('cardNumber', { style: fieldStyle, placeholder: '1234 1234 1234 1234' });
+  var cardExpiry = elements.create('cardExpiry', { style: fieldStyle, placeholder: 'MM / YY' });
+  var cardCvc = elements.create('cardCvc', { style: fieldStyle, placeholder: '123' });
+  cardNumber.mount('#card-number-element');
+  cardExpiry.mount('#card-expiry-element');
+  cardCvc.mount('#card-cvc-element');
   var form = document.getElementById('payment-form');
   var submitBtn = document.getElementById('submit');
   var errEl = document.getElementById('card-errors');
@@ -102,7 +139,7 @@ echo <<<HTML
     e.preventDefault();
     errEl.textContent = '';
     submitBtn.disabled = true;
-    stripe.confirmCardSetup(clientSecret, { payment_method: { card: card } }).then(function (result) {
+    stripe.confirmCardSetup(clientSecret, { payment_method: { card: cardNumber } }).then(function (result) {
       if (result.error) {
         showErr(result.error.message || 'Card was declined.');
         submitBtn.disabled = false;
