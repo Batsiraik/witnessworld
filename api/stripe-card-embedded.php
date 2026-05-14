@@ -46,7 +46,7 @@ echo <<<HTML
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Add Card | Secure Payment</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
@@ -65,6 +65,8 @@ echo <<<HTML
       font-family: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
       padding: 24px 20px;
       color: #1e293b;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     /* main card container — clean, elevated but subtle */
@@ -74,8 +76,7 @@ echo <<<HTML
       background: #ffffff;
       border-radius: 32px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.02), 0 2px 6px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.03);
-      overflow: hidden;
-      transition: all 0.2s ease;
+      transition: box-shadow 0.2s ease;
     }
 
     .form-content {
@@ -120,15 +121,20 @@ echo <<<HTML
 
     /* Stripe iframe container styling — clean borders, soft focus */
     .stripe-input {
-      display: flex;
-      align-items: center;
+      display: block;
+      width: 100%;
       min-height: 48px;
       background: #ffffff;
       border: 1.5px solid #e2edf2;
       border-radius: 20px;
-      padding: 10px 14px;
+      padding: 12px 14px;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .stripe-input > div {
+      width: 100% !important;
+      min-width: 0;
     }
 
     /* on hover subtle indication */
@@ -151,7 +157,8 @@ echo <<<HTML
       margin-bottom: 20px;
     }
     .row-split .field-group {
-      flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
       margin-bottom: 0;
     }
 
@@ -188,12 +195,12 @@ echo <<<HTML
 
     .btn-primary:hover {
       background: #2d3a55;
-      transform: scale(0.98);
+      opacity: 0.96;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .btn-primary:active {
-      transform: scale(0.97);
+      opacity: 0.92;
       background: #141e2f;
     }
 
@@ -229,10 +236,6 @@ echo <<<HTML
       margin: 20px 0 0;
       border: none;
       border-top: 1px solid #ecf3f8;
-    }
-
-    .stripe-input > div {
-      width: 100%;
     }
 
     /* small responsive */
@@ -325,11 +328,14 @@ echo <<<HTML
     const stripe = Stripe(pk);
     const elements = stripe.elements();
 
-    /* Minimal Stripe style — let Stripe set line-height/metrics (fixes ugly typing preview). */
+    /* Web-safe font + normal spacing — avoids “squashed” glyphs in some Android WebViews. */
     const elementStyle = {
       base: {
         color: '#1e293b',
-        fontSize: '16px'
+        fontSize: '17px',
+        fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
+        letterSpacing: '0.02em',
+        fontSmoothing: 'antialiased'
       },
       invalid: {
         color: '#1e293b',
