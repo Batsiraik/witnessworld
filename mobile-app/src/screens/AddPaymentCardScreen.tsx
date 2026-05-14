@@ -172,8 +172,8 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
         {signupFlow ? (
           <View style={styles.signupBanner}>
             <Text style={styles.signupBannerText}>
-              Secure card entry opens in the window below (Stripe). Use test mode card 4242 4242 4242 4242 with any
-              future expiry and any CVC when the server uses Stripe test keys. Or switch to Free.
+              Stripe’s secure checkout opens below (hosted by Stripe). Use test card 4242 4242 4242 4242 with any future
+              expiry and any CVC when the server uses Stripe test keys. Or switch to Free.
             </Text>
             <PrimaryButton
               label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
