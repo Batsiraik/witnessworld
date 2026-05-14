@@ -44,7 +44,7 @@ echo <<<HTML
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Add payment method</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
@@ -63,6 +63,8 @@ echo <<<HTML
       display: flex;
       align-items: center;
       justify-content: center;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     .card-container {
@@ -72,7 +74,6 @@ echo <<<HTML
       background: #ffffff;
       border-radius: 40px;
       box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.02);
-      overflow: hidden;
     }
 
     .form-content {
@@ -109,12 +110,20 @@ echo <<<HTML
 
     /* Stripe field containers */
     .stripe-input {
+      display: block;
+      width: 100%;
       background: #ffffff;
       border: 1.5px solid #e5e7eb;
       border-radius: 16px;
       padding: 12px 16px;
-      transition: all 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
       min-height: 56px;
+    }
+
+    /* Stripe mounts an inner div; keep it full width so the iframe is not squeezed. */
+    .stripe-input > div {
+      width: 100% !important;
+      min-width: 0;
     }
 
     .stripe-input:hover {
@@ -135,7 +144,8 @@ echo <<<HTML
     }
     
     .row-split .field-group {
-      flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
       margin-bottom: 0;
     }
 
@@ -284,40 +294,31 @@ echo <<<HTML
 
     const stripe = Stripe(pk);
     
-    // Enhanced Stripe Elements styling for beautiful text and placeholders
+    // Minimal styles + web-safe font — heavy weights / nested placeholder rules can look wrong inside Elements iframes (especially WebView).
     const elementStyles = {
       base: {
         color: '#1f2937',
-        fontWeight: '500',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif',
-        fontSize: '16px',
+        fontSize: '17px',
+        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+        letterSpacing: '0.02em',
         fontSmoothing: 'antialiased',
         '::placeholder': {
-          color: '#9ca3af',
-          fontWeight: '400',
-          fontSize: '15px',
-          letterSpacing: '0px'
-        },
-        ':focus': {
-          color: '#111827'
+          color: '#9ca3af'
         }
       },
       invalid: {
-        color: '#dc2626',
-        iconColor: '#dc2626',
+        color: '#1f2937',
+        iconColor: '#64748b',
         '::placeholder': {
-          color: '#fca5a5'
+          color: '#9ca3af'
         }
       },
       complete: {
-        color: '#10b981'
+        color: '#059669'
       }
     };
 
-    const elements = stripe.elements({
-      fonts: [],
-      locale: 'auto'
-    });
+    const elements = stripe.elements({ locale: 'auto' });
     
     // Create elements with custom placeholders
     const cardNumber = elements.create('cardNumber', { 
