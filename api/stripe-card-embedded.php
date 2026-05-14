@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * In-app card setup — WebView (?t=…). Split Card Elements (number / expiry / CVC) + SetupIntent.
+ * In-app card setup — WebView (?t=…). Split Card Elements + webfont for iframe text (fixes condensed glyphs on some WebViews).
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/stripe_card_embed_session.php';
@@ -45,6 +45,8 @@ echo <<<HTML
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <title>Add payment method</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
@@ -53,6 +55,10 @@ echo <<<HTML
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      color-scheme: light;
     }
 
     body {
@@ -65,7 +71,7 @@ echo <<<HTML
     }
 
     .wrapper {
-      width: 90%;
+      width: 100%;
       max-width: 640px;
       margin: 0 auto;
     }
@@ -110,7 +116,7 @@ echo <<<HTML
     .stripe-field-host {
       background-color: white;
       width: 100%;
-      padding: 14px 16px;
+      padding: 16px 18px;
       border-radius: 4px;
       border: 1px solid transparent;
       box-shadow: 0 1px 3px 0 #e6ebf1;
@@ -177,7 +183,6 @@ echo <<<HTML
     }
 
     .btn-Stripe:hover:not(:disabled) {
-      transform: translateY(-1px);
       box-shadow: 0 7px 14px rgba(50, 50, 93, .10), 0 3px 6px rgba(0, 0, 0, .08);
       background-color: #11987c;
     }
@@ -263,40 +268,42 @@ echo <<<HTML
     }
 
     var stripe = Stripe(pk);
-    var elements = stripe.elements({ locale: 'auto' });
+    /* Webfont inside Elements — some Android WebViews draw Helvetica/system UI with broken horizontal metrics in iframes. */
+    var elements = stripe.elements({
+      locale: 'auto',
+      fonts: [
+        {
+          cssSrc: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap'
+        }
+      ]
+    });
 
-    /* Placeholders look worse on focus in some WebViews — hide them while focused; keep typed text color stable. */
     var elementStyle = {
       base: {
         color: '#32325d',
-        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-        fontSmoothing: 'antialiased',
-        fontSize: '17px',
+        fontFamily: 'Roboto, Helvetica Neue, Helvetica, Arial, sans-serif',
+        fontSize: '16px',
+        lineHeight: '24px',
+        letterSpacing: '0.03em',
         '::placeholder': {
-          color: '#aab7c4',
-          fontSmoothing: 'antialiased'
+          color: '#aab7c4'
         },
         ':focus': {
           color: '#32325d',
           '::placeholder': {
-            color: 'transparent'
+            color: '#aab7c4'
           }
         }
       },
       invalid: {
         color: '#fa755a',
-        iconColor: '#fa755a',
-        ':focus': {
-          '::placeholder': {
-            color: 'transparent'
-          }
-        }
+        iconColor: '#fa755a'
       }
     };
 
     var cardNumber = elements.create('cardNumber', {
       style: elementStyle,
-      showIcon: true,
+      showIcon: false,
       placeholder: '1234 5678 9012 3456'
     });
     var cardExpiry = elements.create('cardExpiry', {
