@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import type { SubscriptionInfo } from '../context/DashboardContext';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -25,6 +26,13 @@ function formatBillingDate(iso: string | null | undefined): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return 'your trial end date';
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function hasCardOnSubscription(sub: SubscriptionInfo | null | undefined): boolean {
+  if (!sub) return false;
+  if (String(sub.stripe_payment_method_status ?? '').toLowerCase() === 'attached') return true;
+  const l4 = sub.payment_method?.last4;
+  return typeof l4 === 'string' && l4.trim().length >= 4;
 }
 
 function confirmPlanChange(title: string, message: string): Promise<boolean> {
@@ -56,14 +64,14 @@ export function MembershipPlansScreen({ navigation }: Props) {
       const price = planMeta?.price ?? 0;
       const title = planMeta?.title ?? planKey;
       const trialDays = subscription?.trial_days ?? 90;
-      const hadCard = subscription?.stripe_payment_method_status === 'attached';
+      const hadCard = hasCardOnSubscription(subscription);
       const trialEndLabel = formatBillingDate(subscription?.trial_ends_at ?? null);
 
       let msg: string;
       if (hadCard) {
         msg = `Switch to ${title} at $${price}/month?\n\nYour saved payment method stays on file. Your next charge for this plan is expected on ${trialEndLabel} (typically after your trial ends, unless you are already past trial).`;
       } else {
-        msg = `Start a ${trialDays}-day trial on ${title}. After the trial: $${price}/month.\n\nNext, you can add a card on the next screen (inside the app) so billing can continue after the trial. You are not charged until after the trial.`;
+        msg = `Switch to ${title} at $${price}/month after your ${trialDays}-day trial?\n\nYou are not charged until after the trial. Add a card anytime under Profile → Payment method if you have not already.`;
       }
 
       const ok = await confirmPlanChange('Confirm plan', msg);
@@ -73,7 +81,8 @@ export function MembershipPlansScreen({ navigation }: Props) {
     setBusyPlan(planKey);
     try {
       const data = await apiPost('membership-change.php', { membership_plan: planKey }, true);
-      await refreshProfile();
+      const freshSub =
+        (await refreshProfile()) ?? ((data.subscription as SubscriptionInfo | undefined) ?? null);
 
       if (planKey === 'free') {
         Alert.alert(
@@ -84,17 +93,16 @@ export function MembershipPlansScreen({ navigation }: Props) {
         return;
       }
 
-      const sub = data.subscription as { stripe_payment_method_status?: string; trial_ends_at?: string | null } | undefined;
-      const stripePm = String(sub?.stripe_payment_method_status ?? '');
       const planMeta = plans.find((p) => p.key === planKey);
       const planTitle = planMeta?.title ?? planKey;
       const priceAfter = planMeta?.price ?? 0;
-      const chargeWhen = formatBillingDate(sub?.trial_ends_at ?? null);
+      const chargeWhen = formatBillingDate(freshSub?.trial_ends_at ?? subscription?.trial_ends_at ?? null);
+      const onFile = hasCardOnSubscription(freshSub);
 
-      if (stripePm === 'attached') {
+      if (onFile) {
         Alert.alert(
           'Plan updated',
-          `You are on ${planTitle} at $${priceAfter}/month. Your saved payment method will be charged starting ${chargeWhen} (after your trial if you are still in trial).`,
+          `You are on ${planTitle} at $${priceAfter}/month. Billing uses the card already on your account. Next charge is expected around ${chargeWhen} (after your trial if you are still in trial).`,
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
         return;
@@ -102,7 +110,7 @@ export function MembershipPlansScreen({ navigation }: Props) {
 
       Alert.alert(
         'Plan updated',
-        `Your trial is active. Add a card now so your ${planTitle} plan can continue after the trial ($${priceAfter}/month). You are not charged until after the trial.`,
+        `You are on ${planTitle} at $${priceAfter}/month.\n\nAdd a payment method under Profile → Payment method so billing can continue after your trial.`,
         [
           { text: 'Later', style: 'cancel', onPress: () => navigation.goBack() },
           {
@@ -129,9 +137,8 @@ export function MembershipPlansScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.title}>Choose your plan</Text>
           <Text style={styles.lead}>
-            Paid plans include a free trial. Free plan never asks for a card. If you already saved a card, switching
-            paid plans does not ask again; if you are on Free and choose a paid plan, you will be prompted to add a
-            card after confirming (unless one is already on file).
+            Paid plans include a trial. Switch plans anytime. If you already have a card on file, billing keeps using
+            that same card — you will not be asked to add it again when you change plans.
           </Text>
           <Text style={styles.note}>Storefront = separate add-on.</Text>
           {plans.map((plan) => {

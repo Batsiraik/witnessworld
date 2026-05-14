@@ -258,24 +258,23 @@ export function ProfileSettingsScreen(_props: Props) {
             <GlassCard style={styles.card}>
               <Text style={styles.sectionTitle}>Payment method</Text>
               <Text style={styles.sectionHint}>
-                Membership billing after your trial. Card details are entered on the next screen inside the app
-                (Stripe). Test mode: 4242 4242 4242 4242, any future expiry, any CVC.
+                Membership billing after your trial. Add or update your card in a secure Stripe window (same flow as
+                signup). Test mode: 4242 4242 4242 4242, any future expiry, any CVC.
               </Text>
               {(() => {
                 const plan = subscription?.plan ?? 'free';
                 const pm = subscription?.stripe_payment_method_status ?? 'none';
                 const card = subscription?.payment_method;
-                const hasCard = pm === 'attached';
+                const last4 = typeof card?.last4 === 'string' ? card.last4.trim() : '';
+                const hasCard = pm === 'attached' || last4.length >= 4;
                 if (hasCard) {
                   return (
                     <View style={styles.paymentBlock}>
                       <Text style={styles.paymentMain}>
-                        {card?.last4
-                          ? `${formatCardBrand(card?.brand)} ···· ${card.last4}`
-                          : 'Card on file'}
+                        {last4 ? `${formatCardBrand(card?.brand)} ···· ${last4}` : 'Card on file'}
                       </Text>
                       <PrimaryButton
-                        label="Add or replace card"
+                        label="Update payment method"
                         onPress={openAddCardInApp}
                         style={styles.paymentBtn}
                       />

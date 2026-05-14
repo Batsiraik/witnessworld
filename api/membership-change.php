@@ -51,8 +51,10 @@ if ($plan === 'free') {
     $status = in_array((string) ($user['subscription_status'] ?? ''), ['active', 'trialing', 'grace'], true)
         ? (string) $user['subscription_status']
         : 'trialing';
-    $prevPm = (string) ($user['stripe_payment_method_status'] ?? 'none');
-    $pmForPaid = $prevPm === 'attached' ? 'attached' : 'missing';
+    $prevPm = strtolower(trim((string) ($user['stripe_payment_method_status'] ?? 'none')));
+    $last4 = trim((string) ($user['stripe_pm_last4'] ?? ''));
+    /** Keep "attached" if either flag or saved last4 says a card exists (avoids wrongly forcing "missing" after plan switches). */
+    $pmForPaid = ($prevPm === 'attached' || $last4 !== '') ? 'attached' : 'missing';
     $planBusiness = ww_subscription_has_business_membership($plan);
     $prevAddon = (string) ($user['storefront_addon'] ?? 'none');
     $addonVal = 'none';

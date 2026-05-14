@@ -61,19 +61,22 @@ export function DashboardScreen({ navigation }: Props) {
     }
   }, [navigation]);
 
-  const refreshProfile = useCallback(async () => {
+  const refreshProfile = useCallback(async (): Promise<SubscriptionInfo | null> => {
     try {
       const data = await apiGet('me.php', true);
       const u = (data.user as DashboardUser) || null;
       setUser(u);
-      setSubscription((data.subscription as SubscriptionInfo | undefined) ?? null);
+      const sub = (data.subscription as SubscriptionInfo | undefined) ?? null;
+      setSubscription(sub);
       if (typeof data.support_email === 'string' && data.support_email) {
         setSupportEmail(data.support_email);
       }
       setSupportAvailable(data.support_available === true);
       setSessionLoadError(false);
+      return sub;
     } catch {
       /* keep existing user on transient errors */
+      return null;
     }
   }, []);
 

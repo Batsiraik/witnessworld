@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
+import type { SubscriptionInfo } from '../context/DashboardContext';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -41,17 +42,32 @@ export function StorefrontAddonScreen({ navigation }: Props) {
     return typeof row?.price === 'number' ? row.price : 0;
   }, [subscription]);
 
+  const hasCardOnFile = (sub: SubscriptionInfo | null | undefined): boolean => {
+    if (!sub) return false;
+    if (String(sub.stripe_payment_method_status ?? '').toLowerCase() === 'attached') return true;
+    const l4 = sub.payment_method?.last4;
+    return typeof l4 === 'string' && l4.trim().length >= 4;
+  };
+
   const selectAddon = async (addon: 'none' | 'small' | 'large') => {
     setBusy(addon);
     try {
-      await apiPost('storefront-addon-change.php', { storefront_addon: addon }, true);
-      await refreshProfile();
+      const data = await apiPost('storefront-addon-change.php', { storefront_addon: addon }, true);
+      const fromApi = data.subscription as SubscriptionInfo | undefined;
+      let fresh: SubscriptionInfo | null = await refreshProfile();
+      if (!fresh && fromApi) fresh = fromApi;
+      const onFile = hasCardOnFile(fresh);
+
       if (addon === 'none') {
         Alert.alert('Updated', 'Storefront add-on removed.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      } else if (onFile) {
+        Alert.alert('Add-on saved', 'Storefront billing uses the same card already on your membership.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
       } else {
         Alert.alert(
           'Add-on saved',
-          'Billing for this add-on is scheduled with your membership: charges apply after your trial where applicable, on top of your base plan.',
+          'Add a payment method under Profile → Payment method so add-on billing can continue with your membership after your trial.',
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       }

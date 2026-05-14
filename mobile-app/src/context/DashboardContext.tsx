@@ -55,7 +55,7 @@ type Ctx = {
   showGuestPrompt: () => void;
   supportEmail: string;
   supportAvailable: boolean;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<SubscriptionInfo | null>;
   stackNavigation: NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 };
 
@@ -79,7 +79,7 @@ export function DashboardProvider({
   showGuestPrompt: () => void;
   supportEmail: string;
   supportAvailable: boolean;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<SubscriptionInfo | null>;
   stackNavigation: NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 }) {
   return (

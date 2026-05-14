@@ -1,6 +1,14 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  InteractionManager,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
@@ -42,6 +50,27 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
     }
   }, [navigation, returnTo]);
 
+  /** Hide WebView first, wait for native teardown, then alert + navigate — avoids rare Android WebView/GPU crashes when stacking Alert on a live WebView. */
+  const promptSaveSuccess = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    setShowWeb(false);
+    setCheckoutUrl(null);
+    setPhase('finished');
+    setTimeout(() => {
+      Alert.alert('Saved', 'Your payment method is on file.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            InteractionManager.runAfterInteractions(() => {
+              setTimeout(() => finishSuccess(), 120);
+            });
+          },
+        },
+      ]);
+    }, Platform.OS === 'android' ? 600 : 450);
+  }, [finishSuccess]);
+
   const onBack = () => {
     if (returnTo === 'register_complete') {
       navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
@@ -76,14 +105,8 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
 
   const handleStripeUrl = useCallback(
     (url: string) => {
-      if (completedRef.current) return;
       if (url.includes(RETURN_MARK) && url.includes('session_id=')) {
-        if (completedRef.current) return;
-        completedRef.current = true;
-        setShowWeb(false);
-        setCheckoutUrl(null);
-        setPhase('finished');
-        Alert.alert('Saved', 'Your payment method is on file.', [{ text: 'OK', onPress: finishSuccess }]);
+        promptSaveSuccess();
         return;
       }
       if (url.includes(CANCEL_MARK)) {
@@ -93,7 +116,7 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
         setPhase('post_cancel');
       }
     },
-    [finishSuccess]
+    [promptSaveSuccess]
   );
 
   const handleWebMessage = useCallback(
@@ -102,12 +125,7 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
         const j = JSON.parse(raw) as { ww?: string; ok?: boolean };
         if (j.ww !== 'stripe_setup') return;
         if (j.ok === true) {
-          if (completedRef.current) return;
-          completedRef.current = true;
-          setShowWeb(false);
-          setCheckoutUrl(null);
-          setPhase('finished');
-          Alert.alert('Saved', 'Your payment method is on file.', [{ text: 'OK', onPress: finishSuccess }]);
+          promptSaveSuccess();
         } else {
           setShowWeb(false);
           setCheckoutUrl(null);
@@ -118,7 +136,7 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
         /* non-JSON messages ignored */
       }
     },
-    [finishSuccess]
+    [promptSaveSuccess]
   );
 
   const startCheckout = useCallback(async () => {
@@ -220,23 +238,24 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
               </View>
             ) : null}
             <WebView
+              key={checkoutUrl}
               source={{ uri: checkoutUrl }}
               style={styles.webview}
               onLoadStart={() => setWvBusy(true)}
-              onLoadEnd={() => setWvBusy(false)}
+              onLoadEnd={(e) => {
+                setWvBusy(false);
+                const u = e.nativeEvent.url;
+                if (u) handleStripeUrl(u);
+              }}
               onNavigationStateChange={(nav) => {
                 if (nav.url) handleStripeUrl(nav.url);
-              }}
-              onShouldStartLoadWithRequest={(req) => {
-                if (req.url) handleStripeUrl(req.url);
-                return true;
               }}
               onMessage={(ev) => handleWebMessage(ev.nativeEvent.data)}
               javaScriptEnabled
               setSupportMultipleWindows={false}
               sharedCookiesEnabled
               thirdPartyCookiesEnabled
-              userAgent="Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 WitnessWorldApp"
+              {...(Platform.OS === 'android' ? { androidLayerType: 'software' as const } : {})}
             />
           </View>
         ) : null}

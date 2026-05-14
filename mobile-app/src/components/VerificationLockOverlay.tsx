@@ -21,7 +21,7 @@ type Props = {
   supportAvailable?: boolean;
   onMessageSupport?: () => void;
   /** Re-fetches account status from the server (e.g. after admin approval). */
-  onRecheckStatus?: () => Promise<void>;
+  onRecheckStatus?: () => Promise<unknown>;
 };
 
 export function VerificationLockOverlay({
