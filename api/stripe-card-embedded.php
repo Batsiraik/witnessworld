@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * In-app card setup — WebView (?t=…). Split Card Elements + webfont for iframe text (fixes condensed glyphs on some WebViews).
+ * In-app card setup — WebView (?t=…). Split Card Elements; grid min widths avoid squeezed iframes (caret vs text).
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/stripe_card_embed_session.php';
@@ -41,7 +41,7 @@ header('Referrer-Policy: no-referrer');
 
 echo <<<HTML
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -116,17 +116,19 @@ echo <<<HTML
     .stripe-field-host {
       background-color: white;
       width: 100%;
-      padding: 16px 18px;
-      border-radius: 4px;
-      border: 1px solid transparent;
-      box-shadow: 0 1px 3px 0 #e6ebf1;
-      -webkit-transition: box-shadow 150ms ease;
-      transition: box-shadow 150ms ease;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #e3e8ee;
+      box-shadow: none;
+      -webkit-transition: border-color 150ms ease, box-shadow 150ms ease;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
       overflow: visible;
+      direction: ltr;
     }
 
     .stripe-field-host.is-focused {
-      box-shadow: 0 1px 3px 0 #cfd7df;
+      border-color: #a0aec0;
+      box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.15);
     }
 
     .stripe-field-host.is-invalid {
@@ -137,17 +139,23 @@ echo <<<HTML
       background-color: #fefde5 !important;
     }
 
+    /* minmax floor stops Stripe iframes from getting a width smaller than their layout (fixes CVC: digits left, caret far right). */
     .stripe-row-split {
-      display: flex;
-      gap: 16px;
+      display: grid;
+      grid-template-columns: minmax(148px, 1fr) minmax(148px, 1fr);
+      gap: 14px;
       margin-top: 16px;
       width: 100%;
-      min-width: 0;
     }
 
     .stripe-row-split > div {
-      flex: 1 1 0;
       min-width: 0;
+    }
+
+    @media (max-width: 380px) {
+      .stripe-row-split {
+        grid-template-columns: 1fr;
+      }
     }
 
     .field-label-sub {
@@ -222,7 +230,7 @@ echo <<<HTML
 </head>
 <body>
   <div class="wrapper">
-    <form id="payment-form" autocomplete="off">
+    <form id="payment-form" autocomplete="off" dir="ltr">
       <div class="form-row">
         <label>Credit or debit card</label>
         <div id="card-number-host" class="stripe-field-host"></div>
@@ -268,42 +276,41 @@ echo <<<HTML
     }
 
     var stripe = Stripe(pk);
-    /* Webfont inside Elements — some Android WebViews draw Helvetica/system UI with broken horizontal metrics in iframes. */
+    /* Inter via Stripe fonts — clearer digit shapes than Roboto on some WebViews; avoids system condensed faces. */
     var elements = stripe.elements({
       locale: 'auto',
       fonts: [
         {
-          cssSrc: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap'
+          cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap'
         }
       ]
     });
 
     var elementStyle = {
       base: {
-        color: '#32325d',
-        fontFamily: 'Roboto, Helvetica Neue, Helvetica, Arial, sans-serif',
-        fontSize: '16px',
-        lineHeight: '24px',
-        letterSpacing: '0.03em',
+        color: '#1e293b',
+        fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontSize: '18px',
+        lineHeight: '26px',
         '::placeholder': {
-          color: '#aab7c4'
+          color: '#94a3b8'
         },
         ':focus': {
-          color: '#32325d',
+          color: '#1e293b',
           '::placeholder': {
-            color: '#aab7c4'
+            color: '#94a3b8'
           }
         }
       },
       invalid: {
-        color: '#fa755a',
-        iconColor: '#fa755a'
+        color: '#dc2626',
+        iconColor: '#dc2626'
       }
     };
 
     var cardNumber = elements.create('cardNumber', {
       style: elementStyle,
-      showIcon: false,
+      showIcon: true,
       placeholder: '1234 5678 9012 3456'
     });
     var cardExpiry = elements.create('cardExpiry', {
