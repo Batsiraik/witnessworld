@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * In-app card setup — loads in WebView (opaque session ?t=…).
- * Stripe Elements (dark PassDrive-style UI) + SetupIntent; on success postMessage to React Native.
+ * Light UI; field chrome + Stripe styling aligned with PassDrive (minimal Elements base + same .card-field layout).
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/stripe_card_embed_session.php';
@@ -52,28 +52,74 @@ echo <<<HTML
   <script src="https://js.stripe.com/v3/"></script>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #0f172a; color: #e2e8f0; min-height: 100vh; -webkit-text-size-adjust: 100%; }
-    .card { background: #1e293b; border-radius: 16px; padding: 24px; max-width: 400px; margin: 0 auto; border: 1px solid #334155; }
-    h1 { font-size: 20px; margin: 0 0 8px; color: #fff; }
-    .price { font-size: 18px; color: #38bdf8; font-weight: 600; margin-bottom: 16px; }
-    label { display: block; font-size: 14px; color: #94a3b8; margin-bottom: 6px; }
-    .card-field { padding: 14px; border-radius: 12px; border: 1px solid #475569; background: #0f172a; margin-bottom: 12px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #e8ecf4;
+      color: #0f172a;
+      min-height: 100vh;
+      -webkit-text-size-adjust: 100%;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 400px;
+      margin: 0 auto;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+    }
+    h1 { font-size: 20px; margin: 0 0 8px; color: #0f172a; font-weight: 700; }
+    .price { font-size: 18px; color: #0284c7; font-weight: 600; margin-bottom: 16px; }
+    label { display: block; font-size: 14px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+    /* Same shell as PassDrive: padded rounded box; flex centers Stripe’s iframe vertically */
+    .card-field {
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      margin-bottom: 12px;
+    }
+    .card-field:focus-within {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
     .card-field > div { width: 100%; }
     .card-fields-row { display: flex; gap: 12px; margin-bottom: 12px; }
     .card-fields-row .card-field { flex: 1; margin-bottom: 0; min-width: 0; }
-    #card-errors { color: #f87171; font-size: 14px; margin-bottom: 12px; min-height: 20px; }
+    #card-errors { color: #dc2626; font-size: 14px; margin-bottom: 12px; min-height: 20px; font-weight: 600; }
     .btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; }
     .btn-primary { background: linear-gradient(90deg, #3b82f6, #8b5cf6); color: #fff; }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .autofill-hint { font-size: 12px; color: #94a3b8; margin: -4px 0 12px; padding: 8px 10px; background: rgba(100,116,139,0.2); border-radius: 8px; line-height: 1.4; }
-    a.cancel { display: block; text-align: center; margin-top: 16px; color: #94a3b8; font-size: 15px; font-weight: 600; text-decoration: none; }
-    a.cancel:active { color: #cbd5e1; }
+    .autofill-hint {
+      font-size: 12px;
+      color: #64748b;
+      margin: -4px 0 12px;
+      padding: 8px 10px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    a.cancel {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      color: #64748b;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    a.cancel:active { color: #0f172a; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Pay with Master/Visa Card</h1>
-    <p class="price">Membership billing — processed by Stripe</p>
+    <h1>Add payment method</h1>
+    <p class="price">Processed by Stripe · saved for membership billing</p>
 
     <form id="payment-form" autocomplete="off">
       <label for="card-number">Card details</label>
@@ -98,7 +144,10 @@ echo <<<HTML
   var completeUrl = {$completeJs};
   var stripe = Stripe(pk);
   var elements = stripe.elements();
-  var stripeStyle = { base: { color: '#fff', fontSize: '16px' } };
+  var stripeStyle = {
+    base: { color: '#0f172a', fontSize: '16px' },
+    invalid: { color: '#0f172a' }
+  };
   var cardNumber = elements.create('cardNumber', { style: stripeStyle });
   var cardExpiry = elements.create('cardExpiry', { style: stripeStyle, placeholder: 'MM/YY' });
   var cardCvc = elements.create('cardCvc', { style: stripeStyle });
