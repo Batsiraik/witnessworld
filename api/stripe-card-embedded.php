@@ -45,8 +45,6 @@ echo <<<HTML
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <title>Add payment method</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
@@ -278,35 +276,34 @@ echo <<<HTML
     }
 
     var stripe = Stripe(pk);
-    /* Inter via Stripe fonts — clearer digit shapes than Roboto on some WebViews; avoids system condensed faces. */
-    var elements = stripe.elements({
-      locale: 'auto',
-      fonts: [
-        {
-          cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap'
-        }
-      ]
-    });
+    /*
+     * Do not load webfonts into Elements from googleapis — in many in-app WebViews the iframe cannot use them,
+     * Stripe falls back to a broken condensed system font and digits look “squashed”. Use the OS UI font stack
+     * (Roboto on Android, SF on iOS, Segoe on Windows) which is already on the device.
+     */
+    var elements = stripe.elements({ locale: 'auto' });
 
     var elementStyle = {
       base: {
-        color: '#1e293b',
-        fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        fontSize: '17px',
-        lineHeight: '24px',
+        color: '#0f172a',
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif',
+        fontSize: '16px',
+        lineHeight: '22px',
+        fontWeight: '500',
+        fontSmoothing: 'antialiased',
         '::placeholder': {
           color: '#94a3b8'
         },
         ':focus': {
-          color: '#1e293b',
+          color: '#0f172a',
           '::placeholder': {
             color: '#94a3b8'
           }
         }
       },
-      /* Same hue as base while typing — avoids red “flash” on partial input; full red only when Stripe marks invalid. */
       invalid: {
-        color: '#1e293b',
+        color: '#0f172a',
         iconColor: '#64748b'
       }
     };
