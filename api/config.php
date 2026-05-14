@@ -17,12 +17,6 @@ define('WW_EMAIL_LOGO_URL', 'https://witnessworldconnect.com/logo_ww.jpeg');
 // define('WW_EMAIL_LOGO_URL', WW_PUBLIC_BASE . '/assets/email-logo.jpg');
 // define('WW_EMAIL_LOGO_URL', ''); // text “W” mark only
 
-/**
- * When true, OTP codes may be included in JSON responses for local testing only.
- * Set to false before production deploy.
- */
-define('WW_API_DEBUG', false);
-
 /** Session token lifetime for mobile app (days). Users stay signed in until expiry or explicit logout. */
 define('WW_TOKEN_DAYS', 365);
 
@@ -31,8 +25,14 @@ define('WW_TOKEN_DAYS', 365);
  *
  * Put server-only secrets here (for example WW_STRIPE_SECRET_KEY) and never commit it:
  * api/config.local.php
+ *
+ * Optional: define('WW_API_DEBUG', true); in config.local.php for extra API error detail (never leave on in production).
  */
 $wwLocalConfig = __DIR__ . '/config.local.php';
 if (is_file($wwLocalConfig)) {
     require_once $wwLocalConfig;
+}
+
+if (!defined('WW_API_DEBUG')) {
+    define('WW_API_DEBUG', false);
 }

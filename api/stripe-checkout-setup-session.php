@@ -65,8 +65,15 @@ try {
 } catch (\Throwable $e) {
     error_log('[stripe-checkout-setup-session] ' . $e->getMessage());
     $msg = 'Could not start card setup. Try again later.';
-    if (defined('WW_API_DEBUG') && WW_API_DEBUG) {
-        $msg .= ' (' . $e->getMessage() . ')';
+    $showDetail = (defined('WW_API_DEBUG') && WW_API_DEBUG) || str_starts_with($sk, 'sk_test_');
+    if ($showDetail) {
+        $msg .= ' ' . $e->getMessage();
+        if ($e instanceof \Stripe\Exception\ApiErrorException) {
+            $code = $e->getStripeCode();
+            if (is_string($code) && $code !== '') {
+                $msg .= ' [' . $code . ']';
+            }
+        }
     }
     ww_json(['ok' => false, 'error' => $msg], 500);
 }
