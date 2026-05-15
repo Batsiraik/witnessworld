@@ -3,16 +3,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  InteractionManager,
-  Platform,
+  AppState,
+  Linking,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 
-import { apiPost } from '../api/client';
+import { apiGet, apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -21,19 +20,29 @@ import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddPaymentCard'>;
 
-type Phase = 'loading' | 'embed' | 'error' | 'post_cancel' | 'finished';
+type Phase = 'ready' | 'loading' | 'waiting' | 'error';
+
+function parseStripeSetupDeepLink(url: string): 'success' | 'cancel' | null {
+  const u = url.toLowerCase();
+  if (u.includes('stripe-setup/success') || u.includes('stripe-setup%2fsuccess')) {
+    return 'success';
+  }
+  if (u.includes('stripe-setup/cancel') || u.includes('stripe-setup%2fcancel')) {
+    return 'cancel';
+  }
+  return null;
+}
 
 export function AddPaymentCardScreen({ navigation, route }: Props) {
   const returnTo = route.params?.returnTo ?? 'pop';
   const signupFlow = returnTo === 'register_complete';
 
-  const [phase, setPhase] = useState<Phase>('loading');
-  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>('ready');
   const [loadError, setLoadError] = useState('');
   const [skipBusy, setSkipBusy] = useState(false);
-  const [showWeb, setShowWeb] = useState(false);
-  const [wvBusy, setWvBusy] = useState(true);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const completedRef = useRef(false);
+  const waitingRef = useRef(false);
 
   const finishSuccess = useCallback(() => {
     if (returnTo === 'register_complete') {
@@ -47,26 +56,88 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
     }
   }, [navigation, returnTo]);
 
-  /** Hide WebView first, wait for native teardown, then alert + navigate — avoids rare Android WebView/GPU crashes when stacking Alert on a live WebView. */
-  const promptSaveSuccess = useCallback(() => {
+  const handleSuccess = useCallback(() => {
     if (completedRef.current) return;
     completedRef.current = true;
-    setShowWeb(false);
-    setEmbedUrl(null);
-    setPhase('finished');
-    setTimeout(() => {
-      Alert.alert('Saved', 'Your payment method is on file.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            InteractionManager.runAfterInteractions(() => {
-              setTimeout(() => finishSuccess(), 120);
-            });
-          },
-        },
-      ]);
-    }, Platform.OS === 'android' ? 600 : 450);
+    waitingRef.current = false;
+    setPhase('ready');
+    Alert.alert('Saved', 'Your payment method is on file.', [{ text: 'OK', onPress: finishSuccess }]);
   }, [finishSuccess]);
+
+  const handleCancel = useCallback(() => {
+    waitingRef.current = false;
+    setPhase('ready');
+    if (signupFlow) {
+      Alert.alert(
+        'Checkout cancelled',
+        'You can open Stripe again to add a card, or switch to the free plan.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [signupFlow]);
+
+  const handleDeepLink = useCallback(
+    (url: string | null) => {
+      if (!url || !waitingRef.current) return;
+      const kind = parseStripeSetupDeepLink(url);
+      if (kind === 'success') handleSuccess();
+      else if (kind === 'cancel') handleCancel();
+    },
+    [handleCancel, handleSuccess]
+  );
+
+  useEffect(() => {
+    const sub = Linking.addEventListener('url', (ev) => {
+      handleDeepLink(ev.url);
+    });
+    void Linking.getInitialURL().then(handleDeepLink);
+    return () => sub.remove();
+  }, [handleDeepLink]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || !waitingRef.current || completedRef.current) return;
+      void (async () => {
+        try {
+          const data = await apiGet('membership-status.php', true);
+          const subPayload = data.subscription as { stripe_payment_method_status?: string } | undefined;
+          if (String(subPayload?.stripe_payment_method_status ?? '').toLowerCase() === 'attached') {
+            handleSuccess();
+          }
+        } catch {
+          /* user may still be in browser */
+        }
+      })();
+    });
+    return () => sub.remove();
+  }, [handleSuccess]);
+
+  const fetchCheckoutUrl = useCallback(async (): Promise<string> => {
+    const d = await apiPost('stripe-card-embed-init.php', {}, true);
+    const url = typeof d.url === 'string' ? d.url : '';
+    if (!url) throw new Error('No checkout URL from server.');
+    return url;
+  }, []);
+
+  const openStripeCheckout = useCallback(async () => {
+    setLoadError('');
+    setPhase('loading');
+    try {
+      const url = checkoutUrl ?? (await fetchCheckoutUrl());
+      setCheckoutUrl(url);
+      const canOpen = await Linking.canOpenURL(url);
+      if (!canOpen) {
+        throw new Error('Cannot open the browser on this device.');
+      }
+      await Linking.openURL(url);
+      waitingRef.current = true;
+      completedRef.current = false;
+      setPhase('waiting');
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Could not open Stripe checkout.');
+      setPhase('error');
+    }
+  }, [checkoutUrl, fetchCheckoutUrl]);
 
   const onBack = () => {
     if (returnTo === 'register_complete') {
@@ -100,162 +171,74 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleWebMessage = useCallback(
-    (raw: string) => {
-      try {
-        const j = JSON.parse(raw) as {
-          type?: string;
-          ww?: string;
-          ok?: boolean;
-          message?: string;
-        };
-        if (j.type === 'payment_success' || j.type === 'ww_stripe_card_saved') {
-          promptSaveSuccess();
-          return;
-        }
-        if (j.type === 'payment_cancelled') {
-          setShowWeb(false);
-          setEmbedUrl(null);
-          completedRef.current = false;
-          setPhase('post_cancel');
-          return;
-        }
-        if (j.type === 'payment_error') {
-          const msg = typeof j.message === 'string' && j.message.trim() ? j.message : 'Could not save card.';
-          Alert.alert('Card', msg);
-          return;
-        }
-        if (j.ww === 'stripe_setup') {
-          if (j.ok === true) promptSaveSuccess();
-          else {
-            setShowWeb(false);
-            setEmbedUrl(null);
-            completedRef.current = false;
-            setPhase('post_cancel');
-          }
-        }
-      } catch {
-        /* non-JSON messages ignored */
-      }
-    },
-    [promptSaveSuccess]
-  );
-
-  const startEmbed = useCallback(async () => {
-    setLoadError('');
-    setPhase('loading');
-    setEmbedUrl(null);
-    setShowWeb(false);
-    setWvBusy(true);
-    completedRef.current = false;
-    try {
-      const d = await apiPost('stripe-card-embed-init.php', {}, true);
-      const url = typeof d.url === 'string' ? d.url : '';
-      if (!url) throw new Error('No card form URL from server.');
-      setEmbedUrl(url);
-      setPhase('embed');
-      setShowWeb(true);
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Could not start card setup.');
-      setPhase('error');
-    }
-  }, []);
-
-  useEffect(() => {
-    void startEmbed();
-  }, [startEmbed]);
-
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScreenHeader title="Add payment method" onBack={onBack} />
-        {signupFlow ? (
-          <View style={styles.signupBanner}>
-            <Text style={styles.signupBannerText}>
-              Secure card entry opens in the window below (Stripe). Use test mode card 4242 4242 4242 4242 with any
-              future expiry and any CVC when the server uses Stripe test keys. Or switch to Free.
-            </Text>
+
+        <View style={styles.body}>
+          <Text style={styles.lead}>
+            Stripe opens in your browser (Chrome or Safari). You can pay with card, Link, Cash App, and other methods
+            enabled on your Stripe account. When you finish, you will return to this app automatically.
+          </Text>
+
+          {signupFlow ? (
+            <View style={styles.signupBox}>
+              <Text style={styles.signupHint}>
+                Add a card now, or skip to use the free plan ($0/month). You can upgrade later from Profile →
+                Membership.
+              </Text>
+              <PrimaryButton
+                label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
+                variant="outline"
+                onPress={confirmSkipToFree}
+                disabled={skipBusy || phase === 'loading'}
+                style={styles.skipBtn}
+              />
+            </View>
+          ) : null}
+
+          {phase === 'loading' ? (
+            <View style={styles.centerBlock}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.muted}>Opening Stripe…</Text>
+            </View>
+          ) : null}
+
+          {phase === 'waiting' ? (
+            <View style={styles.centerBlock}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.muted}>Complete checkout in your browser, then return here.</Text>
+              <Text style={styles.mutedSmall}>
+                If the app does not open by itself, switch back to Witness World Connect.
+              </Text>
+              <PrimaryButton
+                label="Open Stripe again"
+                onPress={() => void openStripeCheckout()}
+                style={styles.actionBtn}
+              />
+            </View>
+          ) : null}
+
+          {phase === 'error' ? (
+            <View style={styles.centerBlock}>
+              <Text style={styles.errorText}>{loadError}</Text>
+              <PrimaryButton label="Try again" onPress={() => void openStripeCheckout()} style={styles.actionBtn} />
+            </View>
+          ) : null}
+
+          {phase === 'ready' ? (
             <PrimaryButton
-              label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
-              variant="outline"
-              onPress={confirmSkipToFree}
-              disabled={skipBusy}
-              style={styles.skipBtn}
+              label="Continue in browser (Stripe)"
+              onPress={() => void openStripeCheckout()}
+              style={styles.actionBtn}
             />
-          </View>
-        ) : null}
+          ) : null}
 
-        {phase === 'loading' ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.muted}>Loading secure card form…</Text>
-          </View>
-        ) : null}
-
-        {phase === 'error' ? (
-          <View style={styles.center}>
-            <Text style={styles.errorText}>{loadError}</Text>
-            <PrimaryButton label="Try again" onPress={() => void startEmbed()} style={styles.closeBtn} />
-            <PrimaryButton label="Close" onPress={onBack} variant="outline" style={styles.skipBtn} />
-            {signupFlow ? (
-              <PrimaryButton
-                label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
-                variant="outline"
-                onPress={confirmSkipToFree}
-                disabled={skipBusy}
-                style={styles.skipBtn}
-              />
-            ) : null}
-          </View>
-        ) : null}
-
-        {phase === 'finished' ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : null}
-
-        {phase === 'post_cancel' && !showWeb ? (
-          <View style={styles.center}>
-            <Text style={styles.muted}>Card setup was cancelled or the window was closed.</Text>
-            <PrimaryButton label="Open card form again" onPress={() => void startEmbed()} style={styles.closeBtn} />
-            <PrimaryButton label="Close" onPress={onBack} variant="outline" style={styles.skipBtn} />
-            {signupFlow ? (
-              <PrimaryButton
-                label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
-                variant="outline"
-                onPress={confirmSkipToFree}
-                disabled={skipBusy}
-                style={styles.skipBtn}
-              />
-            ) : null}
-          </View>
-        ) : null}
-
-        {phase === 'embed' && embedUrl && showWeb ? (
-          <View style={styles.webWrap}>
-            {wvBusy ? (
-              <View style={styles.wvOverlay}>
-                <ActivityIndicator size="large" color={colors.primary} />
-              </View>
-            ) : null}
-            <WebView
-              key={embedUrl}
-              source={{ uri: embedUrl }}
-              style={styles.webview}
-              onLoadStart={() => setWvBusy(true)}
-              onLoadEnd={() => setWvBusy(false)}
-              onMessage={(ev) => handleWebMessage(ev.nativeEvent.data)}
-              javaScriptEnabled
-              domStorageEnabled
-              originWhitelist={['*']}
-              setSupportMultipleWindows={false}
-              sharedCookiesEnabled
-              thirdPartyCookiesEnabled
-              {...(Platform.OS === 'android' ? { androidLayerType: 'software' as const } : {})}
-            />
-          </View>
-        ) : null}
+          {phase === 'ready' || phase === 'error' ? (
+            <PrimaryButton label="Close" onPress={onBack} variant="outline" style={styles.closeBtn} />
+          ) : null}
+        </View>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -263,32 +246,44 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  muted: { marginTop: 12, color: colors.textMuted, fontWeight: '600', textAlign: 'center', maxWidth: 320 },
-  errorText: { color: colors.danger, textAlign: 'center', fontWeight: '700', marginBottom: 16 },
-  closeBtn: { marginTop: 8 },
-  signupBanner: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
+  lead: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.textMuted,
+    fontWeight: '600',
+    marginBottom: 20,
+  },
+  signupBox: {
+    marginBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(11, 18, 32, 0.12)',
   },
-  signupBannerText: {
+  signupHint: {
     fontSize: 13,
     lineHeight: 19,
     color: colors.textMuted,
     fontWeight: '600',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   skipBtn: { marginTop: 4 },
-  webWrap: { flex: 1, position: 'relative' },
-  webview: { flex: 1, backgroundColor: colors.white },
-  wvOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    zIndex: 2,
+  centerBlock: { alignItems: 'center', paddingVertical: 24 },
+  muted: {
+    marginTop: 12,
+    color: colors.textMuted,
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: 320,
   },
+  mutedSmall: {
+    marginTop: 8,
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    maxWidth: 300,
+  },
+  errorText: { color: colors.danger, textAlign: 'center', fontWeight: '700', marginBottom: 8 },
+  actionBtn: { marginTop: 8 },
+  closeBtn: { marginTop: 12 },
 });

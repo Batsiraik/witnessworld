@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * POST — start “add card”: returns Stripe hosted Checkout URL (device browser + deep link return).
+ * Legacy name kept for the mobile app endpoint.
+ */
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
-require_once __DIR__ . '/lib/stripe_billing.php';
-require_once __DIR__ . '/lib/stripe_card_embed_session.php';
+require_once __DIR__ . '/lib/stripe_checkout_setup.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -30,47 +33,22 @@ if (!$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
 }
 
-$userId = (int) $user['id'];
-$pk = ww_stripe_publishable_key($pdo);
-if ($pk === '' || !str_starts_with($pk, 'pk_')) {
-    ww_json(['ok' => false, 'error' => 'Stripe publishable key is not configured (admin settings or WW_STRIPE_PUBLISHABLE_KEY).'], 503);
-}
-
 $stripe = new \Stripe\StripeClient($sk);
 
 try {
-    $customerId = ww_stripe_ensure_customer($stripe, $pdo, $user);
-    $si = $stripe->setupIntents->create([
-        'customer' => $customerId,
-        'payment_method_types' => ['card'],
-        'usage' => 'off_session',
-        'metadata' => ['user_id' => (string) $userId],
-    ]);
-} catch (\Throwable) {
-    ww_json(['ok' => false, 'error' => 'Could not start card setup. Try again later.'], 500);
+    $checkout = ww_stripe_create_setup_checkout_session($stripe, $pdo, $user);
+} catch (\Throwable $e) {
+    error_log('[stripe-card-embed-init] ' . $e->getMessage());
+    $msg = 'Could not start card setup. Try again later.';
+    $showDetail = (defined('WW_API_DEBUG') && WW_API_DEBUG) || str_starts_with($sk, 'sk_test_');
+    if ($showDetail) {
+        $msg .= ' ' . $e->getMessage();
+    }
+    ww_json(['ok' => false, 'error' => $msg], 500);
 }
-
-$secret = $si->client_secret ?? '';
-$setiId = (string) ($si->id ?? '');
-if (!is_string($secret) || $secret === '' || $setiId === '') {
-    ww_json(['ok' => false, 'error' => 'Could not start card setup.'], 500);
-}
-
-$embedId = bin2hex(random_bytes(32));
-try {
-    ww_stripe_embed_save($embedId, [
-        'user_id' => $userId,
-        'client_secret' => $secret,
-        'publishable_key' => $pk,
-        'setup_intent_id' => $setiId,
-    ]);
-} catch (\Throwable) {
-    ww_json(['ok' => false, 'error' => 'Could not create embed session.'], 500);
-}
-
-$pageUrl = rtrim(WW_PUBLIC_BASE, '/') . '/api/stripe-card-embedded.php?t=' . rawurlencode($embedId);
 
 ww_json([
     'ok' => true,
-    'url' => $pageUrl,
+    'url' => $checkout['url'],
+    'checkout' => true,
 ]);
