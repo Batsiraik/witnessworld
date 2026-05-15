@@ -41,10 +41,8 @@ function ww_stripe_create_setup_checkout_session(
         'setup_intent_data' => [
             'metadata' => ['user_id' => (string) $userId],
         ],
-        /* Wallets (Link, Cash App Pay, etc.) follow what is enabled on your Stripe account. */
-        'automatic_payment_methods' => [
-            'enabled' => true,
-        ],
+        /* Setup Checkout does not accept automatic_payment_methods on many API versions — use explicit types. */
+        'payment_method_types' => ['card'],
     ];
 
     $session = $stripe->checkout->sessions->create($params);

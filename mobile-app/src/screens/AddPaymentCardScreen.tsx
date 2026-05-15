@@ -178,8 +178,8 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
 
         <View style={styles.body}>
           <Text style={styles.lead}>
-            Stripe opens in your browser (Chrome or Safari). You can pay with card, Link, Cash App, and other methods
-            enabled on your Stripe account. When you finish, you will return to this app automatically.
+            Stripe opens in your browser (Chrome or Safari) to save your card securely. When you finish, you will
+            return to this app automatically.
           </Text>
 
           {signupFlow ? (
