@@ -247,26 +247,31 @@ export function ProfileSettingsScreen(_props: Props) {
             <PrimaryButton label="Manage my listings & office" onPress={goOffice} style={styles.manageCta} />
             <Text style={styles.manageCtaHint}>Listings, store, products, and directory — same place as My office below.</Text>
 
-            <View style={styles.nbBox}>
-              <Text style={styles.nbLabel}>NB</Text>
-              <Text style={styles.nbText}>
-                To change your name, email, or phone on the WWC App, Please contact the administrator
-                {supportEmail ? ` at ${supportEmail}` : ''}. Or send a message to the Support in App Chat. These details cannot be updated from the app.
-              </Text>
-            </View>
-
             <GlassCard style={styles.card}>
               <Text style={styles.sectionTitle}>Payment method</Text>
-              <Text style={styles.sectionHint}>
-                Membership billing after your trial. Add or update your card in a secure Stripe window (same flow as
-                signup). Test mode: 4242 4242 4242 4242, any future expiry, any CVC.
-              </Text>
               {(() => {
                 const plan = subscription?.plan ?? 'free';
+                const planTitle =
+                  subscription?.plan_title && String(subscription.plan_title).trim() !== ''
+                    ? String(subscription.plan_title).trim()
+                    : 'your plan';
+                const trialDays =
+                  typeof subscription?.trial_days === 'number' && subscription.trial_days > 0
+                    ? subscription.trial_days
+                    : 90;
                 const pm = subscription?.stripe_payment_method_status ?? 'none';
                 const card = subscription?.payment_method;
                 const last4 = typeof card?.last4 === 'string' ? card.last4.trim() : '';
                 const hasCard = pm === 'attached' || last4.length >= 4;
+
+                const billingHint = plan !== 'free'
+                  ? `You will not be charged today. We only keep your card on file so billing can start after your ${trialDays}-day free trial ends, if you stay on ${planTitle}. Add or update your card in Stripe (opens in your browser).`
+                  : 'Free plan — no membership charges. You can still add a card anytime before upgrading.';
+
+                return (
+                  <>
+              <Text style={styles.sectionHint}>{billingHint}</Text>
+              {(() => {
                 if (hasCard) {
                   return (
                     <View style={styles.paymentBlock}>
@@ -293,11 +298,14 @@ export function ProfileSettingsScreen(_props: Props) {
                     <Text style={styles.paymentMain}>{plan === 'free' ? 'None' : 'Not on file'}</Text>
                     <Text style={styles.paymentSub}>
                       {plan === 'free'
-                        ? 'Free plan — no subscription charges. You can still add a card so upgrades go smoothly.'
-                        : 'Add a card so your paid plan can continue after the trial. You are not charged until after the trial ends.'}
+                        ? 'No card required on the free plan. Add one now if you plan to upgrade later.'
+                        : `No card on file yet. Add one to use ${planTitle} during your ${trialDays}-day trial — we will not charge a penny until the trial ends.`}
                     </Text>
                     <PrimaryButton label="Add card" onPress={openAddCardInApp} style={styles.paymentBtn} />
                   </View>
+                );
+              })()}
+                  </>
                 );
               })()}
             </GlassCard>
@@ -424,6 +432,14 @@ export function ProfileSettingsScreen(_props: Props) {
                 onPress={openDeleteModal}
               />
             </GlassCard>
+
+            <View style={styles.nbBox}>
+              <Text style={styles.nbLabel}>NB</Text>
+              <Text style={styles.nbText}>
+                To change your name, email, or phone on the WWC App, Please contact the administrator
+                {supportEmail ? ` at ${supportEmail}` : ''}. Or send a message to the Support in App Chat. These details cannot be updated from the app.
+              </Text>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -518,7 +534,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(217, 119, 6, 0.35)',
     borderRadius: 14,
     padding: 14,
-    marginBottom: 16,
+    marginTop: 16,
+    marginBottom: 8,
   },
   nbLabel: { fontSize: 12, fontWeight: '900', color: '#B45309', letterSpacing: 0.5 },
   nbText: { flex: 1, fontSize: 13, lineHeight: 20, color: colors.text, fontWeight: '600' },

@@ -22,6 +22,27 @@ type Props = NativeStackScreenProps<RootStackParamList, 'AddPaymentCard'>;
 
 type Phase = 'ready' | 'loading' | 'waiting' | 'error';
 
+type MembershipSnapshot = {
+  trialDays: number;
+  planTitle: string;
+  planKey: string;
+};
+
+function parseMembershipSnapshot(data: Record<string, unknown>): MembershipSnapshot {
+  const sub = data.subscription as Record<string, unknown> | undefined;
+  const trialRaw = sub?.trial_days;
+  const trialDays =
+    typeof trialRaw === 'number' && Number.isFinite(trialRaw) && trialRaw > 0
+      ? Math.round(trialRaw)
+      : typeof trialRaw === 'string' && trialRaw.trim() !== '' && Number.isFinite(Number(trialRaw))
+        ? Math.max(1, Math.round(Number(trialRaw)))
+        : 90;
+  const planTitle =
+    typeof sub?.plan_title === 'string' && sub.plan_title.trim() !== '' ? sub.plan_title.trim() : 'your selected plan';
+  const planKey = typeof sub?.plan === 'string' ? sub.plan : 'free';
+  return { trialDays, planTitle, planKey };
+}
+
 function parseStripeSetupDeepLink(url: string): 'success' | 'cancel' | null {
   const u = url.toLowerCase();
   if (u.includes('stripe-setup/success') || u.includes('stripe-setup%2fsuccess')) {
@@ -41,8 +62,26 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
   const [loadError, setLoadError] = useState('');
   const [skipBusy, setSkipBusy] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [membership, setMembership] = useState<MembershipSnapshot>({
+    trialDays: 90,
+    planTitle: 'your selected plan',
+    planKey: 'free',
+  });
   const completedRef = useRef(false);
   const waitingRef = useRef(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const data = await apiGet('membership-status.php', true);
+        if (data.ok === true) {
+          setMembership(parseMembershipSnapshot(data as Record<string, unknown>));
+        }
+      } catch {
+        /* keep defaults */
+      }
+    })();
+  }, []);
 
   const finishSuccess = useCallback(() => {
     if (returnTo === 'register_complete') {
@@ -177,26 +216,49 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
         <ScreenHeader title="Add payment method" onBack={onBack} />
 
         <View style={styles.body}>
-          <Text style={styles.lead}>
-            Stripe opens in your browser (Chrome or Safari) to save your card securely. When you finish, you will
-            return to this app automatically.
-          </Text>
-
           {signupFlow ? (
-            <View style={styles.signupBox}>
-              <Text style={styles.signupHint}>
-                Add a card now, or skip to use the free plan ($0/month). You can upgrade later from Profile →
-                Membership.
+            <>
+              <View style={styles.noChargeBanner}>
+                <Text style={styles.noChargeTitle}>You will not be charged today</Text>
+                <Text style={styles.noChargeSub}>
+                  We will not charge a penny to your card right now. Adding a payment method only saves your card
+                  securely for later.
+                </Text>
+              </View>
+
+              <Text style={styles.lead}>
+                You chose <Text style={styles.leadStrong}>{membership.planTitle}</Text>. Your{' '}
+                <Text style={styles.leadStrong}>{membership.trialDays}-day free trial</Text> starts now — you can use
+                all plan benefits during the trial (posting, listings, and everything included in your membership).
               </Text>
-              <PrimaryButton
-                label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
-                variant="outline"
-                onPress={confirmSkipToFree}
-                disabled={skipBusy || phase === 'loading'}
-                style={styles.skipBtn}
-              />
-            </View>
-          ) : null}
+
+              <Text style={styles.lead}>
+                Billing only begins after the {membership.trialDays}-day trial ends, and only if you stay on this plan.
+                To save your card, Stripe opens in your browser (Chrome or Safari). When you are done, you return here
+                automatically.
+              </Text>
+
+              <View style={styles.signupBox}>
+                <Text style={styles.signupHint}>
+                  Prefer not to add a card? Skip to the free plan ($0/month). You can upgrade anytime from Profile →
+                  Membership.
+                </Text>
+                <PrimaryButton
+                  label={skipBusy ? 'Updating…' : 'Skip — use free plan'}
+                  variant="outline"
+                  onPress={confirmSkipToFree}
+                  disabled={skipBusy || phase === 'loading'}
+                  style={styles.skipBtn}
+                />
+              </View>
+            </>
+          ) : (
+            <Text style={styles.lead}>
+              Save a card on file for membership billing. Stripe opens in your browser to enter details securely — you
+              are not charged on this step unless your plan is already billing. When you finish, you return here
+              automatically.
+            </Text>
+          )}
 
           {phase === 'loading' ? (
             <View style={styles.centerBlock}>
@@ -247,12 +309,36 @@ export function AddPaymentCardScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
+  noChargeBanner: {
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.35)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  noChargeTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#15803d',
+    marginBottom: 6,
+  },
+  noChargeSub: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#166534',
+    fontWeight: '600',
+  },
   lead: {
     fontSize: 15,
     lineHeight: 22,
     color: colors.textMuted,
     fontWeight: '600',
-    marginBottom: 20,
+    marginBottom: 14,
+  },
+  leadStrong: {
+    color: colors.text,
+    fontWeight: '800',
   },
   signupBox: {
     marginBottom: 20,
