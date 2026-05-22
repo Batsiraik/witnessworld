@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
+import { BrowseCategoryFilters } from '../components/BrowseCategoryFilters';
 import { BrowseLocationFilters, type LocCountry, type LocState } from '../components/BrowseLocationFilters';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
@@ -39,7 +40,8 @@ type Row = {
 export function BrowseStoresScreen({ navigation }: Props) {
   const tileW = useGridTileWidth();
   const [categories, setCategories] = useState<StoreCategory[]>([]);
-  const [selectedCat, setSelectedCat] = useState<StoreCategory | null>(null);
+  const [chipCat, setChipCat] = useState<StoreCategory | null>(null);
+  const [filterCat, setFilterCat] = useState<StoreCategory | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<LocCountry | null>(null);
   const [selectedUsState, setSelectedUsState] = useState<LocState | null>(null);
   const [q, setQ] = useState('');
@@ -63,13 +65,13 @@ export function BrowseStoresScreen({ navigation }: Props) {
 
   const qs = useMemo(() => {
     const p = new URLSearchParams();
-    if (selectedCat) p.set('category_id', String(selectedCat.id));
+    if (filterCat) p.set('category_id', String(filterCat.id));
     if (selectedCountry?.code) p.set('country', selectedCountry.code.toUpperCase());
     if (selectedUsState?.name) p.set('us_state', selectedUsState.name);
     if (appliedQ.trim()) p.set('q', appliedQ.trim());
     p.set('limit', '50');
     return p.toString();
-  }, [selectedCat, selectedCountry, selectedUsState, appliedQ]);
+  }, [filterCat, selectedCountry, selectedUsState, appliedQ]);
 
   const load = useCallback(
     async (mode: 'full' | 'refresh' = 'full') => {
@@ -99,25 +101,13 @@ export function BrowseStoresScreen({ navigation }: Props) {
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <View style={styles.filters}>
-          {categories.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
-              <Pressable
-                onPress={() => setSelectedCat(null)}
-                style={[styles.catChip, !selectedCat && styles.catChipOn]}
-              >
-                <Text style={[styles.catChipText, !selectedCat && styles.catChipTextOn]}>All</Text>
-              </Pressable>
-              {categories.map((c) => (
-                <Pressable
-                  key={c.id}
-                  onPress={() => setSelectedCat(selectedCat?.id === c.id ? null : c)}
-                  style={[styles.catChip, selectedCat?.id === c.id && styles.catChipOn]}
-                >
-                  <Text style={[styles.catChipText, selectedCat?.id === c.id && styles.catChipTextOn]}>{c.name}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          ) : null}
+          <BrowseCategoryFilters
+            categories={categories}
+            chipCat={chipCat}
+            filterCat={filterCat}
+            onChipCatChange={setChipCat}
+            onFilterCatChange={setFilterCat}
+          />
           <BrowseLocationFilters
             country={selectedCountry}
             usState={selectedUsState}
@@ -225,18 +215,6 @@ export function BrowseStoresScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   filters: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
-  catRow: { gap: 6, paddingBottom: 2 },
-  catChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  catChipOn: surfaces.goldChip,
-  catChipText: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
-  catChipTextOn: { color: colors.goldDark },
   input: {
     borderWidth: 1,
     borderColor: colors.line,

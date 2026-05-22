@@ -352,3 +352,13 @@ ALTER TABLE content_reviews
 ALTER TABLE users
   ADD COLUMN stripe_pm_last4 VARCHAR(4) NULL DEFAULT NULL AFTER stripe_payment_method_status,
   ADD COLUMN stripe_pm_brand VARCHAR(32) NULL DEFAULT NULL AFTER stripe_pm_last4;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-22: Signup country + optional baptism for unbaptized publishers
+-- ---------------------------------------------------------------------------
+ALTER TABLE users
+  ADD COLUMN registration_country_code CHAR(2) NULL AFTER congregation,
+  ADD COLUMN registration_country_name VARCHAR(120) NULL AFTER registration_country_code;
+
+ALTER TABLE users
+  MODIFY baptism_date DATE NULL;

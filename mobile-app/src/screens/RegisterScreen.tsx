@@ -1,8 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MutableRefObject, RefObject } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Keyboard,
   type KeyboardEvent,
@@ -14,6 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppPasswordField } from '../components/AppPasswordField';
 import { AppTextField } from '../components/AppTextField';
@@ -22,50 +22,18 @@ import { GlassCard } from '../components/GlassCard';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { SignupPickSheet } from '../components/SignupPickSheet';
 import { apiGet, apiPost, setStoredToken } from '../api/client';
-import {
-  MEMBERSHIP_PLANS_FALLBACK,
-  MEMBERSHIP_TRIAL_DAYS_FALLBACK,
-  type PublicPlan,
-} from '../constants/membershipPlansFallback';
 import { DEFAULT_DIAL, type DialCountry } from '../constants/dialCodes';
+import {
+  SIGNUP_MEMBER_ROLES,
+  SIGNUP_MIN_AGE,
+  isUnbaptizedPublisher,
+} from '../constants/signupMemberRoles';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
-
-const VALID_PLAN_KEYS = ['free', 'plus', 'starter', 'growth', 'elite'] as const;
-type PlanKey = (typeof VALID_PLAN_KEYS)[number];
-
-function isPlanKey(k: string): k is PlanKey {
-  return (VALID_PLAN_KEYS as readonly string[]).includes(k);
-}
-
-function parsePublicPlans(raw: unknown): PublicPlan[] | null {
-  if (!Array.isArray(raw)) return null;
-  const out: PublicPlan[] = [];
-  for (const row of raw) {
-    if (!row || typeof row !== 'object') continue;
-    const p = row as Record<string, unknown>;
-    const key = typeof p.key === 'string' ? p.key : '';
-    if (!isPlanKey(key)) continue;
-    const title = typeof p.title === 'string' ? p.title : key;
-    const price = typeof p.price === 'number' ? p.price : Number(p.price);
-    const badge = typeof p.badge === 'string' ? p.badge : undefined;
-    const features = Array.isArray(p.features)
-      ? p.features.filter((x): x is string => typeof x === 'string')
-      : [];
-    out.push({ key, title, price: Number.isFinite(price) ? price : 0, badge, features });
-  }
-  return out.length ? out : null;
-}
-
-function formatIllustrativeTrialEnd(trialDays: number): string {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  d.setDate(d.getDate() + Math.max(0, trialDays));
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-}
 
 /** Formats typing into YYYY-MM-DD (digits only, auto-inserts dashes). */
 function formatIsoDateAsUserTypes(value: string): string {
@@ -88,6 +56,7 @@ const FIELD_ERROR_ORDER = [
   'memberType',
   'baptismDate',
   'congregation',
+  'country',
   'password',
   'confirm',
   'agree',
@@ -133,19 +102,51 @@ function parseDate(value: string): Date | null {
   return date;
 }
 
-function isAtLeast18(date: Date): boolean {
+function isAtLeastAge(date: Date, minAge: number): boolean {
   const now = new Date();
   let age = now.getFullYear() - date.getUTCFullYear();
   const monthDiff = now.getMonth() - date.getUTCMonth();
   if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < date.getUTCDate())) {
     age -= 1;
   }
-  return age >= 18;
+  return age >= minAge;
 }
+
+type SignupCountry = { code: string; name: string };
 
 export function RegisterScreen({ navigation }: Props) {
   useEffect(() => {
     void setStoredToken(null);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiGet('locations.php', false);
+        if (cancelled) return;
+        const cs = data.countries;
+        if (!Array.isArray(cs)) return;
+        const labels: string[] = [];
+        const map: Record<string, SignupCountry> = {};
+        for (const row of cs) {
+          if (row == null || typeof row !== 'object') continue;
+          const code = typeof row.code === 'string' ? row.code.trim().toUpperCase() : '';
+          const name = typeof row.name === 'string' ? row.name.trim() : '';
+          if (!code || !name) continue;
+          const label = `${name} (${code})`;
+          labels.push(label);
+          map[label] = { code, name };
+        }
+        setCountryOptions(labels);
+        setCountryNameByLabel(map);
+      } catch {
+        /* optional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -178,51 +179,19 @@ export function RegisterScreen({ navigation }: Props) {
   const [phoneLocal, setPhoneLocal] = useState('');
   const [username, setUsername] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [memberType, setMemberType] = useState('');
+  const [memberRole, setMemberRole] = useState('');
   const [baptismDate, setBaptismDate] = useState('');
   const [congregation, setCongregation] = useState('');
-  const [membershipPlan, setMembershipPlan] = useState<PlanKey>('free');
+  const [signupCountry, setSignupCountry] = useState<SignupCountry | null>(null);
+  const [countryOptions, setCountryOptions] = useState<string[]>([]);
+  const [countryNameByLabel, setCountryNameByLabel] = useState<Record<string, SignupCountry>>({});
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
+  const [countrySheetOpen, setCountrySheetOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [loading, setLoading] = useState(false);
-
-  const [plans, setPlans] = useState<PublicPlan[]>([]);
-  const [trialDays, setTrialDays] = useState(MEMBERSHIP_TRIAL_DAYS_FALLBACK);
-  const [plansLoading, setPlansLoading] = useState(true);
-
-  const illustrationEnd = useMemo(() => formatIllustrativeTrialEnd(trialDays), [trialDays]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setPlansLoading(true);
-      try {
-        const data = await apiGet('membership-plans-public.php', false);
-        if (cancelled) return;
-        const parsed = parsePublicPlans(data.plans);
-        if (data.ok === true && parsed) {
-          setPlans(parsed);
-          const td = typeof data.trial_days === 'number' ? data.trial_days : Number(data.trial_days);
-          if (Number.isFinite(td) && td >= 0) setTrialDays(Math.min(365, Math.max(0, td)));
-        } else {
-          setPlans(MEMBERSHIP_PLANS_FALLBACK);
-          setTrialDays(MEMBERSHIP_TRIAL_DAYS_FALLBACK);
-        }
-      } catch {
-        if (!cancelled) {
-          setPlans(MEMBERSHIP_PLANS_FALLBACK);
-          setTrialDays(MEMBERSHIP_TRIAL_DAYS_FALLBACK);
-        }
-      } finally {
-        if (!cancelled) setPlansLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const submit = async () => {
     const next: Record<string, string | undefined> = {};
@@ -234,11 +203,19 @@ export function RegisterScreen({ navigation }: Props) {
     const dob = parseDate(dateOfBirth);
     if (!dateOfBirth.trim()) next.dateOfBirth = 'Enter your date of birth';
     else if (!dob) next.dateOfBirth = 'Use YYYY-MM-DD format';
-    else if (!isAtLeast18(dob)) next.dateOfBirth = 'You must be at least 18 to sign up';
-    if (!memberType.trim()) next.memberType = 'Tell us who you are';
-    if (!baptismDate.trim()) next.baptismDate = 'Enter your baptism date';
-    else if (!parseDate(baptismDate)) next.baptismDate = 'Use YYYY-MM-DD format';
+    else if (!isAtLeastAge(dob, SIGNUP_MIN_AGE)) {
+      next.dateOfBirth = `You must be at least ${SIGNUP_MIN_AGE} to sign up`;
+    }
+    if (!memberRole.trim()) next.memberType = 'Select your role';
+    const unbaptized = isUnbaptizedPublisher(memberRole);
+    if (!unbaptized) {
+      if (!baptismDate.trim()) next.baptismDate = 'Enter your baptism date';
+      else if (!parseDate(baptismDate)) next.baptismDate = 'Use YYYY-MM-DD format';
+    } else if (baptismDate.trim() && !parseDate(baptismDate)) {
+      next.baptismDate = 'Use YYYY-MM-DD format';
+    }
     if (!congregation.trim()) next.congregation = 'Enter your congregation';
+    if (!signupCountry?.code) next.country = 'Select your country';
     if (password.length < 8) next.password = 'Use at least 8 characters';
     if (password !== confirm) next.confirm = 'Passwords do not match';
     if (!agreed) {
@@ -264,10 +241,11 @@ export function RegisterScreen({ navigation }: Props) {
           username: username.trim().toLowerCase(),
           phone,
           date_of_birth: dateOfBirth.trim(),
-          member_type: memberType.trim(),
+          member_type: memberRole.trim(),
           baptism_date: baptismDate.trim(),
           congregation: congregation.trim(),
-          membership_plan: membershipPlan,
+          registration_country_code: signupCountry!.code,
+          membership_plan: 'free',
         },
         false
       );
@@ -367,7 +345,9 @@ export function RegisterScreen({ navigation }: Props) {
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Personal information</Text>
-                <Text style={styles.sectionHint}>Date of birth is required and the minimum age to sign up is 18.</Text>
+                <Text style={styles.sectionHint}>
+                  Minimum age to sign up is {SIGNUP_MIN_AGE}.
+                </Text>
               </View>
 
               <AppTextField
@@ -377,32 +357,39 @@ export function RegisterScreen({ navigation }: Props) {
                 label="Date of birth (YYYY-MM-DD)"
                 value={dateOfBirth}
                 onChangeText={(t) => setDateOfBirth(formatIsoDateAsUserTypes(t))}
-                placeholder="2000-01-15"
+                placeholder="2010-01-15"
                 keyboardType="numbers-and-punctuation"
                 error={errors.dateOfBirth}
               />
-              <AppTextField
-                ref={(el) => {
-                  fieldRefs.current.memberType = el;
-                }}
-                label="I am a ..."
-                value={memberType}
-                onChangeText={setMemberType}
-                autoCapitalize="words"
-                placeholder="Brother, sister, or other"
-                error={errors.memberType}
-              />
+
+              <Text style={styles.fieldLabel}>I am a brother / sister</Text>
+              <Pressable
+                onPress={() => setRoleSheetOpen(true)}
+                style={[styles.selectRow, errors.memberType && styles.selectRowError]}
+              >
+                <Text style={memberRole ? styles.selectVal : styles.selectPh}>
+                  {memberRole || 'Select'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+              </Pressable>
+              {errors.memberType ? <Text style={styles.fieldError}>{errors.memberType}</Text> : null}
+
               <AppTextField
                 ref={(el) => {
                   fieldRefs.current.baptismDate = el;
                 }}
-                label="Baptism date (YYYY-MM-DD)"
+                label={
+                  isUnbaptizedPublisher(memberRole)
+                    ? 'Baptism date (optional, YYYY-MM-DD)'
+                    : 'Baptism date (YYYY-MM-DD)'
+                }
                 value={baptismDate}
                 onChangeText={(t) => setBaptismDate(formatIsoDateAsUserTypes(t))}
                 placeholder="2010-06-01"
                 keyboardType="numbers-and-punctuation"
                 error={errors.baptismDate}
               />
+
               <AppTextField
                 ref={(el) => {
                   fieldRefs.current.congregation = el;
@@ -414,75 +401,43 @@ export function RegisterScreen({ navigation }: Props) {
                 error={errors.congregation}
               />
 
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Membership plan</Text>
-                {plansLoading ? (
-                  <View style={styles.plansLoadingRow}>
-                    <ActivityIndicator color={colors.primary} />
-                    <Text style={styles.sectionHint}>Loading plans…</Text>
-                  </View>
-                ) : (
-                  <>
-                    <Text style={styles.trialIntro}>
-                      <Text style={styles.trialBold}>Free</Text>
-                      {' is $0/month — no subscription billing and '}
-                      <Text style={styles.trialBold}>no card</Text>
-                      {' is collected. After you verify your email, you go straight into the app.'}
-                    </Text>
-                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
-                      <Text style={styles.trialBold}>Paid plans</Text>
-                      {' start your '}
-                      <Text style={styles.trialBold}>{trialDays}-day free trial</Text>
-                      {' when you create the account. '}
-                      <Text style={styles.trialBold}>You are not charged</Text>
-                      {' until after that trial ends. Right after email verification you go straight to the '}
-                      <Text style={styles.trialBold}>add card</Text>
-                      {' screen (or you can switch to Free there). Use Stripe test card 4242 4242 4242 4242 with any future expiry and any CVC while the server is in test mode.'}
-                    </Text>
-                    <Text style={[styles.trialIntro, { marginTop: 10 }]}>
-                      Your exact trial end date appears in the app after signup. Illustration only — last free day
-                      if the trial started today: <Text style={styles.trialBold}>{illustrationEnd}</Text>.
-                    </Text>
-                    <Text style={[styles.sectionHint, { marginTop: 10 }]}>
-                      Optional storefront add-on is chosen later from Create listing (not here).
-                    </Text>
-                  </>
-                )}
-              </View>
+              <Text style={styles.fieldLabel}>Country</Text>
+              <Pressable
+                onPress={() => setCountrySheetOpen(true)}
+                style={[styles.selectRow, errors.country && styles.selectRowError]}
+              >
+                <Text style={signupCountry ? styles.selectVal : styles.selectPh}>
+                  {signupCountry ? `${signupCountry.name} (${signupCountry.code})` : 'Select country'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+              </Pressable>
+              {errors.country ? <Text style={styles.fieldError}>{errors.country}</Text> : null}
 
-              {!plansLoading &&
-                plans.map((plan) => {
-                  const active = membershipPlan === plan.key;
-                  return (
-                    <Pressable
-                      key={plan.key}
-                      onPress={() => {
-                        if (isPlanKey(plan.key)) setMembershipPlan(plan.key);
-                      }}
-                      style={[styles.planCard, active && styles.planCardOn]}
-                    >
-                      <View style={styles.planCardTop}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.planCardTitle}>{plan.title}</Text>
-                          <Text style={styles.planCardPrice}>
-                            {plan.price === 0 ? '$0/month' : `$${plan.price}/month after trial`}
-                          </Text>
-                        </View>
-                        {plan.badge ? <Text style={styles.planBadge}>{plan.badge}</Text> : null}
-                      </View>
-                      {(plan.features ?? []).map((f) => (
-                        <Text key={f} style={styles.planFeature}>
-                          • {f}
-                        </Text>
-                      ))}
-                      <View style={[styles.planSelectPill, active && styles.planSelectPillOn]}>
-                        <Text style={[styles.planSelectText, active && styles.planSelectTextOn]}>
-                          {active ? 'Your selection' : 'Tap to select'}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
+              <SignupPickSheet
+                visible={roleSheetOpen}
+                title="Select role"
+                options={[...SIGNUP_MEMBER_ROLES]}
+                selected={memberRole || null}
+                onSelect={setMemberRole}
+                onClose={() => setRoleSheetOpen(false)}
+              />
+              <SignupPickSheet
+                visible={countrySheetOpen}
+                title="Select country"
+                options={countryOptions}
+                selected={
+                  signupCountry
+                    ? `${signupCountry.name} (${signupCountry.code})`
+                    : null
+                }
+                onSelect={(label) => {
+                  const c = countryNameByLabel[label];
+                  if (c) setSignupCountry(c);
+                }}
+                onClose={() => setCountrySheetOpen(false)}
+                searchable
+                searchPlaceholder="Search countries"
+              />
 
               <AppPasswordField
                 ref={(el) => {
@@ -558,49 +513,27 @@ const styles = StyleSheet.create({
   section: { marginTop: 2, marginBottom: 14 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
   sectionHint: { fontSize: 13, lineHeight: 19, color: colors.textMuted, fontWeight: '500' },
-  plansLoadingRow: {
+  selectRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  trialIntro: { fontSize: 13, lineHeight: 20, color: colors.textMuted, fontWeight: '500' },
-  trialBold: { fontWeight: '800', color: colors.text },
-  planCard: {
-    marginBottom: 12,
-    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    padding: 14,
-  },
-  planCardOn: { borderColor: colors.primaryDark, backgroundColor: colors.primarySoft },
-  planCardTop: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  planCardTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
-  planCardPrice: { marginTop: 3, fontSize: 12, fontWeight: '800', color: colors.textMuted },
-  planBadge: {
-    overflow: 'hidden',
-    borderRadius: 999,
-    backgroundColor: colors.goldSoft,
-    color: colors.goldDark,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  planFeature: { marginTop: 6, fontSize: 12, lineHeight: 17, fontWeight: '600', color: colors.textMuted },
-  planSelectPill: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(11,18,32,0.06)',
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    marginBottom: 16,
   },
-  planSelectPillOn: { backgroundColor: colors.primary },
-  planSelectText: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
-  planSelectTextOn: { color: colors.white },
+  selectRowError: { borderColor: colors.danger },
+  selectVal: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  selectPh: { flex: 1, fontSize: 15, color: colors.textMuted, fontWeight: '500' },
+  fieldError: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: -12,
+    marginBottom: 14,
+  },
   agreeRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8, marginBottom: 20 },
   checkbox: {
     width: 22,

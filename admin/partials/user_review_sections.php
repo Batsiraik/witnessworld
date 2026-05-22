@@ -15,6 +15,7 @@ $showOpenFullPageLink = $showOpenFullPageLink ?? false;
     <div><dt class="text-slate-500">I am a</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['member_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
     <div><dt class="text-slate-500">Baptism date</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['baptism_date'] ?? 'Not provided'), ENT_QUOTES, 'UTF-8') ?></dd></div>
     <div><dt class="text-slate-500">Congregation</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['congregation'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
+    <div><dt class="text-slate-500">Country</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['registration_country_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
     <div><dt class="text-slate-500">Joined</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $user['created_at'], ENT_QUOTES, 'UTF-8') ?></dd></div>
   </dl>
 </div>

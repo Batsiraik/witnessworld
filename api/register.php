@@ -7,6 +7,7 @@ require_once __DIR__ . '/lib/user_tokens.php';
 require_once __DIR__ . '/lib/Mailer.php';
 require_once __DIR__ . '/lib/EmailTemplates.php';
 require_once __DIR__ . '/lib/subscription_helpers.php';
+require_once __DIR__ . '/lib/listing_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -23,7 +24,23 @@ $dateOfBirth = trim((string) ($in['date_of_birth'] ?? ''));
 $memberType = trim((string) ($in['member_type'] ?? ''));
 $baptismDate = trim((string) ($in['baptism_date'] ?? ''));
 $congregation = trim((string) ($in['congregation'] ?? ''));
+$countryCode = strtoupper(trim((string) ($in['registration_country_code'] ?? $in['country_code'] ?? '')));
 $plan = ww_valid_membership_plan(strtolower(trim((string) ($in['membership_plan'] ?? 'free'))));
+
+$allowedMemberTypes = [
+    'Unbaptized publisher',
+    'Baptized publisher',
+    'Pioneer',
+    'Servant',
+    'Elder',
+];
+$memberTypeNormalized = null;
+foreach ($allowedMemberTypes as $allowed) {
+    if (strcasecmp($memberType, $allowed) === 0) {
+        $memberTypeNormalized = $allowed;
+        break;
+    }
+}
 
 $parseDate = static function (string $value): ?DateTimeImmutable {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
@@ -56,18 +73,31 @@ if (!$dob) {
     ww_json(['ok' => false, 'error' => 'Valid date of birth is required'], 422);
 }
 $today = new DateTimeImmutable('today');
-if ($dob->diff($today)->y < 18) {
-    ww_json(['ok' => false, 'error' => 'You must be at least 18 to sign up'], 422);
+if ($dob->diff($today)->y < 16) {
+    ww_json(['ok' => false, 'error' => 'You must be at least 16 to sign up'], 422);
 }
-if ($memberType === '') {
-    ww_json(['ok' => false, 'error' => 'I am a field is required'], 422);
+if ($memberTypeNormalized === null) {
+    ww_json(['ok' => false, 'error' => 'Select your role (publisher, pioneer, servant, or elder)'], 422);
 }
-if (!$parseDate($baptismDate)) {
-    ww_json(['ok' => false, 'error' => 'Valid baptism date is required'], 422);
+$memberType = $memberTypeNormalized;
+$isUnbaptized = strcasecmp($memberType, 'Unbaptized publisher') === 0;
+$baptismParsed = $baptismDate !== '' ? $parseDate($baptismDate) : null;
+if (!$isUnbaptized) {
+    if (!$baptismParsed) {
+        ww_json(['ok' => false, 'error' => 'Valid baptism date is required'], 422);
+    }
+} elseif ($baptismDate !== '' && !$baptismParsed) {
+    ww_json(['ok' => false, 'error' => 'Use YYYY-MM-DD format for baptism date'], 422);
 }
+$baptismStored = $baptismParsed ? $baptismParsed->format('Y-m-d') : null;
 if ($congregation === '') {
     ww_json(['ok' => false, 'error' => 'Congregation is required'], 422);
 }
+$countryMap = ww_listing_country_map();
+if ($countryCode === '' || strlen($countryCode) !== 2 || !isset($countryMap[$countryCode])) {
+    ww_json(['ok' => false, 'error' => 'Select a valid country'], 422);
+}
+$countryName = $countryMap[$countryCode];
 
 $pdo = witnessworld_pdo();
 
@@ -98,8 +128,8 @@ $subscriptionStatus = $isPaidPlan ? 'trialing' : 'free';
 $paymentMethodStatus = $isPaidPlan ? 'missing' : 'none';
 
 $ins = $pdo->prepare(
-    'INSERT INTO users (email, password_hash, first_name, last_name, username, phone, date_of_birth, member_type, baptism_date, congregation, membership_plan, subscription_status, trial_started_at, trial_ends_at, stripe_payment_method_status, status, registration_otp, registration_otp_expires_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+    'INSERT INTO users (email, password_hash, first_name, last_name, username, phone, date_of_birth, member_type, baptism_date, congregation, registration_country_code, registration_country_name, membership_plan, subscription_status, trial_started_at, trial_ends_at, stripe_payment_method_status, status, registration_otp, registration_otp_expires_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
 );
 $ins->execute([
     $email,
@@ -110,8 +140,10 @@ $ins->execute([
     $phone,
     $dateOfBirth,
     $memberType,
-    $baptismDate,
+    $baptismStored,
     $congregation,
+    $countryCode,
+    $countryName,
     $plan,
     $subscriptionStatus,
     $trialStartedAt,

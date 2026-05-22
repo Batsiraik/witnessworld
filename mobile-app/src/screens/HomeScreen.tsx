@@ -27,6 +27,10 @@ import type { LocCountry, LocState } from '../components/BrowseLocationFilters';
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
 const SCREEN_W = Dimensions.get('window').width;
+const TOP_CAT_COUNT = 5;
+const TOP_CAT_GAP = 6;
+/** Slightly smaller on narrow phones so "Marketplace" stays on one line. */
+const TOP_CAT_LABEL_FONT = SCREEN_W < 375 ? 10 : 11;
 const HOME_LOGO = require('../../assets/logo.jpg');
 const FEATURED_CARD_W = Math.min(SCREEN_W * 0.74, 300);
 
@@ -623,7 +627,12 @@ export function HomeScreen({ navigation }: Props) {
                 <View style={[styles.catIconWrap, { backgroundColor: c.bg }]}>
                   <Ionicons name={c.icon} size={26} color={c.iconColor} />
                 </View>
-                <Text style={styles.catLabel} numberOfLines={2}>
+                <Text
+                  style={[styles.catLabel, { fontSize: TOP_CAT_LABEL_FONT }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.78}
+                >
                   {c.label}
                 </Text>
               </Pressable>
@@ -807,8 +816,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(11, 18, 32, 0.06)',
   },
   searchInput: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500', paddingVertical: 0 },
-  catRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22, gap: 8 },
-  catTile: { flex: 1, alignItems: 'center', maxWidth: (SCREEN_W - 40 - 24) / 4 },
+  catRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22, gap: TOP_CAT_GAP },
+  catTile: {
+    flex: 1,
+    alignItems: 'center',
+    minWidth: 0,
+    maxWidth: (SCREEN_W - 40 - TOP_CAT_GAP * (TOP_CAT_COUNT - 1)) / TOP_CAT_COUNT,
+  },
   catIconWrap: {
     width: 56,
     height: 56,
@@ -817,7 +831,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  catLabel: { fontSize: 11, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  catLabel: { fontWeight: '700', color: colors.text, textAlign: 'center', width: '100%' },
   feedLoad: { paddingVertical: 28, alignItems: 'center' },
   feedErrBox: { marginBottom: 12 },
   feedErr: { color: '#b91c1c', fontWeight: '600', marginBottom: 10, lineHeight: 20 },

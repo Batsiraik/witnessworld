@@ -13,12 +13,6 @@ import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RegisterOtp'>;
 
-type VerifySubscription = {
-  plan?: string;
-  stripe_payment_method_status?: string;
-  trial_days?: number;
-};
-
 export function RegisterOtpScreen({ navigation, route }: Props) {
   const { email } = route.params;
   const [otp, setOtp] = useState('');
@@ -40,20 +34,9 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
       if (!token) throw new Error('No token returned');
       await setStoredToken(token);
 
-      const sub = data.subscription as VerifySubscription | undefined;
-      const plan = typeof sub?.plan === 'string' ? sub.plan : 'free';
-      const pm = String(sub?.stripe_payment_method_status ?? '');
-
-      const goDashboard = () => {
-        navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
-      };
-
-      if (plan !== 'free' && pm !== 'attached') {
-        navigation.replace('AddPaymentCard', { returnTo: 'register_complete', email });
-        return;
-      }
-
-      goDashboard();
+      // Signup: no plan or card steps — straight to dashboard (pending verification overlay if applicable).
+      // See mobile-app/docs/SIGNUP_MEMBERSHIP_REMOVED.md to restore paid-plan + AddPaymentCard after OTP.
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Verification failed';
       setError(msg);

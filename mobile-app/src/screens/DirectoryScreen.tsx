@@ -7,7 +7,6 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
+import { BrowseCategoryFilters } from '../components/BrowseCategoryFilters';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { HomeStackParamList } from '../navigation/types';
@@ -52,7 +52,8 @@ export function DirectoryScreen({ navigation }: Props) {
   const [categories, setCategories] = useState<Cat[]>([]);
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
-  const [selectedCat, setSelectedCat] = useState(0);
+  const [chipCat, setChipCat] = useState<Cat | null>(null);
+  const [filterCat, setFilterCat] = useState<Cat | null>(null);
   const [search, setSearch] = useState('');
 
   const [countryModal, setCountryModal] = useState(false);
@@ -138,8 +139,8 @@ export function DirectoryScreen({ navigation }: Props) {
         if (country.code === usCountryCode && usState) {
           qs.set('us_state', usState.name);
         }
-        if (selectedCat > 0) {
-          qs.set('category_id', String(selectedCat));
+        if (filterCat) {
+          qs.set('category_id', String(filterCat.id));
         }
         const qVal = searchRef.current.trim();
         if (qVal) {
@@ -156,13 +157,13 @@ export function DirectoryScreen({ navigation }: Props) {
         else setListLoading(false);
       }
     },
-    [country, usCountryCode, usState, selectedCat]
+    [country, usCountryCode, usState, filterCat]
   );
 
   useEffect(() => {
     if (!country) return;
     void fetchList('full');
-  }, [country, usState, selectedCat, fetchList]);
+  }, [country, usState, filterCat, fetchList]);
 
   if (locLoading) {
     return (
@@ -178,6 +179,13 @@ export function DirectoryScreen({ navigation }: Props) {
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <View style={styles.filters}>
+          <BrowseCategoryFilters
+            categories={categories}
+            chipCat={chipCat}
+            filterCat={filterCat}
+            onChipCatChange={setChipCat}
+            onFilterCatChange={setFilterCat}
+          />
           <Text style={styles.filterLabel}>Country *</Text>
           <Pressable onPress={() => setCountryModal(true)} style={styles.selectRow}>
             <Text style={country ? styles.selectVal : styles.selectPh}>{country ? country.name : 'Select country'}</Text>
@@ -231,37 +239,11 @@ export function DirectoryScreen({ navigation }: Props) {
               />
             }
             ListHeaderComponent={
-              <>
-                {categories.length > 0 ? (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.catRow}
-                    contentContainerStyle={{ paddingRight: 12 }}
-                  >
-                    <Pressable
-                      onPress={() => setSelectedCat(0)}
-                      style={[styles.catChip, selectedCat === 0 && styles.catChipOn]}
-                    >
-                      <Text style={[styles.catChipText, selectedCat === 0 && styles.catChipTextOn]}>All</Text>
-                    </Pressable>
-                    {categories.map((c) => (
-                      <Pressable
-                        key={c.id}
-                        onPress={() => setSelectedCat(c.id)}
-                        style={[styles.catChip, selectedCat === c.id && styles.catChipOn]}
-                      >
-                        <Text style={[styles.catChipText, selectedCat === c.id && styles.catChipTextOn]}>{c.name}</Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                ) : null}
-                {rows.length > 0 ? (
-                  <Text style={styles.resultCount}>
-                    {rows.length} {rows.length === 1 ? 'result' : 'results'}
-                  </Text>
-                ) : null}
-              </>
+              rows.length > 0 ? (
+                <Text style={styles.resultCount}>
+                  {rows.length} {rows.length === 1 ? 'result' : 'results'}
+                </Text>
+              ) : null
             }
             ListEmptyComponent={
               !listError && country ? (
@@ -438,19 +420,6 @@ const styles = StyleSheet.create({
   listFlex: { flex: 1 },
   listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
   gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
-  catRow: { marginBottom: 10 },
-  catChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    marginRight: 8,
-  },
-  catChipOn: surfaces.goldChip,
-  catChipText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
-  catChipTextOn: { color: colors.goldDark },
   resultCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 12 },
   emptyGrow: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 24 },
   empty: { textAlign: 'center', color: colors.textMuted, fontSize: 15 },

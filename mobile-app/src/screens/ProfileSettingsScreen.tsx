@@ -34,7 +34,58 @@ const BROWSE_LINKS: { route: ExploreKey; label: string; icon: keyof typeof Ionic
   { route: 'Stores', label: 'Online stores', icon: 'storefront-outline' },
   { route: 'Directory', label: 'Business directory', icon: 'business-outline' },
 ];
+
 import { colors } from '../theme/colors';
+
+type MenuRowProps = {
+  label: string;
+  subtitle?: string;
+  onPress?: () => void;
+  icon?: keyof typeof Ionicons.glyphMap;
+  chevron?: boolean;
+  danger?: boolean;
+  last?: boolean;
+  disabled?: boolean;
+};
+
+function MenuRow({
+  label,
+  subtitle,
+  onPress,
+  icon,
+  chevron = true,
+  danger,
+  last,
+  disabled,
+}: MenuRowProps) {
+  const showChevron = chevron && !!onPress && !disabled;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress || disabled}
+      style={({ pressed }) => [
+        menuRowStyles.row,
+        last && menuRowStyles.rowLast,
+        pressed && onPress && !disabled && menuRowStyles.pressed,
+      ]}
+    >
+      {icon ? (
+        <Ionicons name={icon} size={22} color={danger ? colors.danger : colors.primaryDark} />
+      ) : (
+        <View style={menuRowStyles.iconSpacer} />
+      )}
+      <View style={menuRowStyles.body}>
+        <Text style={[menuRowStyles.label, danger && menuRowStyles.labelDanger]}>{label}</Text>
+        {subtitle ? <Text style={menuRowStyles.sub}>{subtitle}</Text> : null}
+      </View>
+      {showChevron ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null}
+    </Pressable>
+  );
+}
+
+function MenuDivider() {
+  return <View style={menuRowStyles.divider} />;
+}
 
 type Props =
   | NativeStackScreenProps<HomeStackParamList, 'Profile'>
@@ -69,11 +120,36 @@ export function ProfileSettingsScreen(_props: Props) {
   const [delPhone, setDelPhone] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [billingBusy, setBillingBusy] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   const avatarUri =
     user?.avatar_url && String(user.avatar_url).trim() !== '' ? String(user.avatar_url) : null;
   const displayName =
     [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() || 'Member';
+  const accountEmail = user?.email?.trim() || '—';
+  const accountPhone = user?.phone?.trim() || '—';
+  const accountUsername = user?.username?.trim() || '';
+  const planLabel =
+    subscription?.plan_title?.trim() ||
+    (user?.membership_plan && user.membership_plan !== 'free' ? user.membership_plan : '') ||
+    'Member';
+
+  const showAccountEditBlocked = () => {
+    const body =
+      `To change your name, email, or phone on the WWC App, please contact the administrator${
+        supportEmail ? ` at ${supportEmail}` : ''
+      }. Or send a message to Support in App Chat. These details cannot be updated from the app.`;
+    const buttons: { text: string; style?: 'cancel' | 'destructive'; onPress?: () => void }[] = [
+      { text: 'OK', style: 'cancel' },
+    ];
+    if (supportAvailable) {
+      buttons.unshift({
+        text: 'Message support',
+        onPress: () => stackNavigation.navigate('SupportChat', {}),
+      });
+    }
+    Alert.alert('Profile details', body, buttons);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -242,204 +318,217 @@ export function ProfileSettingsScreen(_props: Props) {
             showsVerticalScrollIndicator={false}
           >
             <Text style={styles.pageTitle}>Profile & settings</Text>
-            <Text style={styles.pageSub}>{displayName}</Text>
 
-            <PrimaryButton label="Manage my listings & office" onPress={goOffice} style={styles.manageCta} />
-            <Text style={styles.manageCtaHint}>Listings, store, products, and directory — same place as My office below.</Text>
-
-            <GlassCard style={styles.card}>
-              <Text style={styles.sectionTitle}>Payment method</Text>
-              {(() => {
-                const plan = subscription?.plan ?? 'free';
-                const planTitle =
-                  subscription?.plan_title && String(subscription.plan_title).trim() !== ''
-                    ? String(subscription.plan_title).trim()
-                    : 'your plan';
-                const trialDays =
-                  typeof subscription?.trial_days === 'number' && subscription.trial_days > 0
-                    ? subscription.trial_days
-                    : 90;
-                const pm = subscription?.stripe_payment_method_status ?? 'none';
-                const card = subscription?.payment_method;
-                const last4 = typeof card?.last4 === 'string' ? card.last4.trim() : '';
-                const hasCard = pm === 'attached' || last4.length >= 4;
-
-                const billingHint = plan !== 'free'
-                  ? `You will not be charged today. We only keep your card on file so billing can start after your ${trialDays}-day free trial ends, if you stay on ${planTitle}. Add or update your card in Stripe (opens in your browser).`
-                  : 'Free plan — no membership charges. You can still add a card anytime before upgrading.';
-
-                return (
-                  <>
-              <Text style={styles.sectionHint}>{billingHint}</Text>
-              {(() => {
-                if (hasCard) {
-                  return (
-                    <View style={styles.paymentBlock}>
-                      <Text style={styles.paymentMain}>
-                        {last4 ? `${formatCardBrand(card?.brand)} ···· ${last4}` : 'Card on file'}
-                      </Text>
-                      <PrimaryButton
-                        label="Update payment method"
-                        onPress={openAddCardInApp}
-                        style={styles.paymentBtn}
+            <GlassCard style={[styles.card, styles.menuCard]}>
+              <View style={styles.profileHead}>
+                <Pressable
+                  onPress={() => void pickAvatar()}
+                  disabled={avatarBusy}
+                  style={({ pressed }) => [pressed && styles.pressed]}
+                >
+                  <View style={styles.avatarCompact}>
+                    {avatarUri ? (
+                      <RemoteImage
+                        url={avatarUri}
+                        style={styles.avatarImgCompact}
+                        contentFit="cover"
+                        accessibilityLabel="Your profile photo"
                       />
-                      <PrimaryButton
-                        label="Remove card"
-                        variant="outline"
-                        onPress={confirmRemovePaymentMethod}
-                        disabled={billingBusy}
-                        style={styles.paymentBtn}
-                      />
-                    </View>
-                  );
-                }
-                return (
-                  <View style={styles.paymentBlock}>
-                    <Text style={styles.paymentMain}>{plan === 'free' ? 'None' : 'Not on file'}</Text>
-                    <Text style={styles.paymentSub}>
-                      {plan === 'free'
-                        ? 'No card required on the free plan. Add one now if you plan to upgrade later.'
-                        : `No card on file yet. Add one to use ${planTitle} during your ${trialDays}-day trial — we will not charge a penny until the trial ends.`}
-                    </Text>
-                    <PrimaryButton label="Add card" onPress={openAddCardInApp} style={styles.paymentBtn} />
+                    ) : (
+                      <Ionicons name="person" size={28} color={colors.primaryDark} />
+                    )}
                   </View>
-                );
-              })()}
-                  </>
-                );
-              })()}
+                </Pressable>
+                <View style={styles.profileHeadText}>
+                  <Text style={styles.profileName}>{displayName}</Text>
+                  <Text style={styles.profileMeta}>{accountEmail}</Text>
+                  {accountUsername ? (
+                    <Text style={styles.profileMeta}>@{accountUsername}</Text>
+                  ) : null}
+                  <Text style={styles.profilePlan}>{planLabel}</Text>
+                </View>
+              </View>
+              <MenuDivider />
+              <MenuRow
+                icon="person-outline"
+                label="Full name"
+                subtitle={displayName}
+                onPress={showAccountEditBlocked}
+              />
+              <MenuRow
+                icon="mail-outline"
+                label="Email"
+                subtitle={accountEmail}
+                onPress={showAccountEditBlocked}
+              />
+              <MenuRow
+                icon="call-outline"
+                label="Phone"
+                subtitle={accountPhone}
+                onPress={showAccountEditBlocked}
+                last
+              />
             </GlassCard>
 
-            <GlassCard style={styles.card}>
-              <Text style={styles.sectionTitle}>Browse marketplace</Text>
-              <Text style={styles.sectionHint}>Jump to a marketplace from your profile.</Text>
+            <GlassCard style={[styles.card, styles.menuCard]}>
+              <MenuRow
+                icon="briefcase-outline"
+                label="Manage my listings & office"
+                subtitle="Listings, store, products, and directory"
+                onPress={goOffice}
+              />
+              <MenuDivider />
               {BROWSE_LINKS.map((item, i) => (
-                <Pressable
+                <MenuRow
                   key={item.route}
+                  icon={item.icon}
+                  label={item.label}
                   onPress={() => goExplore(item.route)}
-                  style={({ pressed }) => [
-                    styles.linkRow,
-                    i === BROWSE_LINKS.length - 1 && styles.linkRowLast,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Ionicons name={item.icon} size={22} color={colors.primaryDark} />
-                  <Text style={styles.linkRowLabel}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                </Pressable>
+                  last={i === BROWSE_LINKS.length - 1}
+                />
               ))}
             </GlassCard>
 
-            <GlassCard style={styles.card}>
-              <Text style={styles.sectionTitle}>Account</Text>
-              <Pressable
-                onPress={goOffice}
-                style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
-              >
-                <Ionicons name="briefcase-outline" size={22} color={colors.primaryDark} />
-                <Text style={styles.linkRowLabel}>My office</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              </Pressable>
-              <Pressable
-                onPress={confirmSignOut}
-                style={({ pressed }) => [styles.logoutRow, pressed && styles.pressed]}
-              >
-                <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-                <Text style={styles.logoutRowText}>Log out</Text>
-              </Pressable>
-            </GlassCard>
+            {(() => {
+              const plan = subscription?.plan ?? 'free';
+              const planTitle =
+                subscription?.plan_title && String(subscription.plan_title).trim() !== ''
+                  ? String(subscription.plan_title).trim()
+                  : 'your plan';
+              const trialDays =
+                typeof subscription?.trial_days === 'number' && subscription.trial_days > 0
+                  ? subscription.trial_days
+                  : 90;
+              const pm = subscription?.stripe_payment_method_status ?? 'none';
+              const card = subscription?.payment_method;
+              const last4 = typeof card?.last4 === 'string' ? card.last4.trim() : '';
+              const hasCard = pm === 'attached' || last4.length >= 4;
+              const cardLabel = hasCard
+                ? last4
+                  ? `${formatCardBrand(card?.brand)} ···· ${last4}`
+                  : 'Card on file'
+                : plan === 'free'
+                  ? 'None — free plan'
+                  : 'Not on file';
+              const billingHint = plan !== 'free'
+                ? `No charge today. Card kept for billing after your ${trialDays}-day trial on ${planTitle}. Stripe opens in your browser.`
+                : 'No membership charges on the free plan. Add a card anytime before upgrading.';
 
-            <GlassCard style={styles.card}>
-              <Text style={styles.sectionTitle}>Profile photo</Text>
-              <Text style={styles.sectionHint}>Shown on Home and on your profile.</Text>
-              <Pressable
-                onPress={() => void pickAvatar()}
-                disabled={avatarBusy}
-                style={({ pressed }) => [styles.avatarRow, pressed && styles.pressed]}
-              >
-                <View style={styles.avatarLarge}>
-                  {avatarUri ? (
-                    <RemoteImage
-                      url={avatarUri}
-                      style={styles.avatarImgLarge}
-                      contentFit="cover"
-                      accessibilityLabel="Your profile photo"
+              return (
+                <GlassCard style={[styles.card, styles.menuCard]}>
+                  <Text style={styles.menuSectionLabel}>Payment method</Text>
+                  <Text style={styles.menuSectionHint}>{billingHint}</Text>
+                  <MenuRow icon="card-outline" label="Card on file" subtitle={cardLabel} chevron={false} />
+                  <MenuDivider />
+                  <MenuRow
+                    icon="create-outline"
+                    label={hasCard ? 'Update payment method' : 'Add card'}
+                    onPress={openAddCardInApp}
+                    last={!hasCard}
+                  />
+                  {hasCard ? (
+                    <MenuRow
+                      icon="trash-outline"
+                      label="Remove card"
+                      onPress={confirmRemovePaymentMethod}
+                      disabled={billingBusy}
+                      danger
+                      last
                     />
-                  ) : (
-                    <Ionicons name="person" size={44} color={colors.primaryDark} />
-                  )}
-                </View>
-              </Pressable>
-              <Pressable
-                onPress={() => void pickAvatar()}
-                disabled={avatarBusy}
-                style={styles.changePhotoBtn}
-              >
-                <Text style={styles.changePhotoText}>
-                  {avatarBusy
+                  ) : null}
+                </GlassCard>
+              );
+            })()}
+
+            <GlassCard style={[styles.card, styles.menuCard]}>
+              <MenuRow
+                icon="camera-outline"
+                label="Profile photo"
+                subtitle={
+                  avatarBusy
                     ? avatarUploadPct != null && avatarUploadPct > 0 && avatarUploadPct < 100
                       ? `Uploading… ${avatarUploadPct}%`
                       : 'Preparing…'
-                    : 'Choose photo'}
+                    : 'Shown on Home and your public profile'
+                }
+                onPress={() => void pickAvatar()}
+                disabled={avatarBusy}
+              />
+              <MenuDivider />
+              <MenuRow
+                icon="lock-closed-outline"
+                label="Change password"
+                subtitle={passwordOpen ? 'Tap to hide' : 'Update your sign-in password'}
+                onPress={() => setPasswordOpen((v) => !v)}
+                chevron={false}
+                last={!passwordOpen}
+              />
+              {passwordOpen ? (
+                <View style={styles.passwordPanel}>
+                  <AppPasswordField
+                    label="Current password"
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                  />
+                  <AppPasswordField
+                    label="New password"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                  />
+                  <AppPasswordField
+                    label="Confirm new password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                  />
+                  <PrimaryButton
+                    label="Update password"
+                    onPress={() => void submitPassword()}
+                    loading={pwdBusy}
+                    style={styles.passwordBtn}
+                  />
+                </View>
+              ) : null}
+            </GlassCard>
+
+            <GlassCard style={[styles.card, styles.menuCard]}>
+              {supportAvailable && user ? (
+                <>
+                  <MenuRow
+                    icon="chatbubble-ellipses-outline"
+                    label="Message support"
+                    subtitle="Questions about your account or listings"
+                    onPress={() => stackNavigation.navigate('SupportChat', {})}
+                  />
+                  <MenuDivider />
+                </>
+              ) : null}
+              <MenuRow
+                icon="log-out-outline"
+                label="Log out"
+                onPress={confirmSignOut}
+                danger
+                last
+              />
+            </GlassCard>
+
+            <Pressable
+              onPress={openDeleteModal}
+              accessibilityRole="button"
+              accessibilityLabel="Delete my account"
+              android_ripple={{ color: 'rgba(220, 38, 38, 0.12)', borderless: false }}
+              style={({ pressed }) => [styles.deleteAccount, pressed && styles.pressed]}
+            >
+              <View style={styles.deleteIconWrap}>
+                <Ionicons name="warning-outline" size={22} color={colors.danger} />
+              </View>
+              <View style={styles.deleteBody}>
+                <Text style={styles.deleteTitle}>Delete my account</Text>
+                <Text style={styles.deleteSub}>
+                  Permanently removes your profile, listings, and messages
                 </Text>
-              </Pressable>
-            </GlassCard>
-
-            <GlassCard style={styles.card}>
-              <Text style={styles.sectionTitle}>Change password</Text>
-              <AppPasswordField
-                label="Current password"
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-              />
-              <AppPasswordField
-                label="New password"
-                value={newPassword}
-                onChangeText={setNewPassword}
-              />
-              <AppPasswordField
-                label="Confirm new password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
-              <PrimaryButton
-                label="Update password"
-                onPress={() => void submitPassword()}
-                loading={pwdBusy}
-              />
-            </GlassCard>
-
-            {supportAvailable && user ? (
-              <GlassCard style={styles.card}>
-                <Text style={styles.sectionTitle}>Customer support</Text>
-                <Text style={styles.sectionHint}>Questions about your account or listings? Chat with our team.</Text>
-                <PrimaryButton
-                  label="Message support"
-                  variant="outline"
-                  onPress={() => stackNavigation.navigate('SupportChat', {})}
-                />
-              </GlassCard>
-            ) : null}
-
-            <GlassCard style={[styles.card, styles.dangerCard]}>
-              <Text style={styles.dangerTitle}>Delete account</Text>
-              <Text style={styles.dangerBody}>
-                This permanently removes your profile, listings, and messages. This cannot be undone.
-              </Text>
-              <PrimaryButton
-                label="Delete my account…"
-                variant="outline"
-                onPress={openDeleteModal}
-              />
-            </GlassCard>
-
-            <View style={styles.nbBox}>
-              <Text style={styles.nbLabel}>NB</Text>
-              <Text style={styles.nbText}>
-                To change your name, email, or phone on the WWC App, Please contact the administrator
-                {supportEmail ? ` at ${supportEmail}` : ''}. Or send a message to the Support in App Chat. These details cannot be updated from the app.
-              </Text>
-            </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -508,93 +597,41 @@ export function ProfileSettingsScreen(_props: Props) {
   );
 }
 
+const menuRowStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
+  },
+  rowLast: { borderBottomWidth: 0 },
+  iconSpacer: { width: 22 },
+  body: { flex: 1, minWidth: 0 },
+  label: { fontSize: 16, fontWeight: '700', color: colors.text },
+  labelDanger: { color: colors.danger },
+  sub: { marginTop: 3, fontSize: 13, lineHeight: 18, color: colors.textMuted, fontWeight: '500' },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line, marginVertical: 2 },
+  pressed: { opacity: 0.88 },
+});
+
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 },
-  pageTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
-  pageSub: { fontSize: 14, color: colors.textMuted, marginTop: 4, marginBottom: 8, fontWeight: '500' },
-  manageCta: { marginTop: 8 },
-  manageCtaHint: {
-    marginTop: 10,
-    marginBottom: 4,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.textMuted,
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingHorizontal: 8,
-  },
-  nbBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.35)',
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  nbLabel: { fontSize: 12, fontWeight: '900', color: '#B45309', letterSpacing: 0.5 },
-  nbText: { flex: 1, fontSize: 13, lineHeight: 20, color: colors.text, fontWeight: '600' },
-  paymentBlock: { marginTop: 4 },
-  paymentMain: { fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 8 },
-  paymentSub: { marginTop: 8, fontSize: 13, lineHeight: 20, color: colors.textMuted, fontWeight: '600' },
-  paymentBtn: { marginTop: 12 },
-  linkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(11, 18, 32, 0.08)',
-  },
-  linkRowLast: { borderBottomWidth: 0 },
-  linkRowLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
-  logoutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(220, 38, 38, 0.08)',
-  },
-  logoutRowText: { fontSize: 16, fontWeight: '700', color: colors.danger },
-  accountRowPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(31, 170, 242, 0.1)',
-    marginBottom: 10,
-  },
-  accountRowPrimaryText: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.primaryDark },
-  accountRowSecondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(31, 170, 242, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(31, 170, 242, 0.35)',
-  },
-  accountRowSecondaryText: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.primaryDark },
-  card: { marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
-  sectionHint: { fontSize: 13, color: colors.textMuted, marginBottom: 14, fontWeight: '500' },
-  avatarRow: { alignSelf: 'center', marginBottom: 12 },
-  avatarLarge: {
-    width: 112,
-    height: 112,
-    borderRadius: 36,
+  pageTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 12 },
+  menuCard: { paddingVertical: 8, paddingHorizontal: 16, overflow: 'hidden' },
+  profileHead: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 4 },
+  profileHeadText: { flex: 1, minWidth: 0 },
+  profileName: { fontSize: 18, fontWeight: '800', color: colors.text },
+  profileMeta: { marginTop: 3, fontSize: 14, color: colors.textMuted, fontWeight: '500' },
+  profilePlan: { marginTop: 6, fontSize: 13, fontWeight: '700', color: colors.primaryDark },
+  avatarCompact: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
@@ -602,15 +639,63 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  avatarImgLarge: { width: 112, height: 112, borderRadius: 36 },
-  changePhotoBtn: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 16 },
-  changePhotoText: { fontSize: 15, fontWeight: '800', color: colors.primaryDark },
-  dangerCard: {
-    borderColor: 'rgba(220, 38, 38, 0.35)',
-    backgroundColor: 'rgba(254, 226, 226, 0.35)',
+  avatarImgCompact: { width: 56, height: 56, borderRadius: 28 },
+  menuSectionLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 4,
   },
-  dangerTitle: { fontSize: 16, fontWeight: '800', color: colors.danger },
-  dangerBody: { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20, fontWeight: '500' },
+  menuSectionHint: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
+    fontWeight: '500',
+    marginBottom: 6,
+    paddingHorizontal: 4,
+  },
+  passwordPanel: { paddingTop: 8, paddingBottom: 12, paddingHorizontal: 4 },
+  passwordBtn: { marginTop: 8 },
+  card: { marginBottom: 14 },
+  deleteAccount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(220, 38, 38, 0.28)',
+    backgroundColor: colors.card,
+    overflow: 'hidden',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  deleteIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBody: { flex: 1, minWidth: 0 },
+  deleteTitle: { fontSize: 16, fontWeight: '800', color: colors.danger },
+  deleteSub: {
+    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
   pressed: { opacity: 0.88 },
   modalRoot: { flex: 1 },
   modalDim: { backgroundColor: 'rgba(11, 18, 32, 0.55)' },
