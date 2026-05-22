@@ -121,6 +121,40 @@ export function DashboardScreen({ navigation }: Props) {
     return () => sub.remove();
   }, [lockUnverified, refreshProfile]);
 
+  /** While pending verification and app is foregrounded, poll me.php every 30s for admin approval. */
+  useEffect(() => {
+    if (loading || status !== 'pending_verification') return undefined;
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      if (interval) return;
+      interval = setInterval(() => {
+        void refreshProfile();
+      }, 30_000);
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const onAppState = (next: AppStateStatus) => {
+      if (next === 'active') startPolling();
+      else stopPolling();
+    };
+
+    if (AppState.currentState === 'active') startPolling();
+    const sub = AppState.addEventListener('change', onAppState);
+
+    return () => {
+      stopPolling();
+      sub.remove();
+    };
+  }, [loading, status, refreshProfile]);
+
   if (sessionLoadError && !loading) {
     return (
       <GradientBackground>
