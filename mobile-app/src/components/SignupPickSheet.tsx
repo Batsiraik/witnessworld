@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { authForm } from '../theme/authForm';
 import { colors } from '../theme/colors';
 import { radii } from '../theme/designSystem';
 
@@ -113,15 +114,15 @@ const styles = StyleSheet.create({
   sheet: {
     maxHeight: '72%',
     minHeight: 220,
-    borderRadius: radii.lg,
+    borderRadius: 20,
     backgroundColor: colors.white,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.line,
-    shadowColor: colors.text,
+    shadowColor: '#0B1220',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
     elevation: 12,
   },
   handle: {

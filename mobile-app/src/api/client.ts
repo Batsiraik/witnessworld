@@ -149,6 +149,17 @@ export async function apiGet(path: string, withAuth = true): Promise<Json> {
   return data;
 }
 
+export async function submitRegistrationAccountType(
+  accountType: 'individual' | 'business'
+): Promise<{ registration_account_type: string }> {
+  const data = await apiPost('registration-account-type.php', { account_type: accountType }, true);
+  const t = data.registration_account_type as string | undefined;
+  if (!t) {
+    throw new Error('Could not save your answer');
+  }
+  return { registration_account_type: t };
+}
+
 export async function apiLogout(): Promise<void> {
   try {
     await apiPost('logout.php', {}, true);

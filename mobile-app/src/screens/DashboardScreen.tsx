@@ -3,7 +3,8 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, type AppStateStatus, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet, getStoredToken } from '../api/client';
+import { apiGet, getStoredToken, submitRegistrationAccountType } from '../api/client';
+import type { RegistrationAccountType } from '../components/VerificationLockOverlay';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { GradientBackground } from '../components/GradientBackground';
 import { VerificationLockOverlay } from '../components/VerificationLockOverlay';
@@ -60,6 +61,16 @@ export function DashboardScreen({ navigation }: Props) {
       setLoading(false);
     }
   }, [navigation]);
+
+  const handleSubmitAccountType = useCallback(
+    async (type: RegistrationAccountType) => {
+      const { registration_account_type } = await submitRegistrationAccountType(type);
+      setUser((prev) =>
+        prev ? { ...prev, registration_account_type: registration_account_type as RegistrationAccountType } : prev
+      );
+    },
+    []
+  );
 
   const refreshProfile = useCallback(async (): Promise<SubscriptionInfo | null> => {
     try {
@@ -146,9 +157,10 @@ export function DashboardScreen({ navigation }: Props) {
                 visible={lockUnverified && isDashboardFocused}
                 variant={overlayVariant}
                 supportEmail={supportEmail}
+                registrationAccountType={user.registration_account_type}
+                onSubmitAccountType={handleSubmitAccountType}
                 supportAvailable={supportAvailable}
                 onMessageSupport={() => navigation.navigate('SupportChat', {})}
-                onRecheckStatus={refreshProfile}
               />
             </View>
           </ShoppingCartProvider>

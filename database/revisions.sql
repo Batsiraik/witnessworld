@@ -362,3 +362,9 @@ ALTER TABLE users
 
 ALTER TABLE users
   MODIFY baptism_date DATE NULL;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-22: Signup intent poll (individual vs business) for marketing segment
+-- ---------------------------------------------------------------------------
+ALTER TABLE users
+  ADD COLUMN registration_account_type ENUM('individual','business') NULL AFTER registration_country_name;

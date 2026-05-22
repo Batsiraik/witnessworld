@@ -10,6 +10,7 @@ export type DashboardUser = {
   phone?: string;
   username?: string;
   status?: string;
+  registration_account_type?: 'individual' | 'business' | null;
   avatar_url?: string | null;
   membership_plan?: string;
   subscription_status?: string;

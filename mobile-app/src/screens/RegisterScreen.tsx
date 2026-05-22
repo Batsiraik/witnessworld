@@ -18,11 +18,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppPasswordField } from '../components/AppPasswordField';
 import { AppTextField } from '../components/AppTextField';
 import { DialCodePicker } from '../components/DialCodePicker';
-import { GlassCard } from '../components/GlassCard';
+import { AppSelectField } from '../components/AppSelectField';
+import { AuthFormCard } from '../components/AuthFormCard';
+import { AuthFormIntro } from '../components/AuthFormIntro';
+import { AuthFormSection } from '../components/AuthFormSection';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SignupPickSheet } from '../components/SignupPickSheet';
+import { authFormStyles } from '../theme/authForm';
 import { apiGet, apiPost, setStoredToken } from '../api/client';
 import { DEFAULT_DIAL, type DialCountry } from '../constants/dialCodes';
 import {
@@ -262,7 +266,7 @@ export function RegisterScreen({ navigation }: Props) {
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScreenHeader
-          title="Create account"
+          title=""
           onBack={() => {
             if (navigation.canGoBack()) navigation.goBack();
             else navigation.navigate('Welcome');
@@ -274,47 +278,58 @@ export function RegisterScreen({ navigation }: Props) {
           contentContainerStyle={[styles.scroll, { paddingBottom: 32 + keyboardHeight }]}
           showsVerticalScrollIndicator={false}
         >
-            <GlassCard>
-              <AppTextField
-                ref={(el) => {
-                  fieldRefs.current.firstName = el;
-                }}
-                label="First name"
-                value={firstName}
-                onChangeText={setFirstName}
-                autoCapitalize="words"
-                error={errors.firstName}
-              />
-              <AppTextField
-                ref={(el) => {
-                  fieldRefs.current.lastName = el;
-                }}
-                label="Last name"
-                value={lastName}
-                onChangeText={setLastName}
-                autoCapitalize="words"
-                error={errors.lastName}
-              />
+          <AuthFormIntro
+            title="Create your account"
+            subtitle="Join Witness World Connect. After signup you will verify your email, then access the app while your profile is reviewed."
+          />
+          <AuthFormCard>
+            <AuthFormSection title="Account">
+              <View style={authFormStyles.row2}>
+                <View style={authFormStyles.row2Cell}>
+                  <AppTextField
+                    ref={(el) => {
+                      fieldRefs.current.firstName = el;
+                    }}
+                    label="First name"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    autoCapitalize="words"
+                    leftIcon="person-outline"
+                    error={errors.firstName}
+                  />
+                </View>
+                <View style={authFormStyles.row2Cell}>
+                  <AppTextField
+                    ref={(el) => {
+                      fieldRefs.current.lastName = el;
+                    }}
+                    label="Last name"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    autoCapitalize="words"
+                    error={errors.lastName}
+                  />
+                </View>
+              </View>
 
-              {/* TODO (backend): duplicate email check — see submit() comment block */}
               <AppTextField
                 ref={(el) => {
                   fieldRefs.current.email = el;
                 }}
-                label="Email"
+                label="Email address"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                leftIcon="mail-outline"
+                placeholder="you@example.com"
                 error={errors.email}
               />
 
-              <Text style={styles.fieldLabel}>Phone</Text>
+              <Text style={styles.phoneLabel}>MOBILE NUMBER</Text>
               <View style={styles.phoneRow}>
-                <View style={styles.dialWrap}>
-                  <DialCodePicker value={dialCountry} onChange={setDialCountry} />
-                </View>
+                <DialCodePicker value={dialCountry} onChange={setDialCountry} />
                 <AppTextField
                   ref={(el) => {
                     fieldRefs.current.phone = el;
@@ -329,7 +344,6 @@ export function RegisterScreen({ navigation }: Props) {
                 />
               </View>
 
-              {/* TODO (backend): unique username, immutable after signup — see submit() comment block */}
               <AppTextField
                 ref={(el) => {
                   fieldRefs.current.username = el;
@@ -339,54 +353,53 @@ export function RegisterScreen({ navigation }: Props) {
                 onChangeText={(t) => setUsername(t.toLowerCase().replace(/\s/g, ''))}
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholder="Unique — cannot be changed later"
+                leftIcon="at-outline"
+                hint="Permanent — cannot be changed later"
+                placeholder="yourname"
                 error={errors.username}
               />
+            </AuthFormSection>
 
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Personal information</Text>
-                <Text style={styles.sectionHint}>
-                  Minimum age to sign up is {SIGNUP_MIN_AGE}.
-                </Text>
-              </View>
-
+            <AuthFormSection
+              title="Congregation"
+              hint={`You must be at least ${SIGNUP_MIN_AGE} years old to register.`}
+            >
               <AppTextField
                 ref={(el) => {
                   fieldRefs.current.dateOfBirth = el;
                 }}
-                label="Date of birth (YYYY-MM-DD)"
+                label="Date of birth"
                 value={dateOfBirth}
                 onChangeText={(t) => setDateOfBirth(formatIsoDateAsUserTypes(t))}
-                placeholder="2010-01-15"
+                placeholder="YYYY-MM-DD"
                 keyboardType="numbers-and-punctuation"
+                leftIcon="calendar-outline"
+                hint="Format: 2010-01-15"
                 error={errors.dateOfBirth}
               />
 
-              <Text style={styles.fieldLabel}>I am a brother / sister</Text>
-              <Pressable
+              <AppSelectField
+                label="I am a brother / sister"
+                value={memberRole}
+                placeholder="Select your role"
                 onPress={() => setRoleSheetOpen(true)}
-                style={[styles.selectRow, errors.memberType && styles.selectRowError]}
-              >
-                <Text style={memberRole ? styles.selectVal : styles.selectPh}>
-                  {memberRole || 'Select'}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-              </Pressable>
-              {errors.memberType ? <Text style={styles.fieldError}>{errors.memberType}</Text> : null}
+                error={errors.memberType}
+                icon="people-outline"
+              />
 
               <AppTextField
                 ref={(el) => {
                   fieldRefs.current.baptismDate = el;
                 }}
-                label={
-                  isUnbaptizedPublisher(memberRole)
-                    ? 'Baptism date (optional, YYYY-MM-DD)'
-                    : 'Baptism date (YYYY-MM-DD)'
-                }
+                label="Baptism date"
                 value={baptismDate}
                 onChangeText={(t) => setBaptismDate(formatIsoDateAsUserTypes(t))}
-                placeholder="2010-06-01"
+                placeholder="YYYY-MM-DD"
                 keyboardType="numbers-and-punctuation"
+                leftIcon="water-outline"
+                hint={
+                  isUnbaptizedPublisher(memberRole) ? 'Optional for unbaptized publishers' : undefined
+                }
                 error={errors.baptismDate}
               />
 
@@ -398,20 +411,19 @@ export function RegisterScreen({ navigation }: Props) {
                 value={congregation}
                 onChangeText={setCongregation}
                 autoCapitalize="words"
+                leftIcon="home-outline"
+                placeholder="Your congregation name"
                 error={errors.congregation}
               />
 
-              <Text style={styles.fieldLabel}>Country</Text>
-              <Pressable
+              <AppSelectField
+                label="Country"
+                value={signupCountry ? signupCountry.name : ''}
+                placeholder="Select country"
                 onPress={() => setCountrySheetOpen(true)}
-                style={[styles.selectRow, errors.country && styles.selectRowError]}
-              >
-                <Text style={signupCountry ? styles.selectVal : styles.selectPh}>
-                  {signupCountry ? `${signupCountry.name} (${signupCountry.code})` : 'Select country'}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-              </Pressable>
-              {errors.country ? <Text style={styles.fieldError}>{errors.country}</Text> : null}
+                error={errors.country}
+                icon="earth-outline"
+              />
 
               <SignupPickSheet
                 visible={roleSheetOpen}
@@ -438,7 +450,9 @@ export function RegisterScreen({ navigation }: Props) {
                 searchable
                 searchPlaceholder="Search countries"
               />
+            </AuthFormSection>
 
+            <AuthFormSection title="Security">
               <AppPasswordField
                 ref={(el) => {
                   fieldRefs.current.password = el;
@@ -446,6 +460,8 @@ export function RegisterScreen({ navigation }: Props) {
                 label="Password"
                 value={password}
                 onChangeText={setPassword}
+                hint="At least 8 characters"
+                placeholder="Create a password"
                 error={errors.password}
                 onFocus={scrollPasswordIntoView}
               />
@@ -456,23 +472,24 @@ export function RegisterScreen({ navigation }: Props) {
                 label="Confirm password"
                 value={confirm}
                 onChangeText={setConfirm}
+                placeholder="Re-enter password"
                 error={errors.confirm}
                 onFocus={scrollPasswordIntoView}
               />
 
-              <View style={styles.agreeRow}>
+              <View style={styles.legalBox}>
                 <Pressable
                   onPress={() => setAgreed((a) => !a)}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: agreed }}
-                  hitSlop={6}
+                  hitSlop={8}
                 >
                   <View style={[styles.checkbox, agreed && styles.checkboxOn]}>
-                    {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
+                    {agreed ? <Ionicons name="checkmark" size={14} color={colors.white} /> : null}
                   </View>
                 </Pressable>
                 <Text style={styles.agreeText}>
-                  I understand and agree to the{' '}
+                  I agree to the{' '}
                   <Text style={styles.link} onPress={() => navigation.navigate('PrivacyPolicy')}>
                     Privacy Policy
                   </Text>
@@ -484,9 +501,16 @@ export function RegisterScreen({ navigation }: Props) {
                 </Text>
               </View>
               {errors.agree ? <Text style={styles.agreeError}>{errors.agree}</Text> : null}
+            </AuthFormSection>
 
             <PrimaryButton label="Create account" onPress={submit} loading={loading} />
-          </GlassCard>
+          </AuthFormCard>
+          <Text style={authFormStyles.footerNote}>
+            Already have an account?{' '}
+            <Text style={styles.footerLink} onPress={() => navigation.navigate('Login')}>
+              Log in
+            </Text>
+          </Text>
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
@@ -497,61 +521,45 @@ const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: 20 },
   scroll: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: 16,
+    paddingTop: 4,
     paddingBottom: 32,
   },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+  phoneLabel: {
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.textMuted,
-    marginBottom: 8,
-    marginTop: -4,
+    letterSpacing: 0.4,
+    marginBottom: 6,
   },
   phoneRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 16 },
-  dialWrap: { flexShrink: 0 },
-  section: { marginTop: 2, marginBottom: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
-  sectionHint: { fontSize: 13, lineHeight: 19, color: colors.textMuted, fontWeight: '500' },
-  selectRow: {
+  legalBox: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.line,
+    gap: 12,
+    alignItems: 'flex-start',
+    marginTop: 4,
+    padding: 14,
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    marginBottom: 16,
+    backgroundColor: 'rgba(31, 170, 242, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(31, 170, 242, 0.12)',
   },
-  selectRowError: { borderColor: colors.danger },
-  selectVal: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
-  selectPh: { flex: 1, fontSize: 15, color: colors.textMuted, fontWeight: '500' },
-  fieldError: {
-    color: colors.danger,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: -12,
-    marginBottom: 14,
-  },
-  agreeRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8, marginBottom: 20 },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: 'rgba(31, 170, 242, 0.45)',
+    borderColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    marginTop: 1,
+    backgroundColor: colors.white,
   },
   checkboxOn: {
     backgroundColor: colors.primary,
     borderColor: colors.primaryDark,
   },
-  checkmark: { color: colors.white, fontSize: 13, fontWeight: '800' },
-  agreeText: { flex: 1, fontSize: 13, lineHeight: 20, color: colors.textMuted, fontWeight: '500' },
-  link: { color: colors.primaryDark, fontWeight: '700', textDecorationLine: 'underline' },
-  agreeError: { color: colors.danger, fontSize: 12, fontWeight: '600', marginBottom: 12, marginTop: -12 },
+  agreeText: { flex: 1, fontSize: 13, lineHeight: 20, color: colors.text, fontWeight: '500' },
+  link: { color: colors.primaryDark, fontWeight: '800' },
+  agreeError: { color: colors.danger, fontSize: 12, fontWeight: '600', marginBottom: 12, marginTop: 8 },
+  footerLink: { color: colors.primaryDark, fontWeight: '800' },
 });

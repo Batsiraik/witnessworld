@@ -15,6 +15,7 @@ if ($base === '' || $base === '.') {
 }
 $home = $base === '' ? 'index.php' : $base . '/index.php';
 $users = $base === '' ? 'users.php' : $base . '/users.php';
+$businesses = $base === '' ? 'businesses.php' : $base . '/businesses.php';
 $settings = $base === '' ? 'settings.php' : $base . '/settings.php';
 $listings = $base === '' ? 'listings.php' : $base . '/listings.php';
 $commerceRequests = $base === '' ? 'commerce_requests.php' : $base . '/commerce_requests.php';
@@ -57,6 +58,13 @@ $isSuper = !empty($cu['is_super']);
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
       </span>
       App users
+    </a>
+    <a href="<?= htmlspecialchars($businesses, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('businesses'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      </span>
+      Businesses
     </a>
     <a href="<?= htmlspecialchars($customerSupport, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('support'), ENT_QUOTES, 'UTF-8') ?>">

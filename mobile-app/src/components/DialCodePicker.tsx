@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { DialCountry } from '../constants/dialCodes';
 import { DIAL_COUNTRIES } from '../constants/dialCodes';
+import { authForm } from '../theme/authForm';
 import { colors } from '../theme/colors';
 
 type Props = {
@@ -91,14 +92,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    minHeight: authForm.fieldMinHeight,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(31, 170, 242, 0.25)',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    minWidth: 136,
-    maxWidth: 168,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.white,
+    minWidth: 128,
+    maxWidth: 160,
     flexShrink: 0,
   },
   flag: { fontSize: 17, flexShrink: 0 },

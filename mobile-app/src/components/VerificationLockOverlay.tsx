@@ -5,6 +5,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -13,30 +14,58 @@ import {
 import { PrimaryButton } from './PrimaryButton';
 import { colors } from '../theme/colors';
 
+export type RegistrationAccountType = 'individual' | 'business';
+
 type Props = {
   visible: boolean;
   variant: 'pending' | 'declined';
   supportEmail: string;
-  /** When set with onMessageSupport, shows in-app Customer Support entry above the email line. */
+  registrationAccountType?: RegistrationAccountType | null;
+  onSubmitAccountType?: (type: RegistrationAccountType) => Promise<void>;
   supportAvailable?: boolean;
   onMessageSupport?: () => void;
-  /** Re-fetches account status from the server (e.g. after admin approval). */
-  onRecheckStatus?: () => Promise<unknown>;
 };
+
+const POLL_OPTIONS: { value: RegistrationAccountType; label: string; hint: string }[] = [
+  {
+    value: 'individual',
+    label: 'Individual',
+    hint: 'Browse listings, shop the marketplace, find housing/services, and connect',
+  },
+  {
+    value: 'business',
+    label: 'Business',
+    hint: 'Promote your business, create a storefront, list professional services, and network',
+  },
+];
 
 export function VerificationLockOverlay({
   visible,
   variant,
   supportEmail,
+  registrationAccountType,
+  onSubmitAccountType,
   supportAvailable,
   onMessageSupport,
-  onRecheckStatus,
 }: Props) {
-  const [recheckBusy, setRecheckBusy] = useState(false);
+  const [selected, setSelected] = useState<RegistrationAccountType | null>(null);
+  const [submitBusy, setSubmitBusy] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const pollDone = Boolean(registrationAccountType);
+  const showPoll = variant === 'pending' && !pollDone && onSubmitAccountType;
+
   useEffect(() => {
     if (!visible) return undefined;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      setSelected(null);
+      setSubmitError('');
+    }
   }, [visible]);
 
   const title = variant === 'declined' ? 'Account not approved' : 'Waiting for verification';
@@ -48,13 +77,16 @@ export function VerificationLockOverlay({
   const emailStyle: TextStyle =
     variant === 'declined' ? styles.emailDeclined : styles.emailPending;
 
-  const recheck = async () => {
-    if (!onRecheckStatus || recheckBusy) return;
-    setRecheckBusy(true);
+  const submitPoll = async () => {
+    if (!selected || !onSubmitAccountType || submitBusy) return;
+    setSubmitBusy(true);
+    setSubmitError('');
     try {
-      await onRecheckStatus();
+      await onSubmitAccountType(selected);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'Could not save. Please try again.');
     } finally {
-      setRecheckBusy(false);
+      setSubmitBusy(false);
     }
   };
 
@@ -76,27 +108,74 @@ export function VerificationLockOverlay({
         )}
         <View style={styles.centerWrap} pointerEvents="box-none">
           <View style={styles.card}>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.body}>{body}</Text>
-            <Text style={emailStyle}>{supportEmail}</Text>
-            {supportAvailable && onMessageSupport ? (
-              <Pressable
-                onPress={onMessageSupport}
-                style={({ pressed }) => [styles.supportChatBtn, pressed && styles.supportChatBtnPressed]}
-                accessibilityLabel="Open Customer Support chat"
-              >
-                <Text style={styles.supportChatBtnText}>Message Customer Support</Text>
-              </Pressable>
-            ) : null}
-            <Text style={styles.hint}>This message will clear once an admin has verified your account.</Text>
-            {onRecheckStatus ? (
-              <PrimaryButton
-                label="Check status"
-                loading={recheckBusy}
-                onPress={() => void recheck()}
-                style={styles.recheckBtn}
-              />
-            ) : null}
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text style={styles.title}>{title}</Text>
+
+              {showPoll ? (
+                <>
+                  <Text style={styles.pollIntro}>
+                    To help us review your account, please answer one quick question.
+                  </Text>
+                  <Text style={styles.pollQuestion}>
+                    Are you registering as an Individual or a Business?{' '}
+                    <Text style={styles.required}>*</Text>
+                  </Text>
+                  {POLL_OPTIONS.map((opt) => {
+                    const on = selected === opt.value;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        onPress={() => setSelected(opt.value)}
+                        style={({ pressed }) => [
+                          styles.optionRow,
+                          on && styles.optionRowOn,
+                          pressed && styles.optionRowPressed,
+                        ]}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: on }}
+                      >
+                        <View style={[styles.radioOuter, on && styles.radioOuterOn]}>
+                          {on ? <View style={styles.radioInner} /> : null}
+                        </View>
+                        <View style={styles.optionTextWrap}>
+                          <Text style={styles.optionLabel}>{opt.label}</Text>
+                          <Text style={styles.optionHint}>{opt.hint}</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                  {submitError ? <Text style={styles.pollError}>{submitError}</Text> : null}
+                  <PrimaryButton
+                    label="Continue"
+                    loading={submitBusy}
+                    disabled={!selected}
+                    onPress={() => void submitPoll()}
+                    style={styles.pollSubmit}
+                  />
+                </>
+              ) : (
+                <>
+                  <Text style={styles.body}>{body}</Text>
+                  <Text style={emailStyle}>{supportEmail}</Text>
+                  {supportAvailable && onMessageSupport ? (
+                    <Pressable
+                      onPress={onMessageSupport}
+                      style={({ pressed }) => [styles.supportChatBtn, pressed && styles.supportChatBtnPressed]}
+                      accessibilityLabel="Open Customer Support chat"
+                    >
+                      <Text style={styles.supportChatBtnText}>Message Customer Support</Text>
+                    </Pressable>
+                  ) : null}
+                  <Text style={styles.hint}>
+                    This message will clear once an admin has verified your account.
+                  </Text>
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </View>
@@ -114,7 +193,8 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 22,
-    padding: 24,
+    maxHeight: '88%',
+    padding: 22,
     backgroundColor: 'rgba(255,255,255,0.97)',
     borderWidth: 1,
     borderColor: 'rgba(31, 170, 242, 0.35)',
@@ -131,6 +211,71 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
   },
+  pollIntro: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
+    textAlign: 'center',
+    fontWeight: '500',
+    marginBottom: 14,
+  },
+  pollQuestion: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  required: { color: colors.danger },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    marginBottom: 8,
+  },
+  optionRowOn: {
+    borderColor: 'rgba(31, 170, 242, 0.45)',
+    backgroundColor: 'rgba(31, 170, 242, 0.06)',
+  },
+  optionRowPressed: { opacity: 0.92 },
+  radioOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  radioOuterOn: { borderColor: colors.primary },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  optionTextWrap: { flex: 1 },
+  optionLabel: { fontSize: 12, fontWeight: '700', color: colors.text },
+  optionHint: {
+    marginTop: 3,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  pollError: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.danger,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  pollSubmit: { marginTop: 14 },
   body: {
     fontSize: 15,
     lineHeight: 22,
@@ -162,7 +307,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  recheckBtn: { marginTop: 20 },
   supportChatBtn: {
     marginTop: 16,
     alignSelf: 'center',

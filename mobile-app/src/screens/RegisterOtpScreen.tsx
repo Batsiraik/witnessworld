@@ -1,16 +1,24 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiPost, setStoredToken } from '../api/client';
 import { AppTextField } from '../components/AppTextField';
-import { GlassCard } from '../components/GlassCard';
+import { AuthFormCard } from '../components/AuthFormCard';
+import { AuthFormIntro } from '../components/AuthFormIntro';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
 import type { RootStackParamList } from '../navigation/types';
-import { colors } from '../theme/colors';
-
+import { authFormStyles } from '../theme/authForm';
 type Props = NativeStackScreenProps<RootStackParamList, 'RegisterOtp'>;
 
 export function RegisterOtpScreen({ navigation, route }: Props) {
@@ -34,8 +42,6 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
       if (!token) throw new Error('No token returned');
       await setStoredToken(token);
 
-      // Signup: no plan or card steps — straight to dashboard (pending verification overlay if applicable).
-      // See mobile-app/docs/SIGNUP_MEMBERSHIP_REMOVED.md to restore paid-plan + AddPaymentCard after OTP.
       navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Verification failed';
@@ -49,7 +55,7 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <ScreenHeader title="Verify email" onBack={() => navigation.goBack()} />
+        <ScreenHeader title="" onBack={() => navigation.goBack()} />
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -59,23 +65,30 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
             contentContainerStyle={styles.scroll}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.centerBlock}>
-              <Text style={styles.lead}>
-                We sent a code to <Text style={styles.email}>{email}</Text>. Enter it to continue.
-              </Text>
-              <GlassCard>
-                <AppTextField
-                  label="Verification code"
-                  value={otp}
-                  onChangeText={(t) => setOtp(t.replace(/\D/g, '').slice(0, 6))}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  placeholder="••••••"
-                  error={error}
-                />
-                <PrimaryButton label="Continue" onPress={submit} loading={loading} />
-              </GlassCard>
-            </View>
+            <AuthFormIntro
+              title="Verify your email"
+              subtitle={
+                'We sent a 6-digit code to ' + email + '. Enter it below to finish creating your account.'
+              }
+              showLogo={false}
+            />
+            <AuthFormCard>
+              <AppTextField
+                label="Verification code"
+                value={otp}
+                onChangeText={(t) => setOtp(t.replace(/\D/g, '').slice(0, 6))}
+                keyboardType="number-pad"
+                maxLength={6}
+                placeholder="000000"
+                leftIcon="keypad-outline"
+                inputStyle={styles.otpInput}
+                error={error}
+              />
+              <PrimaryButton label="Continue" onPress={submit} loading={loading} />
+            </AuthFormCard>
+            <Text style={authFormStyles.footerNote}>
+              Did not get the email? Check spam, or go back and confirm your address is correct.
+            </Text>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -88,17 +101,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: 16,
+    paddingTop: 4,
     paddingBottom: 32,
   },
-  centerBlock: { width: '100%' },
-  lead: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.textMuted,
-    marginBottom: 16,
-    fontWeight: '500',
+  otpInput: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: 10,
+    textAlign: 'center',
   },
-  email: { color: colors.text, fontWeight: '700' },
 });

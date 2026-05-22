@@ -72,6 +72,7 @@ CREATE TABLE users (
   congregation VARCHAR(180) NOT NULL,
   registration_country_code CHAR(2) NULL,
   registration_country_name VARCHAR(120) NULL,
+  registration_account_type ENUM('individual','business') NULL,
   avatar_url VARCHAR(512) NULL,
   membership_plan ENUM('free','plus','starter','growth','elite') NOT NULL DEFAULT 'free',
   subscription_status ENUM('free','trialing','active','grace','past_due','canceled') NOT NULL DEFAULT 'free',
