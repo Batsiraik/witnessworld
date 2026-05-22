@@ -6,6 +6,12 @@
 /** @var bool $showOpenFullPageLink show link to user.php (modal context only) */
 $formReturn = $formReturn ?? '';
 $showOpenFullPageLink = $showOpenFullPageLink ?? false;
+require_once __DIR__ . '/../includes/registration_poll_labels.php';
+$pollAcct = (string) ($user['registration_account_type'] ?? '');
+$pollPurpose = (string) ($user['registration_primary_purpose'] ?? '');
+$pollReferral = (string) ($user['registration_referral_source'] ?? '');
+$pollReferralOther = (string) ($user['registration_referral_other'] ?? '');
+$hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollReferral !== '';
 ?>
 <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-panel">
   <h3 class="text-sm font-semibold text-slate-900">Profile</h3>
@@ -16,13 +22,30 @@ $showOpenFullPageLink = $showOpenFullPageLink ?? false;
     <div><dt class="text-slate-500">Baptism date</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['baptism_date'] ?? 'Not provided'), ENT_QUOTES, 'UTF-8') ?></dd></div>
     <div><dt class="text-slate-500">Congregation</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['congregation'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
     <div><dt class="text-slate-500">Country</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) ($user['registration_country_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></dd></div>
-    <div><dt class="text-slate-500">Signup as</dt><dd class="font-medium text-slate-900"><?php
-      $acct = (string) ($user['registration_account_type'] ?? '');
-      echo $acct === 'business' ? 'Business' : ($acct === 'individual' ? 'Individual' : '—');
-    ?></dd></div>
     <div><dt class="text-slate-500">Joined</dt><dd class="font-medium text-slate-900"><?= htmlspecialchars((string) $user['created_at'], ENT_QUOTES, 'UTF-8') ?></dd></div>
   </dl>
 </div>
+
+<?php if ($hasPollAnswers): ?>
+<div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-panel">
+  <h3 class="text-sm font-semibold text-slate-900">Verification poll</h3>
+  <p class="mt-1 text-xs text-slate-500">Answers submitted while waiting for account approval.</p>
+  <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <dt class="text-slate-500">1. Individual or Business</dt>
+      <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_account_type_label($pollAcct), ENT_QUOTES, 'UTF-8') ?></dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-slate-500">2. Primary purpose</dt>
+      <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_primary_purpose_label($pollPurpose), ENT_QUOTES, 'UTF-8') ?></dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-slate-500">3. How they heard about WWC</dt>
+      <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_referral_label($pollReferral, $pollReferralOther), ENT_QUOTES, 'UTF-8') ?></dd>
+    </div>
+  </dl>
+</div>
+<?php endif; ?>
 
 <?php if (($user['status'] ?? '') === 'pending_verification'): ?>
   <div class="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-panel">

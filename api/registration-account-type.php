@@ -20,26 +20,62 @@ if (!$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
 }
 
-$in = ww_read_json();
-$raw = strtolower(trim((string) ($in['account_type'] ?? $in['registration_account_type'] ?? '')));
-if (!in_array($raw, ['individual', 'business'], true)) {
-    ww_json(['ok' => false, 'error' => 'Select Individual or Business'], 422);
-}
-
 $status = (string) ($user['status'] ?? '');
 if ($status !== 'pending_verification') {
     ww_json(['ok' => false, 'error' => 'This step only applies while your account is pending verification'], 422);
 }
 
-$existing = (string) ($user['registration_account_type'] ?? '');
-if ($existing !== '') {
-    ww_json(['ok' => true, 'registration_account_type' => $existing]);
+$in = ww_read_json();
+
+$accountType = strtolower(trim((string) ($in['account_type'] ?? $in['registration_account_type'] ?? '')));
+if (!in_array($accountType, ['individual', 'business'], true)) {
+    ww_json(['ok' => false, 'error' => 'Select Individual or Business'], 422);
 }
 
-$up = $pdo->prepare('UPDATE users SET registration_account_type = ? WHERE id = ?');
-$up->execute([$raw, (int) $user['id']]);
+$purpose = strtolower(trim((string) ($in['primary_purpose'] ?? $in['registration_primary_purpose'] ?? '')));
+if (!in_array($purpose, ['browsing_connecting', 'promoting_business', 'both'], true)) {
+    ww_json(['ok' => false, 'error' => 'Select your primary purpose'], 422);
+}
+
+$referral = strtolower(trim((string) ($in['referral_source'] ?? $in['registration_referral_source'] ?? '')));
+if (!in_array($referral, ['friend_family', 'social_media', 'whatsapp_group', 'wwc_team_member', 'other'], true)) {
+    ww_json(['ok' => false, 'error' => 'Select how you heard about WWC'], 422);
+}
+
+$referralOther = trim((string) ($in['referral_other'] ?? $in['registration_referral_other'] ?? ''));
+if ($referral === 'other') {
+    if ($referralOther === '' || mb_strlen($referralOther) < 2) {
+        ww_json(['ok' => false, 'error' => 'Please specify how you heard about us'], 422);
+    }
+    if (mb_strlen($referralOther) > 200) {
+        ww_json(['ok' => false, 'error' => 'Referral note is too long'], 422);
+    }
+} else {
+    $referralOther = '';
+}
+
+$existingAcct = (string) ($user['registration_account_type'] ?? '');
+$existingPurpose = (string) ($user['registration_primary_purpose'] ?? '');
+$existingReferral = (string) ($user['registration_referral_source'] ?? '');
+if ($existingAcct !== '' && $existingPurpose !== '' && $existingReferral !== '') {
+    ww_json([
+        'ok' => true,
+        'registration_account_type' => $existingAcct,
+        'registration_primary_purpose' => $existingPurpose,
+        'registration_referral_source' => $existingReferral,
+        'registration_referral_other' => (string) ($user['registration_referral_other'] ?? ''),
+    ]);
+}
+
+$up = $pdo->prepare(
+    'UPDATE users SET registration_account_type = ?, registration_primary_purpose = ?, registration_referral_source = ?, registration_referral_other = ? WHERE id = ?'
+);
+$up->execute([$accountType, $purpose, $referral, $referralOther !== '' ? $referralOther : null, (int) $user['id']]);
 
 ww_json([
     'ok' => true,
-    'registration_account_type' => $raw,
+    'registration_account_type' => $accountType,
+    'registration_primary_purpose' => $purpose,
+    'registration_referral_source' => $referral,
+    'registration_referral_other' => $referralOther,
 ]);

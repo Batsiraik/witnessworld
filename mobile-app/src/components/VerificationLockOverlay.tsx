@@ -8,25 +8,44 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type TextStyle,
 } from 'react-native';
+import type { RegistrationPollPayload } from '../api/client';
+import { isRegistrationPollComplete } from '../utils/registrationPoll';
 import { PrimaryButton } from './PrimaryButton';
 import { colors } from '../theme/colors';
 
 export type RegistrationAccountType = 'individual' | 'business';
+export type RegistrationPrimaryPurpose = 'browsing_connecting' | 'promoting_business' | 'both';
+export type RegistrationReferralSource =
+  | 'friend_family'
+  | 'social_media'
+  | 'whatsapp_group'
+  | 'wwc_team_member'
+  | 'other';
+
+type PollUser = {
+  registration_account_type?: RegistrationAccountType | null;
+  registration_primary_purpose?: RegistrationPrimaryPurpose | null;
+  registration_referral_source?: RegistrationReferralSource | null;
+  registration_referral_other?: string | null;
+};
 
 type Props = {
   visible: boolean;
   variant: 'pending' | 'declined';
   supportEmail: string;
-  registrationAccountType?: RegistrationAccountType | null;
-  onSubmitAccountType?: (type: RegistrationAccountType) => Promise<void>;
+  user?: PollUser | null;
+  onSubmitPoll?: (payload: RegistrationPollPayload) => Promise<void>;
   supportAvailable?: boolean;
   onMessageSupport?: () => void;
 };
 
-const POLL_OPTIONS: { value: RegistrationAccountType; label: string; hint: string }[] = [
+type RadioOption<V extends string> = { value: V; label: string; hint?: string };
+
+const ACCOUNT_OPTIONS: RadioOption<RegistrationAccountType>[] = [
   {
     value: 'individual',
     label: 'Individual',
@@ -39,21 +58,89 @@ const POLL_OPTIONS: { value: RegistrationAccountType; label: string; hint: strin
   },
 ];
 
+const PURPOSE_OPTIONS: RadioOption<RegistrationPrimaryPurpose>[] = [
+  {
+    value: 'browsing_connecting',
+    label: 'Browsing & Connecting',
+    hint: 'Explore the marketplace, rentals, roommate finder, and professional services',
+  },
+  {
+    value: 'promoting_business',
+    label: 'Promoting a Business or Service',
+    hint: 'Showcase your business directory listing, digital services, or storefront',
+  },
+  {
+    value: 'both',
+    label: 'Both',
+    hint: 'I want to utilize the platform to both offer services/goods and browse other listings',
+  },
+];
+
+const REFERRAL_OPTIONS: { value: RegistrationReferralSource; label: string }[] = [
+  { value: 'friend_family', label: 'Friend / Family' },
+  { value: 'social_media', label: 'Social Media' },
+  { value: 'whatsapp_group', label: 'WhatsApp Group' },
+  { value: 'wwc_team_member', label: 'WWC Team Member' },
+  { value: 'other', label: 'Other' },
+];
+
+function PollRadioGroup<V extends string>({
+  options,
+  selected,
+  onSelect,
+}: {
+  options: RadioOption<V>[];
+  selected: V | null;
+  onSelect: (v: V) => void;
+}) {
+  return (
+    <>
+      {options.map((opt) => {
+        const on = selected === opt.value;
+        return (
+          <Pressable
+            key={opt.value}
+            onPress={() => onSelect(opt.value)}
+            style={({ pressed }) => [
+              styles.optionRow,
+              on && styles.optionRowOn,
+              pressed && styles.optionRowPressed,
+            ]}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+          >
+            <View style={[styles.radioOuter, on && styles.radioOuterOn]}>
+              {on ? <View style={styles.radioInner} /> : null}
+            </View>
+            <View style={styles.optionTextWrap}>
+              <Text style={styles.optionLabel}>{opt.label}</Text>
+              {opt.hint ? <Text style={styles.optionHint}>{opt.hint}</Text> : null}
+            </View>
+          </Pressable>
+        );
+      })}
+    </>
+  );
+}
+
 export function VerificationLockOverlay({
   visible,
   variant,
   supportEmail,
-  registrationAccountType,
-  onSubmitAccountType,
+  user,
+  onSubmitPoll,
   supportAvailable,
   onMessageSupport,
 }: Props) {
-  const [selected, setSelected] = useState<RegistrationAccountType | null>(null);
+  const [accountType, setAccountType] = useState<RegistrationAccountType | null>(null);
+  const [primaryPurpose, setPrimaryPurpose] = useState<RegistrationPrimaryPurpose | null>(null);
+  const [referralSource, setReferralSource] = useState<RegistrationReferralSource | null>(null);
+  const [referralOther, setReferralOther] = useState('');
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const pollDone = Boolean(registrationAccountType);
-  const showPoll = variant === 'pending' && !pollDone && onSubmitAccountType;
+  const pollDone = isRegistrationPollComplete(user ?? null);
+  const showPoll = variant === 'pending' && !pollDone && onSubmitPoll;
 
   useEffect(() => {
     if (!visible) return undefined;
@@ -63,10 +150,14 @@ export function VerificationLockOverlay({
 
   useEffect(() => {
     if (!visible) {
-      setSelected(null);
       setSubmitError('');
+      return;
     }
-  }, [visible]);
+    setAccountType(user?.registration_account_type ?? null);
+    setPrimaryPurpose(user?.registration_primary_purpose ?? null);
+    setReferralSource(user?.registration_referral_source ?? null);
+    setReferralOther(user?.registration_referral_other ?? '');
+  }, [visible, user]);
 
   const title = variant === 'declined' ? 'Account not approved' : 'Waiting for verification';
   const body =
@@ -77,12 +168,23 @@ export function VerificationLockOverlay({
   const emailStyle: TextStyle =
     variant === 'declined' ? styles.emailDeclined : styles.emailPending;
 
+  const canSubmit =
+    accountType &&
+    primaryPurpose &&
+    referralSource &&
+    (referralSource !== 'other' || referralOther.trim().length >= 2);
+
   const submitPoll = async () => {
-    if (!selected || !onSubmitAccountType || submitBusy) return;
+    if (!canSubmit || !onSubmitPoll || submitBusy) return;
     setSubmitBusy(true);
     setSubmitError('');
     try {
-      await onSubmitAccountType(selected);
+      await onSubmitPoll({
+        account_type: accountType,
+        primary_purpose: primaryPurpose,
+        referral_source: referralSource,
+        referral_other: referralSource === 'other' ? referralOther.trim() : undefined,
+      });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Could not save. Please try again.');
     } finally {
@@ -118,18 +220,42 @@ export function VerificationLockOverlay({
               {showPoll ? (
                 <>
                   <Text style={styles.pollIntro}>
-                    To help us review your account, please answer one quick question.
+                    To help us review your account, please answer these quick questions.
                   </Text>
+
+                  <Text style={styles.pollSection}>1. Account type</Text>
                   <Text style={styles.pollQuestion}>
                     Are you registering as an Individual or a Business?{' '}
                     <Text style={styles.required}>*</Text>
                   </Text>
-                  {POLL_OPTIONS.map((opt) => {
-                    const on = selected === opt.value;
+                  <PollRadioGroup
+                    options={ACCOUNT_OPTIONS}
+                    selected={accountType}
+                    onSelect={setAccountType}
+                  />
+
+                  <Text style={styles.pollSection}>2. Primary purpose</Text>
+                  <Text style={styles.pollQuestion}>
+                    What is the primary purpose of your registration?{' '}
+                    <Text style={styles.required}>*</Text>
+                  </Text>
+                  <PollRadioGroup
+                    options={PURPOSE_OPTIONS}
+                    selected={primaryPurpose}
+                    onSelect={setPrimaryPurpose}
+                  />
+
+                  <Text style={styles.pollSection}>3. Referral</Text>
+                  <Text style={styles.pollQuestion}>
+                    How did you hear about Witness World Connect (WWC)?{' '}
+                    <Text style={styles.required}>*</Text>
+                  </Text>
+                  {REFERRAL_OPTIONS.map((opt) => {
+                    const on = referralSource === opt.value;
                     return (
                       <Pressable
                         key={opt.value}
-                        onPress={() => setSelected(opt.value)}
+                        onPress={() => setReferralSource(opt.value)}
                         style={({ pressed }) => [
                           styles.optionRow,
                           on && styles.optionRowOn,
@@ -141,18 +267,27 @@ export function VerificationLockOverlay({
                         <View style={[styles.radioOuter, on && styles.radioOuterOn]}>
                           {on ? <View style={styles.radioInner} /> : null}
                         </View>
-                        <View style={styles.optionTextWrap}>
-                          <Text style={styles.optionLabel}>{opt.label}</Text>
-                          <Text style={styles.optionHint}>{opt.hint}</Text>
-                        </View>
+                        <Text style={styles.optionLabel}>{opt.label}</Text>
                       </Pressable>
                     );
                   })}
+                  {referralSource === 'other' ? (
+                    <TextInput
+                      value={referralOther}
+                      onChangeText={setReferralOther}
+                      placeholder="Please specify"
+                      placeholderTextColor={colors.textMuted}
+                      style={styles.otherInput}
+                      maxLength={200}
+                      accessibilityLabel="Other referral source"
+                    />
+                  ) : null}
+
                   {submitError ? <Text style={styles.pollError}>{submitError}</Text> : null}
                   <PrimaryButton
                     label="Continue"
                     loading={submitBusy}
-                    disabled={!selected}
+                    disabled={!canSubmit}
                     onPress={() => void submitPoll()}
                     style={styles.pollSubmit}
                   />
@@ -189,12 +324,12 @@ const styles = StyleSheet.create({
   centerWrap: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   card: {
     borderRadius: 22,
-    maxHeight: '88%',
-    padding: 22,
+    maxHeight: '90%',
+    padding: 20,
     backgroundColor: 'rgba(255,255,255,0.97)',
     borderWidth: 1,
     borderColor: 'rgba(31, 170, 242, 0.35)',
@@ -205,11 +340,11 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   title: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '800',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   pollIntro: {
     fontSize: 13,
@@ -217,25 +352,34 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     fontWeight: '500',
-    marginBottom: 14,
+    marginBottom: 12,
+  },
+  pollSection: {
+    marginTop: 12,
+    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   pollQuestion: {
     fontSize: 12,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   required: { color: colors.danger },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 9,
     paddingHorizontal: 10,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(15, 23, 42, 0.08)',
-    marginBottom: 8,
+    marginBottom: 7,
   },
   optionRowOn: {
     borderColor: 'rgba(31, 170, 242, 0.45)',
@@ -260,13 +404,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   optionTextWrap: { flex: 1 },
-  optionLabel: { fontSize: 12, fontWeight: '700', color: colors.text },
+  optionLabel: { fontSize: 12, fontWeight: '700', color: colors.text, flex: 1 },
   optionHint: {
     marginTop: 3,
     fontSize: 11,
     lineHeight: 15,
     color: colors.textMuted,
     fontWeight: '500',
+  },
+  otherInput: {
+    marginTop: 4,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
+    color: colors.text,
+    backgroundColor: '#fff',
   },
   pollError: {
     marginTop: 6,
@@ -275,7 +431,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  pollSubmit: { marginTop: 14 },
+  pollSubmit: { marginTop: 12, marginBottom: 4 },
   body: {
     fontSize: 15,
     lineHeight: 22,

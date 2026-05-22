@@ -11,6 +11,15 @@ export type DashboardUser = {
   username?: string;
   status?: string;
   registration_account_type?: 'individual' | 'business' | null;
+  registration_primary_purpose?: 'browsing_connecting' | 'promoting_business' | 'both' | null;
+  registration_referral_source?:
+    | 'friend_family'
+    | 'social_media'
+    | 'whatsapp_group'
+    | 'wwc_team_member'
+    | 'other'
+    | null;
+  registration_referral_other?: string | null;
   avatar_url?: string | null;
   membership_plan?: string;
   subscription_status?: string;

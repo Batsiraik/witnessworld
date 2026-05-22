@@ -3,8 +3,7 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, type AppStateStatus, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet, getStoredToken, submitRegistrationAccountType } from '../api/client';
-import type { RegistrationAccountType } from '../components/VerificationLockOverlay';
+import { apiGet, getStoredToken, submitRegistrationPoll, type RegistrationPollPayload } from '../api/client';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { GradientBackground } from '../components/GradientBackground';
 import { VerificationLockOverlay } from '../components/VerificationLockOverlay';
@@ -62,15 +61,22 @@ export function DashboardScreen({ navigation }: Props) {
     }
   }, [navigation]);
 
-  const handleSubmitAccountType = useCallback(
-    async (type: RegistrationAccountType) => {
-      const { registration_account_type } = await submitRegistrationAccountType(type);
-      setUser((prev) =>
-        prev ? { ...prev, registration_account_type: registration_account_type as RegistrationAccountType } : prev
-      );
-    },
-    []
-  );
+  const handleSubmitPoll = useCallback(async (payload: RegistrationPollPayload) => {
+    const result = await submitRegistrationPoll(payload);
+    setUser((prev) =>
+      prev
+        ? {
+            ...prev,
+            registration_account_type: result.registration_account_type as DashboardUser['registration_account_type'],
+            registration_primary_purpose:
+              result.registration_primary_purpose as DashboardUser['registration_primary_purpose'],
+            registration_referral_source:
+              result.registration_referral_source as DashboardUser['registration_referral_source'],
+            registration_referral_other: result.registration_referral_other || null,
+          }
+        : prev
+    );
+  }, []);
 
   const refreshProfile = useCallback(async (): Promise<SubscriptionInfo | null> => {
     try {
@@ -157,8 +163,8 @@ export function DashboardScreen({ navigation }: Props) {
                 visible={lockUnverified && isDashboardFocused}
                 variant={overlayVariant}
                 supportEmail={supportEmail}
-                registrationAccountType={user.registration_account_type}
-                onSubmitAccountType={handleSubmitAccountType}
+                user={user}
+                onSubmitPoll={handleSubmitPoll}
                 supportAvailable={supportAvailable}
                 onMessageSupport={() => navigation.navigate('SupportChat', {})}
               />

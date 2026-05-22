@@ -149,15 +149,36 @@ export async function apiGet(path: string, withAuth = true): Promise<Json> {
   return data;
 }
 
-export async function submitRegistrationAccountType(
-  accountType: 'individual' | 'business'
-): Promise<{ registration_account_type: string }> {
-  const data = await apiPost('registration-account-type.php', { account_type: accountType }, true);
-  const t = data.registration_account_type as string | undefined;
-  if (!t) {
-    throw new Error('Could not save your answer');
+export type RegistrationPollPayload = {
+  account_type: 'individual' | 'business';
+  primary_purpose: 'browsing_connecting' | 'promoting_business' | 'both';
+  referral_source: 'friend_family' | 'social_media' | 'whatsapp_group' | 'wwc_team_member' | 'other';
+  referral_other?: string;
+};
+
+export type RegistrationPollResult = {
+  registration_account_type: string;
+  registration_primary_purpose: string;
+  registration_referral_source: string;
+  registration_referral_other: string;
+};
+
+export async function submitRegistrationPoll(
+  payload: RegistrationPollPayload
+): Promise<RegistrationPollResult> {
+  const data = await apiPost('registration-account-type.php', payload, true);
+  const account = data.registration_account_type as string | undefined;
+  const purpose = data.registration_primary_purpose as string | undefined;
+  const referral = data.registration_referral_source as string | undefined;
+  if (!account || !purpose || !referral) {
+    throw new Error('Could not save your answers');
   }
-  return { registration_account_type: t };
+  return {
+    registration_account_type: account,
+    registration_primary_purpose: purpose,
+    registration_referral_source: referral,
+    registration_referral_other: (data.registration_referral_other as string) || '',
+  };
 }
 
 export async function apiLogout(): Promise<void> {

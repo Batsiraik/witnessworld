@@ -368,3 +368,11 @@ ALTER TABLE users
 -- ---------------------------------------------------------------------------
 ALTER TABLE users
   ADD COLUMN registration_account_type ENUM('individual','business') NULL AFTER registration_country_name;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-22: Verification poll — primary purpose & referral source
+-- ---------------------------------------------------------------------------
+ALTER TABLE users
+  ADD COLUMN registration_primary_purpose ENUM('browsing_connecting','promoting_business','both') NULL AFTER registration_account_type,
+  ADD COLUMN registration_referral_source ENUM('friend_family','social_media','whatsapp_group','wwc_team_member','other') NULL AFTER registration_primary_purpose,
+  ADD COLUMN registration_referral_other VARCHAR(200) NULL AFTER registration_referral_source;
