@@ -1,0 +1,132 @@
+/* Witness World Admin — mobile layout (UI only) */
+
+@media (max-width: 1023px) {
+  body.admin-nav-open {
+    overflow: hidden;
+  }
+
+  #admin-sidebar-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #admin-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  main.admin-main {
+    padding: 1rem;
+  }
+
+  .admin-shell-header {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    gap: 0.75rem;
+  }
+
+  .admin-shell-header h1 {
+    font-size: 1rem;
+  }
+
+  .admin-shell-header .admin-header-sub {
+    display: none;
+  }
+
+  main .rounded-2xl > .border-b {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* List tables → stacked cards */
+  main .overflow-x-auto {
+    overflow-x: visible;
+    padding: 0 0.75rem 0.75rem;
+  }
+
+  main .overflow-x-auto > table {
+    min-width: 0 !important;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  main .overflow-x-auto > table thead {
+    display: none;
+  }
+
+  main .overflow-x-auto > table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  main .overflow-x-auto > table tbody tr {
+    display: block;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  main .overflow-x-auto > table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  main .overflow-x-auto > table td {
+    display: block;
+    padding: 0.3rem 0;
+    border: none;
+    text-align: left !important;
+  }
+
+  main .overflow-x-auto > table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.15rem;
+  }
+
+  main .overflow-x-auto > table td:not([data-label])::before {
+    display: none;
+  }
+
+  main .overflow-x-auto > table td:first-child::before {
+    display: none;
+  }
+
+  main .overflow-x-auto > table td:first-child {
+    padding-top: 0;
+    padding-bottom: 0.35rem;
+    font-size: 0.95rem;
+  }
+
+  main .overflow-x-auto > table td:last-child {
+    margin-top: 0.5rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  /* Forms & grids */
+  main form .grid.sm\:grid-cols-2,
+  main form .grid.md\:grid-cols-2,
+  main form .grid.lg\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  main .flex.flex-wrap.gap-3 button,
+  main .flex.flex-wrap.gap-3 a.rounded-xl {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  #admin-sidebar-backdrop {
+    display: none !important;
+  }
+}

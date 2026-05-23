@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
+import { FeaturedBadge } from '../components/FeaturedBadge';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
@@ -261,7 +262,7 @@ export function HomeScreen({ navigation }: Props) {
             )}
             {showBadge ? (
               <View style={styles.featuredBadge}>
-                <Text style={styles.featuredBadgeText}>Featured</Text>
+                <FeaturedBadge />
               </View>
             ) : null}
           </View>
@@ -314,7 +315,7 @@ export function HomeScreen({ navigation }: Props) {
             )}
             {isFeatured ? (
               <View style={styles.featuredBadge}>
-                <Text style={styles.featuredBadgeText}>Featured</Text>
+                <FeaturedBadge />
               </View>
             ) : null}
           </View>
@@ -380,7 +381,7 @@ export function HomeScreen({ navigation }: Props) {
           )}
           {isFeatured ? (
             <View style={styles.featuredBadge}>
-              <Text style={styles.featuredBadgeText}>Featured</Text>
+              <FeaturedBadge />
             </View>
           ) : null}
         </View>
@@ -863,7 +864,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     paddingBottom: 12,
   },
-  fCardFeatured: { borderWidth: 1, borderColor: 'rgba(200, 162, 74, 0.48)' },
+  fCardFeatured: { borderWidth: 1, borderColor: 'rgba(31, 170, 242, 0.32)' },
   fCardUrgent: { borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.34)' },
   fImgWrap: { position: 'relative', overflow: 'hidden' },
   /** Landscape hero (~16:9): shorter than the old 1.25 ratio; top corners only, flat bottom against text */
@@ -878,12 +879,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: colors.gold,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
   },
-  featuredBadgeText: { color: colors.white, fontSize: 11, fontWeight: '800' },
   flagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 12, paddingTop: 10 },
   flagBadge: {
     overflow: 'hidden',

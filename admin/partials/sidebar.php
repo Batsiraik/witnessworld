@@ -35,13 +35,30 @@ $customerSupport = $base === '' ? 'customer_support.php' : $base . '/customer_su
 $logout = $base === '' ? 'logout.php' : $base . '/logout.php';
 $isSuper = !empty($cu['is_super']);
 ?>
-<aside class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/10 bg-[#0f2847] text-slate-200 shadow-lg">
+<div
+  id="admin-sidebar-backdrop"
+  class="fixed inset-0 z-40 bg-slate-900/60 opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden"
+  aria-hidden="true"
+></div>
+<aside
+  id="admin-sidebar"
+  class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] max-w-xs -translate-x-full flex-col border-r border-white/10 bg-[#0f2847] text-slate-200 shadow-xl transition-transform duration-300 ease-out lg:z-40 lg:w-64 lg:max-w-none lg:translate-x-0"
+  aria-label="Admin navigation"
+>
   <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4">
     <img src="assets/logo.jpg" alt="Witness World Connect" class="h-10 w-10 rounded-lg object-cover ring-1 ring-white/10" width="40" height="40" />
-    <div class="min-w-0">
+    <div class="min-w-0 flex-1">
       <p class="truncate text-sm font-semibold text-white">Witness World</p>
       <p class="truncate text-xs text-slate-400">Admin</p>
     </div>
+    <button
+      type="button"
+      id="admin-sidebar-close"
+      class="lg:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white"
+      aria-label="Close menu"
+    >
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
   </div>
   <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Main">
     <p class="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Menu</p>
