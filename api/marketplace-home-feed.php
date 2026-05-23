@@ -253,81 +253,41 @@ try {
     }
 
     if ($section === 'all') {
-        $featLimit = 8;
-        [$sqlS, $paramsS] = ww_feed_listing_sql('service', $featLimit, $country, $usState);
-        $st = $pdo->prepare($sqlS);
-        $st->execute($paramsS);
-        $svcRows = $st->fetchAll(PDO::FETCH_ASSOC);
-
-        if ($viewerId === 0) {
-            $sqlP = 'SELECT p.id, p.store_id, p.name, p.price_amount, p.currency, p.image_url, p.created_at,
-                    s.name AS store_name, s.logo_url AS store_logo_url, s.user_id AS seller_user_id,
-                    s.location_country_name, s.location_us_state,
-                    u.username, u.first_name, u.last_name, u.avatar_url
-             FROM store_products p
-             INNER JOIN stores s ON s.id = p.store_id
-             INNER JOIN users u ON u.id = s.user_id
-             WHERE s.moderation_status = ? AND p.moderation_status = ?';
-            $paramsP = ['approved', 'approved'];
-        } else {
-            $sqlP = 'SELECT p.id, p.store_id, p.name, p.price_amount, p.currency, p.image_url, p.created_at,
-                    s.name AS store_name, s.logo_url AS store_logo_url, s.user_id AS seller_user_id,
-                    s.location_country_name, s.location_us_state,
-                    u.username, u.first_name, u.last_name, u.avatar_url
-             FROM store_products p
-             INNER JOIN stores s ON s.id = p.store_id
-             INNER JOIN users u ON u.id = s.user_id
-             WHERE s.moderation_status = ?
-               AND (
-                 p.moderation_status = ?
-                 OR (p.moderation_status = ? AND s.user_id = ?)
-               )';
-            $paramsP = ['approved', 'approved', 'pending_approval', $viewerId];
-        }
+        $featLimit = 12;
+        $sqlF = 'SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
+                        l.listing_type, l.is_featured, l.is_urgent, l.is_verified,
+                        l.location_country_name, l.location_us_state, l.created_at,
+                        u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
+                 FROM listings l
+                 INNER JOIN users u ON u.id = l.user_id
+                 WHERE l.moderation_status = ? AND l.is_featured = 1';
+        $paramsF = ['approved'];
         if ($country !== '' && strlen($country) === 2) {
-            $sqlP .= ' AND s.location_country_code = ?';
-            $paramsP[] = $country;
+            $sqlF .= ' AND l.location_country_code = ?';
+            $paramsF[] = $country;
         }
         if ($usState !== '') {
-            $sqlP .= ' AND s.location_us_state = ?';
-            $paramsP[] = $usState;
+            $sqlF .= ' AND l.location_us_state = ?';
+            $paramsF[] = $usState;
         }
-        $sqlP .= ' ORDER BY p.id DESC LIMIT ' . (int) $featLimit;
-        $st = $pdo->prepare($sqlP);
-        $st->execute($paramsP);
-        $prdRows = $st->fetchAll(PDO::FETCH_ASSOC);
-
+        $sqlF .= ' ORDER BY l.id DESC LIMIT ' . (int) $featLimit;
+        $st = $pdo->prepare($sqlF);
+        $st->execute($paramsF);
         $merged = [];
-        foreach ($svcRows as $r) {
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
             $row = ww_feed_row_listing($r);
+            $kind = (string) ($r['listing_type'] ?? 'service');
+            if (!in_array($kind, ['service', 'classified', 'community'], true)) {
+                $kind = 'service';
+            }
             $merged[] = [
                 'sort' => (int) $row['id'],
                 'created_at' => (string) $row['created_at'],
-                'kind' => 'service',
+                'kind' => $kind,
                 'listing' => $row,
             ];
         }
-        foreach ($prdRows as $r) {
-            $row = ww_feed_row_product($r);
-            $merged[] = [
-                'sort' => (int) $row['id'],
-                'created_at' => (string) $row['created_at'],
-                'kind' => 'product',
-                'product' => $row,
-            ];
-        }
-        usort(
-            $merged,
-            static function (array $a, array $b): int {
-                $ta = strtotime($a['created_at']) ?: 0;
-                $tb = strtotime($b['created_at']) ?: 0;
-                if ($tb !== $ta) {
-                    return $tb <=> $ta;
-                }
-                return $b['sort'] <=> $a['sort'];
-            }
-        );
-        $out['featured'] = array_slice($merged, 0, 12);
+        $out['featured'] = $merged;
     }
 } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Feed unavailable'], 500);

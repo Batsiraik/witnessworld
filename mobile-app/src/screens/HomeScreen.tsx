@@ -61,7 +61,11 @@ function normalizeFeatured(raw: unknown): FeaturedRow[] {
       out.push({ kind: 'product', product: o.product as Record<string, unknown> });
       continue;
     }
-    if ((kind === 'service' || kind === 'classified') && o.listing != null && typeof o.listing === 'object') {
+    if (
+      (kind === 'service' || kind === 'classified' || kind === 'community') &&
+      o.listing != null &&
+      typeof o.listing === 'object'
+    ) {
       out.push({ kind, listing: o.listing as Record<string, unknown> });
     }
   }
