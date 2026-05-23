@@ -38,11 +38,19 @@ try {
 
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 $self = ($base === '' || $base === '.') ? 'commerce_requests.php' : $base . '/commerce_requests.php';
-$chip = static function (string $key, string $label, string $cur) use ($self): string {
+$chipTones = [
+    'all' => 'brand',
+    'new' => 'sky',
+    'accepted' => 'success',
+    'shipped' => 'info',
+    'completed' => 'success',
+    'disputed' => 'danger',
+];
+$chip = static function (string $key, string $label, string $cur) use ($self, $chipTones): string {
     $qs = $key === 'all' ? '' : ('?status=' . urlencode($key));
-    $active = $cur === $key;
-    $cls = $active ? 'border-brand bg-brand/10 text-brand-dark ring-1 ring-brand/30' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300';
-    return '<a href="' . htmlspecialchars($self . $qs, ENT_QUOTES, 'UTF-8') . '" class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ' . $cls . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+    $tone = $chipTones[$key] ?? 'brand';
+
+    return ww_admin_filter_chip($self . $qs, $label, $cur === $key, $tone);
 };
 
 require __DIR__ . '/partials/head.php';
@@ -93,10 +101,13 @@ require __DIR__ . '/partials/shell_open.php';
                 (string) ($r['shipping_country'] ?? ''),
             ]);
           ?>
-          <tr class="bg-white align-top hover:bg-brand-muted/20">
+          <tr class="bg-white align-top hover:bg-brand-muted/20"<?= ww_admin_row_attrs((string) $r['status']) ?>>
             <td class="px-6 py-4">
               <div class="font-semibold text-slate-900"><?= htmlspecialchars((string) $r['subject_title'], ENT_QUOTES, 'UTF-8') ?></div>
-              <div class="text-xs text-slate-500">#<?= (int) $r['id'] ?> · <?= htmlspecialchars((string) $r['request_type'], ENT_QUOTES, 'UTF-8') ?></div>
+              <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                <span class="text-xs text-slate-500">#<?= (int) $r['id'] ?></span>
+                <?= ww_admin_status_badge((string) $r['request_type'], str_replace('_', ' ', (string) $r['request_type'])) ?>
+              </div>
               <?php if (!empty($r['unit_price'])): ?>
                 <div class="mt-1 text-xs text-slate-600"><?= htmlspecialchars((string) $r['currency'], ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars((string) $r['unit_price'], ENT_QUOTES, 'UTF-8') ?> × <?= (int) $r['quantity'] ?></div>
               <?php endif; ?>
@@ -112,7 +123,7 @@ require __DIR__ . '/partials/shell_open.php';
               <div class="text-xs text-slate-500"><?= htmlspecialchars((string) $r['seller_email_account'], ENT_QUOTES, 'UTF-8') ?></div>
             </td>
             <td class="px-6 py-4">
-              <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 ring-1 ring-inset ring-slate-200"><?= htmlspecialchars(str_replace('_', ' ', (string) $r['status']), ENT_QUOTES, 'UTF-8') ?></span>
+              <?= ww_admin_status_badge((string) $r['status']) ?>
             </td>
             <td class="max-w-sm px-6 py-4 text-slate-600">
               <?php if ($ship !== []): ?>

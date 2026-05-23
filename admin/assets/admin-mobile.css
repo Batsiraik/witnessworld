@@ -63,10 +63,39 @@
   main .overflow-x-auto > table tbody tr {
     display: block;
     border: 1px solid #e2e8f0;
+    border-left-width: 4px;
+    border-left-color: #1faaf2;
     border-radius: 1rem;
     padding: 0.85rem 1rem;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    background: linear-gradient(90deg, rgba(239, 246, 255, 0.55) 0%, #fff 18%);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+
+  main .overflow-x-auto > table tbody tr[data-status-tone='success'] {
+    border-left-color: #10b981;
+    background: linear-gradient(90deg, rgba(236, 253, 245, 0.7) 0%, #fff 18%);
+  }
+
+  main .overflow-x-auto > table tbody tr[data-status-tone='warning'] {
+    border-left-color: #f59e0b;
+    background: linear-gradient(90deg, rgba(255, 251, 235, 0.75) 0%, #fff 18%);
+  }
+
+  main .overflow-x-auto > table tbody tr[data-status-tone='danger'] {
+    border-left-color: #ef4444;
+    background: linear-gradient(90deg, rgba(254, 242, 242, 0.75) 0%, #fff 18%);
+  }
+
+  main .overflow-x-auto > table tbody tr[data-status-tone='sky'] {
+    border-left-color: #38bdf8;
+  }
+
+  main .overflow-x-auto > table tbody tr[data-status-tone='violet'] {
+    border-left-color: #8b5cf6;
+  }
+
+  main .overflow-x-auto > table tbody tr[data-status-tone='info'] {
+    border-left-color: #3b82f6;
   }
 
   main .overflow-x-auto > table tbody tr:hover {
@@ -109,6 +138,16 @@
     margin-top: 0.5rem;
     padding-top: 0.65rem;
     border-top: 1px solid #f1f5f9;
+  }
+
+  main .overflow-x-auto > table td:last-child .admin-btn,
+  main .overflow-x-auto > table td:last-child .flex.flex-wrap {
+    width: 100%;
+  }
+
+  main .overflow-x-auto > table td:last-child .flex.flex-wrap {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   /* Forms & grids */

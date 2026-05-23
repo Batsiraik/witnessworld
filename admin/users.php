@@ -34,27 +34,19 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 $usersSelf = ($base === '' || $base === '.') ? 'users.php' : $base . '/users.php';
-$userChip = static function (string $key, string $label, string $cur) use ($usersSelf): string {
+$userChipTones = [
+    'all' => 'brand',
+    'pending_verification' => 'warning',
+    'verified' => 'success',
+    'declined' => 'danger',
+    'pending_otp' => 'neutral',
+];
+$userChip = static function (string $key, string $label, string $cur) use ($usersSelf, $userChipTones): string {
     $qs = $key === 'all' ? '' : ('?status=' . urlencode($key));
-    $active = $cur === $key;
-    $cls = $active
-        ? 'border-brand bg-brand/10 text-brand-dark ring-1 ring-brand/30'
-        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300';
+    $tone = $userChipTones[$key] ?? 'brand';
 
-    return '<a href="' . htmlspecialchars($usersSelf . $qs, ENT_QUOTES, 'UTF-8') . '" class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ' . $cls . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+    return ww_admin_filter_chip($usersSelf . $qs, $label, $cur === $key, $tone);
 };
-
-function ww_status_badge(string $s): string
-{
-    $map = [
-        'pending_otp' => 'bg-slate-100 text-slate-700 ring-slate-600/10',
-        'pending_verification' => 'bg-amber-50 text-amber-900 ring-amber-600/20',
-        'verified' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
-        'declined' => 'bg-red-50 text-red-800 ring-red-600/20',
-    ];
-    $c = $map[$s] ?? 'bg-slate-100 text-slate-700';
-    return '<span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ' . $c . '">' . htmlspecialchars($s, ENT_QUOTES, 'UTF-8') . '</span>';
-}
 
 require __DIR__ . '/partials/head.php';
 require __DIR__ . '/partials/sidebar.php';
@@ -88,16 +80,16 @@ require __DIR__ . '/partials/shell_open.php';
       </thead>
       <tbody class="divide-y divide-slate-100">
         <?php foreach ($rows as $r): ?>
-          <tr class="bg-white hover:bg-brand-muted/20">
+          <tr class="bg-white hover:bg-brand-muted/20"<?= ww_admin_row_attrs((string) $r['status']) ?>>
             <td class="px-6 py-4 font-medium text-slate-900">
               <?= htmlspecialchars((string) $r['first_name'] . ' ' . (string) $r['last_name'], ENT_QUOTES, 'UTF-8') ?>
               <div class="text-xs font-normal text-slate-500">@<?= htmlspecialchars((string) $r['username'], ENT_QUOTES, 'UTF-8') ?></div>
             </td>
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['email'], ENT_QUOTES, 'UTF-8') ?></td>
-            <td class="px-6 py-4"><?= ww_status_badge((string) $r['status']) ?></td>
+            <td class="px-6 py-4"><?= ww_admin_status_badge((string) $r['status']) ?></td>
             <td class="px-6 py-4 text-slate-500"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-right">
-              <button type="button" class="text-sm font-semibold text-brand hover:text-brand-dark js-user-modal-open" data-user-id="<?= (int) $r['id'] ?>">View</button>
+              <button type="button" class="admin-btn admin-btn--primary admin-btn--sm js-user-modal-open" data-user-id="<?= (int) $r['id'] ?>">View</button>
             </td>
           </tr>
         <?php endforeach; ?>

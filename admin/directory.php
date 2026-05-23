@@ -42,31 +42,21 @@ try {
 
 $cats = ww_directory_categories();
 
-function ww_dir_status_badge(string $s): string
-{
-    $map = [
-        'pending_approval' => 'bg-amber-50 text-amber-900 ring-amber-600/20',
-        'approved' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
-        'rejected' => 'bg-slate-100 text-slate-700 ring-slate-600/10',
-        'suspended' => 'bg-red-50 text-red-800 ring-red-600/20',
-    ];
-    $c = $map[$s] ?? 'bg-slate-100 text-slate-700';
-    $label = str_replace('_', ' ', $s);
-
-    return '<span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ' . $c . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
-}
-
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 $self = ($base === '' || $base === '.') ? 'directory.php' : $base . '/directory.php';
 
-$chip = static function (string $key, string $label, string $cur) use ($self): string {
+$chipTones = [
+    'all' => 'brand',
+    'pending_approval' => 'warning',
+    'approved' => 'success',
+    'rejected' => 'neutral',
+    'suspended' => 'danger',
+];
+$chip = static function (string $key, string $label, string $cur) use ($self, $chipTones): string {
     $qs = $key === 'all' ? '' : ('?status=' . urlencode($key));
-    $active = $cur === $key;
-    $cls = $active
-        ? 'border-brand bg-brand/10 text-brand-dark ring-1 ring-brand/30'
-        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300';
+    $tone = $chipTones[$key] ?? 'brand';
 
-    return '<a href="' . htmlspecialchars($self . $qs, ENT_QUOTES, 'UTF-8') . '" class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ' . $cls . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+    return ww_admin_filter_chip($self . $qs, $label, $cur === $key, $tone);
 };
 
 require __DIR__ . '/partials/head.php';
@@ -123,7 +113,7 @@ require __DIR__ . '/partials/shell_open.php';
                 ? htmlspecialchars((string) $r['category_name'], ENT_QUOTES, 'UTF-8')
                 : htmlspecialchars($cats[(string) ($r['category'] ?? '')] ?? (string) ($r['category'] ?? ''), ENT_QUOTES, 'UTF-8');
           ?>
-          <tr class="bg-white hover:bg-slate-50/80">
+          <tr class="bg-white hover:bg-slate-50/80"<?= ww_admin_row_attrs((string) ($r['moderation_status'] ?? '')) ?>>
             <td class="px-6 py-4">
               <a href="<?= htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline"><?= htmlspecialchars((string) $r['business_name'], ENT_QUOTES, 'UTF-8') ?></a>
             </td>
@@ -134,10 +124,10 @@ require __DIR__ . '/partials/shell_open.php';
             </td>
             <td class="px-6 py-4 text-slate-700"><?= $loc ?></td>
             <td class="px-6 py-4 text-slate-700"><?= $catLabel ?></td>
-            <td class="px-6 py-4"><?= ww_dir_status_badge((string) ($r['moderation_status'] ?? '')) ?></td>
+            <td class="px-6 py-4"><?= ww_admin_status_badge((string) ($r['moderation_status'] ?? '')) ?></td>
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <a href="<?= htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline">Review</a>
+              <?= ww_admin_btn_link($detail, 'Review', 'primary', ['class' => 'admin-btn--sm']) ?>
             </td>
           </tr>
         <?php endforeach; ?>

@@ -42,31 +42,21 @@ try {
     $listingsDbError = 'Listings tables are missing or out of date. See database/README.md.';
 }
 
-function ww_listing_status_badge(string $s): string
-{
-    $map = [
-        'pending_approval' => 'bg-amber-50 text-amber-900 ring-amber-600/20',
-        'approved' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
-        'rejected' => 'bg-slate-100 text-slate-700 ring-slate-600/10',
-        'removed' => 'bg-red-50 text-red-800 ring-red-600/20',
-    ];
-    $c = $map[$s] ?? 'bg-slate-100 text-slate-700';
-    $label = str_replace('_', ' ', $s);
-
-    return '<span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ' . $c . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
-}
-
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 $self = ($base === '' || $base === '.') ? 'listings.php' : $base . '/listings.php';
 
-$chip = static function (string $key, string $label, string $cur) use ($self): string {
+$chipTones = [
+    'all' => 'brand',
+    'pending_approval' => 'warning',
+    'approved' => 'success',
+    'rejected' => 'neutral',
+    'removed' => 'danger',
+];
+$chip = static function (string $key, string $label, string $cur) use ($self, $chipTones): string {
     $qs = $key === 'all' ? '' : ('?status=' . urlencode($key));
-    $active = $cur === $key;
-    $cls = $active
-        ? 'border-brand bg-brand/10 text-brand-dark ring-1 ring-brand/30'
-        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300';
+    $tone = $chipTones[$key] ?? 'brand';
 
-    return '<a href="' . htmlspecialchars($self . $qs, ENT_QUOTES, 'UTF-8') . '" class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ' . $cls . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+    return ww_admin_filter_chip($self . $qs, $label, $cur === $key, $tone);
 };
 
 require __DIR__ . '/partials/head.php';
@@ -109,19 +99,19 @@ require __DIR__ . '/partials/shell_open.php';
       </thead>
       <tbody class="divide-y divide-slate-100">
         <?php foreach ($rows as $r): ?>
-          <tr class="bg-white hover:bg-brand-muted/20">
+          <tr class="bg-white hover:bg-brand-muted/20"<?= ww_admin_row_attrs((string) $r['moderation_status']) ?>>
             <td class="px-6 py-4 font-medium text-slate-900">
               <?= htmlspecialchars((string) $r['title'], ENT_QUOTES, 'UTF-8') ?>
               <div class="text-xs font-normal text-slate-500">#<?= (int) $r['id'] ?></div>
               <div class="mt-1 flex flex-wrap gap-1">
                 <?php if ((int) ($r['is_featured'] ?? 0) === 1): ?>
-                  <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-inset ring-amber-600/20">Featured</span>
+                  <?= ww_admin_status_badge('featured', 'Featured') ?>
                 <?php endif; ?>
                 <?php if ((int) ($r['is_urgent'] ?? 0) === 1): ?>
-                  <span class="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-800 ring-1 ring-inset ring-red-600/20">Urgent</span>
+                  <?= ww_admin_status_badge('urgent', 'Urgent') ?>
                 <?php endif; ?>
                 <?php if ((int) ($r['is_verified'] ?? 0) === 1): ?>
-                  <span class="inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-800 ring-1 ring-inset ring-sky-600/20">Verified</span>
+                  <?= ww_admin_status_badge('verified', 'Verified') ?>
                 <?php endif; ?>
               </div>
             </td>
@@ -162,12 +152,12 @@ require __DIR__ . '/partials/shell_open.php';
                 }
               ?>
             </td>
-            <td class="px-6 py-4"><?= ww_listing_status_badge((string) $r['moderation_status']) ?></td>
+            <td class="px-6 py-4"><?= ww_admin_status_badge((string) $r['moderation_status']) ?></td>
             <td class="px-6 py-4 text-slate-500"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-right">
               <div class="flex flex-wrap items-center justify-end gap-2">
-                <button type="button" class="text-sm font-semibold text-brand hover:text-brand-dark" data-listing-review="<?= (int) $r['id'] ?>">Review</button>
-                <a class="text-xs font-medium text-slate-500 hover:text-slate-700" href="listing.php?id=<?= (int) $r['id'] ?>" title="Full page">Page</a>
+                <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" data-listing-review="<?= (int) $r['id'] ?>">Review</button>
+                <?= ww_admin_btn_link('listing.php?id=' . (int) $r['id'], 'Page', 'ghost', ['class' => 'admin-btn--sm', 'title' => 'Full page']) ?>
               </div>
             </td>
           </tr>

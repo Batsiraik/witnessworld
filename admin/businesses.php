@@ -23,19 +23,6 @@ $userHref = static function (int $id) use ($base): string {
     return $p . '?id=' . $id;
 };
 
-function ww_business_status_badge(string $s): string
-{
-    $map = [
-        'pending_otp' => 'bg-slate-100 text-slate-700 ring-slate-600/10',
-        'pending_verification' => 'bg-amber-50 text-amber-900 ring-amber-600/20',
-        'verified' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
-        'declined' => 'bg-red-50 text-red-800 ring-red-600/20',
-    ];
-    $c = $map[$s] ?? 'bg-slate-100 text-slate-700';
-
-    return '<span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ' . $c . '">' . htmlspecialchars($s, ENT_QUOTES, 'UTF-8') . '</span>';
-}
-
 require __DIR__ . '/partials/head.php';
 require __DIR__ . '/partials/sidebar.php';
 require __DIR__ . '/partials/shell_open.php';
@@ -64,7 +51,7 @@ require __DIR__ . '/partials/shell_open.php';
       </thead>
       <tbody class="divide-y divide-slate-100">
         <?php foreach ($rows as $r): ?>
-          <tr class="bg-white hover:bg-brand-muted/20">
+          <tr class="bg-white hover:bg-brand-muted/20"<?= ww_admin_row_attrs((string) $r['status']) ?>>
             <td class="px-6 py-4 font-medium text-slate-900">
               <?= htmlspecialchars((string) $r['first_name'] . ' ' . (string) $r['last_name'], ENT_QUOTES, 'UTF-8') ?>
               <div class="text-xs font-normal text-slate-500">@<?= htmlspecialchars((string) $r['username'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -72,10 +59,10 @@ require __DIR__ . '/partials/shell_open.php';
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['email'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) ($r['registration_country_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) ($r['congregation'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
-            <td class="px-6 py-4"><?= ww_business_status_badge((string) $r['status']) ?></td>
+            <td class="px-6 py-4"><?= ww_admin_status_badge((string) $r['status']) ?></td>
             <td class="px-6 py-4 text-slate-500"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-right">
-              <a href="<?= htmlspecialchars($userHref((int) $r['id']), ENT_QUOTES, 'UTF-8') ?>" class="text-sm font-semibold text-brand hover:text-brand-dark">View</a>
+              <?= ww_admin_btn_link($userHref((int) $r['id']), 'View', 'primary', ['class' => 'admin-btn--sm']) ?>
             </td>
           </tr>
         <?php endforeach; ?>

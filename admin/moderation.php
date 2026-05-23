@@ -68,14 +68,17 @@ try {
 
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 $self = ($base === '' || $base === '.') ? 'moderation.php' : $base . '/moderation.php';
-$chip = static function (string $key, string $label, string $cur) use ($self): string {
+$chipTones = [
+    'open' => 'warning',
+    'reviewed' => 'success',
+    'dismissed' => 'neutral',
+    'all' => 'brand',
+];
+$chip = static function (string $key, string $label, string $cur) use ($self, $chipTones): string {
     $qs = $key === 'open' ? '' : ('?status=' . urlencode($key));
-    $active = $cur === $key;
-    $cls = $active
-        ? 'border-brand bg-brand/10 text-brand-dark ring-1 ring-brand/30'
-        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300';
+    $tone = $chipTones[$key] ?? 'brand';
 
-    return '<a href="' . htmlspecialchars($self . $qs, ENT_QUOTES, 'UTF-8') . '" class="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ' . $cls . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+    return ww_admin_filter_chip($self . $qs, $label, $cur === $key, $tone);
 };
 
 $subject_link = static function (array $r) use ($base): string {
@@ -171,13 +174,16 @@ require __DIR__ . '/partials/shell_open.php';
   </div>
   <div class="divide-y divide-slate-100">
     <?php foreach ($rows as $r): ?>
-      <div class="px-6 py-5">
+      <div class="admin-report-card px-6 py-5"<?= ww_admin_row_attrs((string) $r['status']) ?>>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p class="text-sm font-semibold text-slate-900">Report #<?= (int) $r['id'] ?></p>
-            <p class="mt-1 text-xs text-slate-500"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?> · Status: <?= htmlspecialchars((string) $r['status'], ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></span>
+              <?= ww_admin_status_badge((string) $r['status']) ?>
+            </p>
           </div>
-          <a class="text-sm font-semibold text-brand hover:underline" href="<?= htmlspecialchars($subject_link($r), ENT_QUOTES, 'UTF-8') ?>">Open in admin</a>
+          <?= ww_admin_btn_link($subject_link($r), 'Open in admin', 'primary', ['class' => 'admin-btn--sm']) ?>
         </div>
         <p class="mt-3 text-sm text-slate-800">
           <span class="font-semibold text-slate-600"><?= htmlspecialchars((string) $r['subject_type'], ENT_QUOTES, 'UTF-8') ?>:</span>
@@ -199,8 +205,8 @@ require __DIR__ . '/partials/shell_open.php';
               <label class="block text-xs font-semibold text-slate-600">Admin note (optional)</label>
               <input type="text" name="admin_resolution_note" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Internal note" />
             </div>
-            <button type="submit" name="action" value="resolve" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Mark reviewed</button>
-            <button type="submit" name="action" value="dismiss" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">Dismiss</button>
+            <?= ww_admin_btn_submit('Mark reviewed', 'success', ['name' => 'action', 'value' => 'resolve']) ?>
+            <?= ww_admin_btn_submit('Dismiss', 'ghost', ['name' => 'action', 'value' => 'dismiss']) ?>
           </form>
         <?php endif; ?>
       </div>

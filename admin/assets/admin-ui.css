@@ -1,0 +1,227 @@
+/* Witness World Admin — colorful list UI */
+
+main .rounded-2xl.border.shadow-panel {
+  border-color: rgba(31, 170, 242, 0.12);
+  box-shadow: 0 1px 3px rgba(15, 40, 71, 0.06), 0 12px 40px rgba(31, 170, 242, 0.1);
+}
+
+main .rounded-2xl.border.shadow-panel > .border-b:first-of-type {
+  background: linear-gradient(135deg, #eff8ff 0%, #ffffff 42%, #fffbeb 100%);
+  border-bottom-color: rgba(31, 170, 242, 0.15);
+}
+
+main .overflow-x-auto > table thead {
+  background: linear-gradient(180deg, #f0f9ff 0%, #f8fafc 100%);
+}
+
+main .overflow-x-auto > table thead th {
+  color: #475569;
+}
+
+/* Status badges */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.admin-badge--success {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #065f46;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.admin-badge--warning {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.admin-badge--danger {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.admin-badge--info {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.admin-badge--sky {
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: #075985;
+  border-color: rgba(31, 170, 242, 0.45);
+}
+
+.admin-badge--violet {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: #5b21b6;
+  border-color: rgba(139, 92, 246, 0.35);
+}
+
+.admin-badge--gold {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #9a7328;
+  border-color: rgba(200, 162, 74, 0.45);
+}
+
+.admin-badge--neutral {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  color: #475569;
+  border-color: rgba(100, 116, 139, 0.25);
+}
+
+/* Filter chips */
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-chip:hover {
+  border-color: #cbd5e1;
+  color: #334155;
+  transform: translateY(-1px);
+}
+
+.admin-chip--active {
+  color: #0b1220;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.admin-chip--active.admin-chip--brand {
+  border-color: #1faaf2;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: #075985;
+}
+
+.admin-chip--active.admin-chip--sky {
+  border-color: #38bdf8;
+  background: linear-gradient(135deg, #e0f2fe, #7dd3fc);
+  color: #0c4a6e;
+}
+
+.admin-chip--active.admin-chip--success {
+  border-color: #34d399;
+  background: linear-gradient(135deg, #d1fae5, #6ee7b7);
+  color: #065f46;
+}
+
+.admin-chip--active.admin-chip--warning {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #fef3c7, #fcd34d);
+  color: #92400e;
+}
+
+.admin-chip--active.admin-chip--danger {
+  border-color: #f87171;
+  background: linear-gradient(135deg, #fee2e2, #fca5a5);
+  color: #991b1b;
+}
+
+.admin-chip--active.admin-chip--violet {
+  border-color: #a78bfa;
+  background: linear-gradient(135deg, #ede9fe, #c4b5fd);
+  color: #5b21b6;
+}
+
+.admin-chip--active.admin-chip--neutral {
+  border-color: #94a3b8;
+  background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+  color: #334155;
+}
+
+/* Action buttons */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.admin-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.admin-btn--primary {
+  background: linear-gradient(135deg, #1faaf2, #1590d4);
+  color: #fff;
+  border-color: rgba(21, 144, 212, 0.5);
+}
+
+.admin-btn--success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border-color: rgba(5, 150, 105, 0.5);
+}
+
+.admin-btn--danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
+.admin-btn--ghost {
+  background: #fff;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.admin-btn--soft {
+  background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+  color: #075985;
+  border-color: rgba(31, 170, 242, 0.35);
+}
+
+.admin-btn--sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.72rem;
+  border-radius: 0.65rem;
+}
+
+/* Moderation / card rows */
+.admin-report-card {
+  border-left: 4px solid #1faaf2;
+  background: linear-gradient(90deg, rgba(239, 246, 255, 0.65) 0%, #fff 12%);
+}
+
+.admin-report-card[data-status-tone='warning'] {
+  border-left-color: #f59e0b;
+  background: linear-gradient(90deg, rgba(255, 251, 235, 0.8) 0%, #fff 14%);
+}
+
+.admin-report-card[data-status-tone='success'] {
+  border-left-color: #10b981;
+  background: linear-gradient(90deg, rgba(236, 253, 245, 0.8) 0%, #fff 14%);
+}
+
+.admin-report-card[data-status-tone='neutral'] {
+  border-left-color: #94a3b8;
+}

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/admin_auth.php';
+require_once __DIR__ . '/admin_ui.php';
 
 ww_admin_require();
 
