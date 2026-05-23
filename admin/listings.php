@@ -64,6 +64,13 @@ require __DIR__ . '/partials/sidebar.php';
 require __DIR__ . '/partials/shell_open.php';
 ?>
 
+<?php if (isset($_GET['suspended']) && $_GET['suspended'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">Listing suspended — hidden from the app until reviewed again.</div>
+<?php endif; ?>
+<?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">Listing deleted permanently.</div>
+<?php endif; ?>
+
 <?php if ($listingsDbError !== null): ?>
   <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><?= htmlspecialchars($listingsDbError, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
@@ -158,6 +165,12 @@ require __DIR__ . '/partials/shell_open.php';
               <div class="flex flex-wrap items-center justify-end gap-2">
                 <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" data-listing-review="<?= (int) $r['id'] ?>">Review</button>
                 <?= ww_admin_btn_link('listing.php?id=' . (int) $r['id'], 'Page', 'ghost', ['class' => 'admin-btn--sm', 'title' => 'Full page']) ?>
+                <?php
+                  $entityType = 'listing';
+                  $entityId = (int) $r['id'];
+                  $return = 'list';
+                  require __DIR__ . '/partials/content_list_action_buttons.php';
+                ?>
               </div>
             </td>
           </tr>
@@ -342,4 +355,5 @@ require __DIR__ . '/partials/shell_open.php';
 })();
 </script>
 
+<?php require __DIR__ . '/partials/content_confirm_scripts.php'; ?>
 <?php require __DIR__ . '/partials/shell_close.php'; ?>

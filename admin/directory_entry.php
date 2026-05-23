@@ -14,6 +14,7 @@ if ($id <= 0) {
 
 $pdo = witnessworld_pdo();
 $adminId = (int) ($_SESSION['admin_id'] ?? 0);
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
@@ -47,13 +48,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     (string) $row['business_name']
                 );
             } elseif ($action === 'suspend') {
-                $pdo->prepare(
-                    'UPDATE directory_entries SET moderation_status = ?, admin_note = ?, reviewed_at = ?, reviewed_by_admin_id = ? WHERE id = ?'
-                )->execute(['suspended', $note !== '' ? $note : null, $now, $adminId > 0 ? $adminId : null, $id]);
+                ww_content_suspend($pdo, 'directory', $id, $adminId, $note !== '' ? $note : null);
             } elseif ($action === 'reopen') {
                 $pdo->prepare(
                     'UPDATE directory_entries SET moderation_status = ?, admin_note = NULL, reviewed_at = NULL, reviewed_by_admin_id = NULL WHERE id = ?'
                 )->execute(['pending_approval', $id]);
+            } elseif ($action === 'delete') {
+                if (ww_content_delete($pdo, 'directory', $id)) {
+                    $returnTo = trim((string) ($_POST['return_to'] ?? ''));
+                    ww_content_redirect_after_action('directory', $id, 'delete', $returnTo, $base);
+                }
             }
         }
     } catch (Throwable) {
@@ -61,12 +65,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
     $returnTo = trim((string) ($_POST['return_to'] ?? ''));
-    if ($returnTo === 'list') {
-        header('Location: directory.php?moderated=1');
-        exit;
-    }
-    header('Location: directory_entry.php?id=' . $id);
-    exit;
+    ww_content_redirect_after_action('directory', $id, $action, $returnTo, $base);
 }
 
 $entry = null;
@@ -234,4 +233,11 @@ require __DIR__ . '/partials/shell_open.php';
   </div>
 </div>
 
+<?php
+$contentRow = $entry;
+$entityType = 'directory';
+$entityId = $id;
+require __DIR__ . '/partials/content_detail_controls.php';
+require __DIR__ . '/partials/content_confirm_scripts.php';
+?>
 <?php require __DIR__ . '/partials/shell_close.php'; ?>

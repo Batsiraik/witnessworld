@@ -100,6 +100,12 @@ require __DIR__ . '/partials/shell_open.php';
     Product updated. The list is refreshed below.
   </div>
 <?php endif; ?>
+<?php if (isset($_GET['suspended']) && $_GET['suspended'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">Product suspended — hidden until reviewed again.</div>
+<?php endif; ?>
+<?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">Product deleted permanently.</div>
+<?php endif; ?>
 
 <div class="rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden">
   <div class="border-b border-slate-100 px-6 py-4 space-y-4">
@@ -157,6 +163,13 @@ require __DIR__ . '/partials/shell_open.php';
                   data-product-id="<?= $pid ?>"
                 ><?= htmlspecialchars($btnLabel, ENT_QUOTES, 'UTF-8') ?></button>
                 <?= ww_admin_btn_link($detail, 'Full page', 'ghost', ['class' => 'admin-btn--sm']) ?>
+                <?php
+                  $entityType = 'product';
+                  $entityId = $pid;
+                  $row = $r;
+                  $return = 'list';
+                  require __DIR__ . '/partials/content_list_action_buttons.php';
+                ?>
               </div>
             </td>
           </tr>
@@ -357,4 +370,5 @@ require __DIR__ . '/partials/shell_open.php';
 })();
 </script>
 
+<?php require __DIR__ . '/partials/content_confirm_scripts.php'; ?>
 <?php require __DIR__ . '/partials/shell_close.php'; ?>

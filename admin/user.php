@@ -13,24 +13,43 @@ if ($id <= 0) {
 }
 
 $pdo = witnessworld_pdo();
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+$userPhp = ($base === '' || $base === '.') ? 'user.php' : $base . '/user.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
     $returnTo = (string) ($_POST['return'] ?? '');
-    $st = $pdo->prepare('SELECT status FROM users WHERE id = ? LIMIT 1');
-    $st->execute([$id]);
-    $cur = $st->fetchColumn();
-    if ($cur === 'pending_verification') {
-        if ($action === 'approve') {
-            $pdo->prepare("UPDATE users SET status = 'verified' WHERE id = ?")->execute([$id]);
-            ww_admin_notify_account_review($pdo, $id, 'approve');
-        } elseif ($action === 'decline') {
-            $pdo->prepare("UPDATE users SET status = 'declined' WHERE id = ?")->execute([$id]);
-            ww_admin_notify_account_review($pdo, $id, 'decline');
+
+    if ($action === 'approve' || $action === 'decline') {
+        $st = $pdo->prepare('SELECT status FROM users WHERE id = ? LIMIT 1');
+        $st->execute([$id]);
+        $cur = $st->fetchColumn();
+        if ($cur === 'pending_verification') {
+            if ($action === 'approve') {
+                $pdo->prepare("UPDATE users SET status = 'verified' WHERE id = ?")->execute([$id]);
+                ww_admin_notify_account_review($pdo, $id, 'approve');
+            } elseif ($action === 'decline') {
+                $pdo->prepare("UPDATE users SET status = 'declined' WHERE id = ?")->execute([$id]);
+                ww_admin_notify_account_review($pdo, $id, 'decline');
+            }
+        }
+    } elseif ($action === 'suspend') {
+        ww_admin_suspend_user($pdo, $id);
+    } elseif ($action === 'delete') {
+        if (ww_admin_delete_user($pdo, $id)) {
+            $dest = $returnTo === 'businesses' ? 'businesses.php' : 'users.php';
+            if ($base !== '' && $base !== '.') {
+                $dest = $base . '/' . $dest;
+            }
+            header('Location: ' . $dest . '?deleted=1');
+            exit;
         }
     }
+
     if ($returnTo === 'users') {
-        header('Location: users.php');
+        header('Location: users.php' . ($action === 'suspend' ? '?suspended=1' : ''));
+    } elseif ($returnTo === 'businesses') {
+        header('Location: businesses.php' . ($action === 'suspend' ? '?suspended=1' : ''));
     } else {
         header('Location: user.php?id=' . $id);
     }
@@ -64,10 +83,22 @@ require __DIR__ . '/partials/shell_open.php';
       <h2 class="text-lg font-semibold text-slate-900"><?= htmlspecialchars((string) $user['first_name'] . ' ' . (string) $user['last_name'], ENT_QUOTES, 'UTF-8') ?></h2>
       <p class="text-sm text-slate-600">@<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars((string) $user['email'], ENT_QUOTES, 'UTF-8') ?></p>
     </div>
-    <div class="text-sm font-semibold text-slate-700">Status: <span class="text-brand"><?= htmlspecialchars((string) $user['status'], ENT_QUOTES, 'UTF-8') ?></span></div>
+    <div><?= ww_admin_status_badge((string) $user['status']) ?></div>
   </div>
 
   <?php require __DIR__ . '/partials/user_review_sections.php'; ?>
 </div>
+
+<?php
+$confirmModalUserPhp = $userPhp;
+require __DIR__ . '/partials/user_confirm_modal.php';
+?>
+<script src="<?= htmlspecialchars(($base === '' || $base === '.' ? '' : $base) . '/assets/admin-user-actions.js', ENT_QUOTES, 'UTF-8') ?>"></script>
+<script>
+(function () {
+  var m = document.getElementById('admin-user-confirm-modal');
+  if (m) m.setAttribute('data-user-php-base', <?= json_encode($userPhp, JSON_THROW_ON_ERROR) ?>);
+})();
+</script>
 
 <?php require __DIR__ . '/partials/shell_close.php'; ?>

@@ -23,6 +23,7 @@ if (!$user) {
     exit;
 }
 
+$id = (int) $user['id'];
 $support = ww_get_setting($pdo, 'support_email', 'info@witnessworldconnect.com');
 $formReturn = 'users';
 $showOpenFullPageLink = true;
@@ -35,7 +36,7 @@ header('X-Content-Type-Options: nosniff');
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Review user</p>
     <h3 class="mt-1 text-lg font-semibold text-slate-900"><?= htmlspecialchars((string) $user['first_name'] . ' ' . (string) $user['last_name'], ENT_QUOTES, 'UTF-8') ?></h3>
     <p class="text-sm text-slate-600">@<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars((string) $user['email'], ENT_QUOTES, 'UTF-8') ?></p>
-    <p class="mt-2 text-sm font-medium text-slate-700">Status: <span class="text-brand"><?= htmlspecialchars((string) $user['status'], ENT_QUOTES, 'UTF-8') ?></span></p>
+    <p class="mt-2"><?= ww_admin_status_badge((string) $user['status']) ?></p>
   </div>
   <?php require __DIR__ . '/partials/user_review_sections.php'; ?>
 </div>

@@ -48,10 +48,19 @@ $userChip = static function (string $key, string $label, string $cur) use ($user
     return ww_admin_filter_chip($usersSelf . $qs, $label, $cur === $key, $tone);
 };
 
+$userPhp = ($base === '' || $base === '.') ? 'user.php' : $base . '/user.php';
+
 require __DIR__ . '/partials/head.php';
 require __DIR__ . '/partials/sidebar.php';
 require __DIR__ . '/partials/shell_open.php';
 ?>
+
+<?php if (isset($_GET['suspended']) && $_GET['suspended'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">User suspended — they are now pending verification and have been signed out of the app.</div>
+<?php endif; ?>
+<?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">User account deleted permanently.</div>
+<?php endif; ?>
 
 <div class="rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden">
   <div class="border-b border-slate-100 px-6 py-4 space-y-4">
@@ -80,6 +89,17 @@ require __DIR__ . '/partials/shell_open.php';
       </thead>
       <tbody class="divide-y divide-slate-100">
         <?php foreach ($rows as $r): ?>
+          <?php
+            $uid = (int) $r['id'];
+            $rowUser = $r;
+            $rowUser['id'] = $uid;
+            $rowName = trim((string) $r['first_name'] . ' ' . (string) $r['last_name']);
+            if ($rowName === '') {
+                $rowName = (string) $r['email'];
+            }
+            $rowCanSuspend = ww_admin_can_suspend_user($rowUser);
+            $rowCanDelete = ww_admin_can_delete_user($pdo, $rowUser);
+          ?>
           <tr class="bg-white hover:bg-brand-muted/20"<?= ww_admin_row_attrs((string) $r['status']) ?>>
             <td class="px-6 py-4 font-medium text-slate-900">
               <?= htmlspecialchars((string) $r['first_name'] . ' ' . (string) $r['last_name'], ENT_QUOTES, 'UTF-8') ?>
@@ -89,7 +109,15 @@ require __DIR__ . '/partials/shell_open.php';
             <td class="px-6 py-4"><?= ww_admin_status_badge((string) $r['status']) ?></td>
             <td class="px-6 py-4 text-slate-500"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-right">
-              <button type="button" class="admin-btn admin-btn--primary admin-btn--sm js-user-modal-open" data-user-id="<?= (int) $r['id'] ?>">View</button>
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <button type="button" class="admin-btn admin-btn--primary admin-btn--sm js-user-modal-open" data-user-id="<?= $uid ?>">View</button>
+                <?php if ($rowCanSuspend): ?>
+                  <button type="button" class="admin-btn admin-btn--warning admin-btn--sm js-admin-user-suspend" data-user-id="<?= $uid ?>" data-user-name="<?= htmlspecialchars($rowName, ENT_QUOTES, 'UTF-8') ?>" data-return="users">Suspend</button>
+                <?php endif; ?>
+                <?php if ($rowCanDelete): ?>
+                  <button type="button" class="admin-btn admin-btn--danger admin-btn--sm js-admin-user-delete" data-user-id="<?= $uid ?>" data-user-name="<?= htmlspecialchars($rowName, ENT_QUOTES, 'UTF-8') ?>" data-return="users">Delete</button>
+                <?php endif; ?>
+              </div>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -155,6 +183,18 @@ require __DIR__ . '/partials/shell_open.php';
         });
     });
   });
+})();
+</script>
+
+<?php
+$confirmModalUserPhp = $userPhp;
+require __DIR__ . '/partials/user_confirm_modal.php';
+?>
+<script src="<?= htmlspecialchars(($base === '' || $base === '.' ? '' : $base) . '/assets/admin-user-actions.js', ENT_QUOTES, 'UTF-8') ?>"></script>
+<script>
+(function () {
+  var m = document.getElementById('admin-user-confirm-modal');
+  if (m) m.setAttribute('data-user-php-base', <?= json_encode($userPhp, JSON_THROW_ON_ERROR) ?>);
 })();
 </script>
 

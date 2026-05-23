@@ -41,6 +41,7 @@ function ww_admin_status_tone(string $status): string
         'cancelled' => 'danger',
         'canceled' => 'danger',
         'suspended' => 'danger',
+        'removed' => 'neutral',
         'dismissed' => 'neutral',
 
         'business' => 'violet',

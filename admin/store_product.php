@@ -13,6 +13,7 @@ if ($id <= 0) {
 
 $pdo = witnessworld_pdo();
 $adminId = (int) ($_SESSION['admin_id'] ?? 0);
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
@@ -56,6 +57,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $pdo->prepare(
                     'UPDATE store_products SET moderation_status = ?, admin_note = NULL, reviewed_at = NULL, reviewed_by_admin_id = NULL WHERE id = ?'
                 )->execute(['pending_approval', $id]);
+            } elseif ($action === 'suspend') {
+                ww_content_suspend($pdo, 'product', $id, $adminId, $note !== '' ? $note : null);
+            } elseif ($action === 'delete') {
+                if (ww_content_delete($pdo, 'product', $id)) {
+                    $returnTo = trim((string) ($_POST['return_to'] ?? ''));
+                    ww_content_redirect_after_action('product', $id, 'delete', $returnTo, $base);
+                }
             }
         }
     } catch (Throwable) {
@@ -63,12 +71,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
     $returnTo = trim((string) ($_POST['return_to'] ?? ''));
-    if ($returnTo === 'list') {
-        header('Location: store_products.php?moderated=1');
-        exit;
-    }
-    header('Location: store_product.php?id=' . $id);
-    exit;
+    ww_content_redirect_after_action('product', $id, $action, $returnTo, $base);
 }
 
 $product = null;
@@ -202,4 +205,11 @@ require __DIR__ . '/partials/shell_open.php';
   </div>
 </div>
 
+<?php
+$contentRow = $product;
+$entityType = 'product';
+$entityId = $id;
+require __DIR__ . '/partials/content_detail_controls.php';
+require __DIR__ . '/partials/content_confirm_scripts.php';
+?>
 <?php require __DIR__ . '/partials/shell_close.php'; ?>

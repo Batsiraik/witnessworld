@@ -60,6 +60,8 @@ $hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollReferral !== '
   </div>
 <?php endif; ?>
 
+<?php require __DIR__ . '/user_admin_actions.php'; ?>
+
 <?php if ($showOpenFullPageLink): ?>
   <p class="text-center text-xs text-slate-500">
     <a class="font-semibold text-brand hover:underline" href="user.php?id=<?= (int) $id ?>" target="_blank" rel="noopener">Open full page</a>

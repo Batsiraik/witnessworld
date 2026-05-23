@@ -59,6 +59,13 @@ require __DIR__ . '/partials/sidebar.php';
 require __DIR__ . '/partials/shell_open.php';
 ?>
 
+<?php if (isset($_GET['suspended']) && $_GET['suspended'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">Store suspended — hidden from the app until reviewed again.</div>
+<?php endif; ?>
+<?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">Store deleted permanently.</div>
+<?php endif; ?>
+
 <?php if ($dbError !== null): ?>
   <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><?= htmlspecialchars($dbError, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
@@ -119,7 +126,16 @@ require __DIR__ . '/partials/shell_open.php';
             <td class="px-6 py-4"><?= ww_admin_status_badge((string) ($r['moderation_status'] ?? '')) ?></td>
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <?= ww_admin_btn_link($detail, 'Moderate', 'primary', ['class' => 'admin-btn--sm']) ?>
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <?= ww_admin_btn_link($detail, 'Moderate', 'primary', ['class' => 'admin-btn--sm']) ?>
+                <?php
+                  $entityType = 'store';
+                  $entityId = $sid;
+                  $row = $r;
+                  $return = 'list';
+                  require __DIR__ . '/partials/content_list_action_buttons.php';
+                ?>
+              </div>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -131,4 +147,5 @@ require __DIR__ . '/partials/shell_open.php';
   </div>
 </div>
 
+<?php require __DIR__ . '/partials/content_confirm_scripts.php'; ?>
 <?php require __DIR__ . '/partials/shell_close.php'; ?>

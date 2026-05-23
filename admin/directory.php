@@ -71,6 +71,12 @@ require __DIR__ . '/partials/shell_open.php';
 <?php if (isset($_GET['moderated']) && $_GET['moderated'] === '1'): ?>
   <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 font-medium">Directory listing updated.</div>
 <?php endif; ?>
+<?php if (isset($_GET['suspended']) && $_GET['suspended'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">Directory listing suspended.</div>
+<?php endif; ?>
+<?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">Directory listing deleted permanently.</div>
+<?php endif; ?>
 
 <div class="rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden">
   <div class="border-b border-slate-100 px-6 py-4 space-y-4">
@@ -127,7 +133,16 @@ require __DIR__ . '/partials/shell_open.php';
             <td class="px-6 py-4"><?= ww_admin_status_badge((string) ($r['moderation_status'] ?? '')) ?></td>
             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <?= ww_admin_btn_link($detail, 'Review', 'primary', ['class' => 'admin-btn--sm']) ?>
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <?= ww_admin_btn_link($detail, 'Review', 'primary', ['class' => 'admin-btn--sm']) ?>
+                <?php
+                  $entityType = 'directory';
+                  $entityId = $did;
+                  $row = $r;
+                  $return = 'list';
+                  require __DIR__ . '/partials/content_list_action_buttons.php';
+                ?>
+              </div>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -139,4 +154,5 @@ require __DIR__ . '/partials/shell_open.php';
   </div>
 </div>
 
+<?php require __DIR__ . '/partials/content_confirm_scripts.php'; ?>
 <?php require __DIR__ . '/partials/shell_close.php'; ?>

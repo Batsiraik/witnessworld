@@ -13,6 +13,7 @@ if ($id <= 0) {
 
 $pdo = witnessworld_pdo();
 $adminId = (int) ($_SESSION['admin_id'] ?? 0);
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
@@ -46,21 +47,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     (string) $row['name']
                 );
             } elseif ($action === 'suspend') {
-                $pdo->prepare(
-                    'UPDATE stores SET moderation_status = ?, admin_note = ?, reviewed_at = ?, reviewed_by_admin_id = ? WHERE id = ?'
-                )->execute(['suspended', $note !== '' ? $note : null, $now, $adminId > 0 ? $adminId : null, $id]);
+                ww_content_suspend($pdo, 'store', $id, $adminId, $note !== '' ? $note : null);
             } elseif ($action === 'reopen') {
                 $pdo->prepare(
                     'UPDATE stores SET moderation_status = ?, admin_note = NULL, reviewed_at = NULL, reviewed_by_admin_id = NULL WHERE id = ?'
                 )->execute(['pending_approval', $id]);
+            } elseif ($action === 'delete') {
+                if (ww_content_delete($pdo, 'store', $id)) {
+                    $returnTo = trim((string) ($_POST['return_to'] ?? ''));
+                    ww_content_redirect_after_action('store', $id, 'delete', $returnTo, $base);
+                }
             }
         }
     } catch (Throwable) {
         header('Location: stores.php');
         exit;
     }
-    header('Location: store.php?id=' . $id);
-    exit;
+    $returnTo = trim((string) ($_POST['return_to'] ?? ''));
+    ww_content_redirect_after_action('store', $id, $action, $returnTo, $base);
 }
 
 $store = null;
@@ -247,4 +251,11 @@ require __DIR__ . '/partials/shell_open.php';
   </div>
 </div>
 
+<?php
+$contentRow = $store;
+$entityType = 'store';
+$entityId = $id;
+require __DIR__ . '/partials/content_detail_controls.php';
+require __DIR__ . '/partials/content_confirm_scripts.php';
+?>
 <?php require __DIR__ . '/partials/shell_close.php'; ?>
