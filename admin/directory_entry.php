@@ -208,7 +208,7 @@ require __DIR__ . '/partials/shell_open.php';
         <div class="flex flex-wrap gap-3">
           <button type="submit" name="action" value="approve" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Approve listing</button>
           <button type="submit" name="action" value="reject" class="rounded-xl bg-slate-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Reject</button>
-          <button type="submit" name="action" value="suspend" class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700" onclick="return confirm('Suspend this listing?');">Suspend</button>
+          <button type="submit" name="action" value="suspend" class="admin-btn admin-btn--warning px-5 py-2.5 text-sm" onclick="return confirm('Suspend this listing?');">Suspend</button>
         </div>
       </form>
     <?php elseif ($status === 'approved'): ?>
@@ -218,7 +218,7 @@ require __DIR__ . '/partials/shell_open.php';
           <textarea id="admin_note" name="admin_note" rows="2" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"></textarea>
         </div>
         <div class="flex flex-wrap gap-3">
-          <button type="submit" name="action" value="suspend" class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700" onclick="return confirm('Suspend?');">Suspend</button>
+          <button type="submit" name="action" value="suspend" class="admin-btn admin-btn--warning px-5 py-2.5 text-sm" onclick="return confirm('Suspend?');">Suspend</button>
           <button type="submit" name="action" value="reject" class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Reject instead</button>
         </div>
       </form>
