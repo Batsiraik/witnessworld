@@ -2,17 +2,43 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
-require_once dirname(__DIR__, 2) . '/api/config.php';
-require_once dirname(__DIR__, 2) . '/api/lib/Mailer.php';
-require_once dirname(__DIR__, 2) . '/api/lib/EmailTemplates.php';
-
 const WW_ADMIN_DEVICE_COOKIE = 'ww_admin_device';
 const WW_ADMIN_DEVICE_TRUST_DAYS = 7;
 const WW_ADMIN_OTP_MINUTES = 15;
 
+function ww_admin_project_root(): string
+{
+    return dirname(__DIR__, 2);
+}
+
+function ww_admin_bootstrap_mailer(): void
+{
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $root = ww_admin_project_root();
+    $autoload = $root . '/vendor/autoload.php';
+    if (!is_file($autoload)) {
+        throw new RuntimeException('Missing vendor/autoload.php — run composer install on the server.');
+    }
+    require_once $autoload;
+    if (!defined('WW_PUBLIC_BASE')) {
+        require_once $root . '/api/config.php';
+    }
+    require_once $root . '/api/lib/EmailTemplates.php';
+    require_once $root . '/api/lib/Mailer.php';
+    $ready = true;
+}
+
 function ww_admin_email_logo_url(): ?string
 {
+    if (!defined('WW_EMAIL_LOGO_URL')) {
+        $cfg = ww_admin_project_root() . '/api/config.php';
+        if (is_file($cfg)) {
+            require_once $cfg;
+        }
+    }
     return (defined('WW_EMAIL_LOGO_URL') && WW_EMAIL_LOGO_URL !== '') ? (string) WW_EMAIL_LOGO_URL : null;
 }
 
@@ -24,7 +50,8 @@ function ww_admin_public_login_url(): string
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
     $scriptDir = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/admin')));
-    if (!str_ends_with($scriptDir, '/admin')) {
+    $len = strlen($scriptDir);
+    if ($len < 6 || substr($scriptDir, -6) !== '/admin') {
         $scriptDir = rtrim($scriptDir, '/') . '/admin';
     }
     return $scheme . '://' . $host . $scriptDir . '/login.php';
@@ -83,8 +110,29 @@ function ww_admin_device_cookie_value(): ?string
 /**
  * @return array<string, mixed>|null
  */
+function ww_admin_trusted_devices_ready(PDO $pdo): bool
+{
+    static $ready = null;
+    if ($ready !== null) {
+        return $ready;
+    }
+    try {
+        $pdo->query('SELECT 1 FROM admin_trusted_devices LIMIT 1');
+        $ready = true;
+    } catch (Throwable) {
+        $ready = false;
+    }
+    return $ready;
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
 function ww_admin_find_trusted_device(PDO $pdo, int $adminId, string $token): ?array
 {
+    if (!ww_admin_trusted_devices_ready($pdo)) {
+        return null;
+    }
     $hash = hash('sha256', $token);
     $st = $pdo->prepare(
         'SELECT * FROM admin_trusted_devices
@@ -120,6 +168,9 @@ function ww_admin_set_device_cookie(string $token): void
 
 function ww_admin_create_trusted_device(PDO $pdo, int $adminId): void
 {
+    if (!ww_admin_trusted_devices_ready($pdo)) {
+        return;
+    }
     $token = bin2hex(random_bytes(32));
     $hash = hash('sha256', $token);
     $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
@@ -159,8 +210,12 @@ function ww_admin_issue_login_otp(PDO $pdo, int $adminId): string
 {
     $otp = (string) random_int(100000, 999999);
     $exp = (new DateTimeImmutable())->modify('+' . WW_ADMIN_OTP_MINUTES . ' minutes')->format('Y-m-d H:i:s');
-    $pdo->prepare('UPDATE admins SET login_otp = ?, login_otp_expires_at = ? WHERE id = ?')
-        ->execute([$otp, $exp, $adminId]);
+    try {
+        $pdo->prepare('UPDATE admins SET login_otp = ?, login_otp_expires_at = ? WHERE id = ?')
+            ->execute([$otp, $exp, $adminId]);
+    } catch (Throwable) {
+        // login_otp columns not migrated yet — OTP still returned for session step.
+    }
     return $otp;
 }
 
@@ -172,6 +227,7 @@ function ww_admin_clear_login_otp(PDO $pdo, int $adminId): void
 
 function ww_admin_send_login_otp_email(PDO $pdo, array $admin, string $otp): bool
 {
+    ww_admin_bootstrap_mailer();
     $mailer = new Mailer($pdo);
     $name = trim((string) ($admin['name'] ?? 'Admin'));
     $tpl = EmailTemplates::adminLoginOtp($name, $otp, ww_admin_email_logo_url());
@@ -186,6 +242,7 @@ function ww_admin_send_login_otp_email(PDO $pdo, array $admin, string $otp): boo
 
 function ww_admin_send_welcome_email(PDO $pdo, array $admin, string $username, string $plainPassword): bool
 {
+    ww_admin_bootstrap_mailer();
     $mailer = new Mailer($pdo);
     $name = trim((string) ($admin['name'] ?? 'Admin'));
     $loginUrl = ww_admin_public_login_url();
@@ -216,11 +273,6 @@ function ww_admin_begin_otp_pending(int $adminId): void
 {
     unset($_SESSION['admin_id'], $_SESSION['admin_username'], $_SESSION['admin_name'], $_SESSION['admin_email'], $_SESSION['admin_super']);
     $_SESSION['admin_otp_pending_id'] = $adminId;
-}
-
-function ww_admin_otp_pending_id(): int
-{
-    return (int) ($_SESSION['admin_otp_pending_id'] ?? 0);
 }
 
 function ww_admin_verify_login_otp(PDO $pdo, int $adminId, string $code): bool

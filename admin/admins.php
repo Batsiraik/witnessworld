@@ -42,7 +42,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 'name' => $name,
                 'email' => $email,
             ];
-            $sent = ww_admin_send_welcome_email($pdo, $adminRow, $username, $plainPassword);
+            try {
+                $sent = ww_admin_send_welcome_email($pdo, $adminRow, $username, $plainPassword);
+            } catch (Throwable) {
+                $sent = false;
+            }
             if ($sent) {
                 $flash = 'Admin created. Login details were emailed to ' . $email . '.';
             } else {
