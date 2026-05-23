@@ -189,8 +189,8 @@ require __DIR__ . '/partials/shell_open.php';
   </div>
 <?php endif; ?>
 
-<div class="grid gap-6 lg:grid-cols-[minmax(240px,320px)_1fr]">
-  <div class="rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden">
+<div class="admin-support-layout grid gap-6 lg:grid-cols-[minmax(240px,320px)_1fr]<?= $openId > 0 ? ' admin-support-chat-open' : '' ?>">
+  <div class="admin-support-list rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden">
     <div class="border-b border-slate-100 px-4 py-3">
       <h2 class="text-sm font-semibold text-slate-900">Conversations</h2>
       <p class="mt-0.5 text-xs text-slate-500">Users who messaged support</p>
@@ -237,9 +237,9 @@ require __DIR__ . '/partials/shell_open.php';
     </ul>
   </div>
 
-  <div class="rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden flex flex-col min-h-[320px]">
+  <div class="admin-support-chat rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden flex flex-col min-h-[320px] lg:min-h-[calc(100vh-8rem)]">
     <?php if ($openId <= 0): ?>
-      <div class="flex flex-1 items-center justify-center p-8 text-sm text-slate-500">
+      <div class="admin-support-chat-empty flex flex-1 items-center justify-center p-8 text-sm text-slate-500">
         Select a user on the left to view messages and reply.
       </div>
     <?php elseif ($suid <= 0): ?>
@@ -264,12 +264,21 @@ require __DIR__ . '/partials/shell_open.php';
             }
         }
         ?>
-      <div class="border-b border-slate-100 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-sm font-semibold text-slate-900"><?= htmlspecialchars($hdrName !== '' ? $hdrName : 'Conversation', ENT_QUOTES, 'UTF-8') ?></h2>
+      <div class="admin-support-chat-header border-b border-slate-100 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <a
+            href="<?= htmlspecialchars($self, ENT_QUOTES, 'UTF-8') ?>"
+            class="admin-support-back lg:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-brand/40 hover:text-brand"
+            aria-label="Back to conversations"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </a>
+          <div class="min-w-0">
+          <h2 class="truncate text-sm font-semibold text-slate-900"><?= htmlspecialchars($hdrName !== '' ? $hdrName : 'Conversation', ENT_QUOTES, 'UTF-8') ?></h2>
           <?php if ($hdrMember): ?>
-            <p class="text-xs text-slate-500"><?= htmlspecialchars((string) $hdrMember['email'], ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="truncate text-xs text-slate-500"><?= htmlspecialchars((string) $hdrMember['email'], ENT_QUOTES, 'UTF-8') ?></p>
           <?php endif; ?>
+          </div>
         </div>
         <?php if ($mid > 0): ?>
           <a
@@ -280,7 +289,7 @@ require __DIR__ . '/partials/shell_open.php';
           </a>
         <?php endif; ?>
       </div>
-      <div class="flex-1 overflow-y-auto max-h-[50vh] space-y-3 p-4 bg-slate-50/80">
+      <div class="admin-support-messages flex-1 min-h-0 overflow-y-auto max-h-[50vh] lg:max-h-none space-y-3 p-4 bg-slate-50/80">
         <?php foreach ($messages as $msg): ?>
           <?php
             $isStaff = (int) $msg['sender_user_id'] === $suid;
@@ -330,7 +339,7 @@ require __DIR__ . '/partials/shell_open.php';
           <p class="text-center text-sm text-slate-500 py-6">No messages in this thread yet.</p>
         <?php endif; ?>
       </div>
-      <form method="post" class="border-t border-slate-100 p-4 space-y-2 bg-white">
+      <form method="post" class="admin-support-reply border-t border-slate-100 p-4 space-y-2 bg-white shrink-0">
         <input type="hidden" name="action" value="reply" />
         <input type="hidden" name="conversation_id" value="<?= (int) $openId ?>" />
         <label class="text-xs font-semibold text-slate-600">Reply as Customer Support</label>
@@ -342,7 +351,7 @@ require __DIR__ . '/partials/shell_open.php';
           required
           maxlength="6000"
         ></textarea>
-        <button type="submit" class="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:opacity-95">
+        <button type="submit" class="w-full rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:opacity-95 sm:w-auto">
           Send &amp; notify user
         </button>
         <p class="text-[11px] text-slate-500">The user receives a push notification when you send.</p>

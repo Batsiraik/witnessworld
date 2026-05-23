@@ -123,6 +123,44 @@
     width: 100%;
     justify-content: center;
   }
+
+  /* Customer support: list OR full-screen chat on mobile */
+  .admin-support-layout:not(.admin-support-chat-open) .admin-support-chat {
+    display: none;
+  }
+
+  .admin-support-layout.admin-support-chat-open .admin-support-list {
+    display: none;
+  }
+
+  .admin-support-layout.admin-support-chat-open .admin-support-chat {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 5.25rem);
+    max-height: calc(100dvh - 5.25rem);
+  }
+
+  .admin-support-layout.admin-support-chat-open .admin-support-messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-support-layout.admin-support-chat-open .admin-support-reply {
+    flex-shrink: 0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
+  }
+
+  .admin-support-layout.admin-support-chat-open .admin-support-reply textarea {
+    min-height: 4.5rem;
+    font-size: 16px; /* avoids iOS zoom on focus */
+  }
+
+  .admin-support-list ul {
+    max-height: none !important;
+  }
 }
 
 @media (min-width: 1024px) {

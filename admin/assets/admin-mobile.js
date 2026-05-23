@@ -69,4 +69,19 @@
   } else {
     labelTables();
   }
+
+  /* Customer support: scroll to latest message when opening a thread on mobile */
+  function scrollSupportMessages() {
+    var box = document.querySelector('.admin-support-messages');
+    if (!box) return;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  if (document.querySelector('.admin-support-chat-open')) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', scrollSupportMessages);
+    } else {
+      scrollSupportMessages();
+    }
+  }
 })();
