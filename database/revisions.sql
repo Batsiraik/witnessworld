@@ -376,3 +376,22 @@ ALTER TABLE users
   ADD COLUMN registration_primary_purpose ENUM('browsing_connecting','promoting_business','both') NULL AFTER registration_account_type,
   ADD COLUMN registration_referral_source ENUM('friend_family','social_media','whatsapp_group','wwc_team_member','other') NULL AFTER registration_primary_purpose,
   ADD COLUMN registration_referral_other VARCHAR(200) NULL AFTER registration_referral_source;
+
+-- ---------------------------------------------------------------------------
+-- 2026-05-22: Admin panel OTP login + trusted devices (7-day rolling)
+-- ---------------------------------------------------------------------------
+ALTER TABLE admins
+  ADD COLUMN login_otp VARCHAR(6) NULL AFTER email,
+  ADD COLUMN login_otp_expires_at DATETIME NULL AFTER login_otp;
+
+CREATE TABLE IF NOT EXISTS admin_trusted_devices (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  user_agent_hash CHAR(64) NOT NULL DEFAULT '',
+  last_seen_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_atd_admin FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_atd_token (token_hash),
+  INDEX idx_atd_admin_seen (admin_id, last_seen_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

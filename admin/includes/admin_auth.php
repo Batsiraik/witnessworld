@@ -19,9 +19,34 @@ if (session_status() === PHP_SESSION_NONE) {
 
 function ww_admin_require(): void
 {
-    if (empty($_SESSION['admin_id'])) {
-        header('Location: login.php');
-        exit;
+    if (!empty($_SESSION['admin_id'])) {
+        ww_admin_maybe_touch_device();
+        return;
+    }
+    if (ww_admin_otp_pending_id() > 0) {
+        $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        if ($script !== 'verify-otp.php') {
+            header('Location: verify-otp.php');
+            exit;
+        }
+        return;
+    }
+    header('Location: login.php');
+    exit;
+}
+
+function ww_admin_maybe_touch_device(): void
+{
+    static $touched = false;
+    if ($touched || empty($_SESSION['admin_id'])) {
+        return;
+    }
+    $touched = true;
+    require_once __DIR__ . '/admin_security.php';
+    try {
+        ww_admin_touch_trusted_device(witnessworld_pdo(), (int) $_SESSION['admin_id']);
+    } catch (Throwable) {
+        // Table may not exist until migration is applied.
     }
 }
 
@@ -37,6 +62,11 @@ function ww_admin_user(): array
         'email' => (string) ($_SESSION['admin_email'] ?? ''),
         'is_super' => !empty($_SESSION['admin_super']),
     ];
+}
+
+function ww_admin_otp_pending_id(): int
+{
+    return (int) ($_SESSION['admin_otp_pending_id'] ?? 0);
 }
 
 function ww_admin_require_super(): void

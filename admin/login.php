@@ -3,9 +3,14 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/admin_security.php';
 
 if (!empty($_SESSION['admin_id'])) {
     header('Location: index.php');
+    exit;
+}
+if (ww_admin_otp_pending_id() > 0) {
+    header('Location: verify-otp.php');
     exit;
 }
 
@@ -23,17 +28,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $st->execute([$user]);
             $row = $st->fetch(PDO::FETCH_ASSOC);
             if ($row && password_verify($pass, (string) $row['password_hash'])) {
-                $_SESSION['admin_id'] = (int) $row['id'];
-                $_SESSION['admin_username'] = (string) $row['username'];
-                $_SESSION['admin_name'] = (string) $row['name'];
-                $_SESSION['admin_email'] = (string) $row['email'];
-                $_SESSION['admin_super'] = (bool) $row['is_super_admin'];
-                header('Location: index.php');
+                $result = ww_admin_complete_password_login($pdo, $row);
+                if ($result === 'session') {
+                    header('Location: index.php');
+                    exit;
+                }
+                header('Location: verify-otp.php');
                 exit;
             }
             $error = 'Invalid username or password.';
         } catch (Throwable) {
-            $error = 'Database error. On the server, add admin/includes/config.local.php with Hostinger MySQL host, name, user, and password (often host is "localhost"). Ensure the admins table exists.';
+            $error = 'Database error. Ensure admin OTP tables exist (run database/revisions.sql). Check config.local.php.';
         }
     }
 }
@@ -48,7 +53,7 @@ $pageTitle = 'Admin sign in';
   <?php
     $adminFavBase = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
     if ($adminFavBase === '' || $adminFavBase === '.') {
-      $adminFavBase = '';
+        $adminFavBase = '';
     }
     $faviconHref = ($adminFavBase !== '' ? $adminFavBase : '') . '/favicon.png';
     ?>
@@ -77,6 +82,7 @@ $pageTitle = 'Admin sign in';
       </div>
       <button type="submit" class="w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">Sign in</button>
     </form>
+    <p class="mt-4 text-xs text-slate-500 leading-relaxed">New browser or after 7 days without a visit, we email you a one-time code to finish signing in.</p>
   </div>
 </body>
 </html>

@@ -50,8 +50,22 @@ CREATE TABLE admins (
   password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(120) NOT NULL,
   email VARCHAR(255) NOT NULL,
+  login_otp VARCHAR(6) NULL,
+  login_otp_expires_at DATETIME NULL,
   is_super_admin TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE admin_trusted_devices (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  user_agent_hash CHAR(64) NOT NULL DEFAULT '',
+  last_seen_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_atd_admin FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_atd_token (token_hash),
+  INDEX idx_atd_admin_seen (admin_id, last_seen_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Default super admin: username admin / password admin — change immediately after first login.

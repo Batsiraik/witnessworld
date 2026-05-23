@@ -60,6 +60,69 @@ final class EmailTemplates
         return ['html' => $html, 'text' => $text];
     }
 
+    /**
+     * @return array{html: string, text: string}
+     */
+    public static function adminLoginOtp(string $name, string $otp, ?string $logoUrl = null): array
+    {
+        $safeName = self::e($name);
+        $safeOtp = self::e($otp);
+        $html = self::layout(
+            preheader: "Your admin sign-in code is {$safeOtp}. Expires in 15 minutes.",
+            heading: 'Admin sign-in code',
+            intro: "Hi {$safeName}, use this code to finish signing in to the Witness World Connect admin panel.",
+            otp: $safeOtp,
+            otpLabel: 'Your sign-in code',
+            footerLine: 'This code expires in 15 minutes. If you did not try to sign in, you can ignore this email.',
+            logoUrl: $logoUrl
+        );
+        $text = "Hi {$name},\n\nYour admin sign-in code is: {$otp}\n\nThis code expires in 15 minutes.\n\n— Witness World Connect Admin\n";
+        return ['html' => $html, 'text' => $text];
+    }
+
+    /**
+     * @return array{html: string, text: string}
+     */
+    public static function adminWelcomeCredentials(
+        string $name,
+        string $username,
+        string $password,
+        string $loginUrl,
+        ?string $logoUrl = null
+    ): array {
+        $safeName = self::e($name);
+        $safeUser = self::e($username);
+        $safePass = self::e($password);
+        $safeUrl = self::e($loginUrl);
+        $brand = self::BRAND;
+        $brandDark = self::BRAND_DARK;
+        $navy = self::NAVY;
+        $muted = self::MUTED;
+
+        $credentialsBox = '
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f9ff;border-radius:16px;border:1px solid rgba(31,170,242,0.28);">
+                <tr><td style="padding:16px 20px 8px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:' . $brandDark . ';">Username</td></tr>
+                <tr><td style="padding:0 20px 16px;font-family:Consolas,Monaco,monospace;font-size:16px;font-weight:700;color:' . $navy . ';">' . $safeUser . '</td></tr>
+                <tr><td style="padding:0 20px 8px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:' . $brandDark . ';">Temporary password</td></tr>
+                <tr><td style="padding:0 20px 20px;font-family:Consolas,Monaco,monospace;font-size:15px;font-weight:700;color:' . $navy . ';">' . $safePass . '</td></tr>
+              </table>
+              <p style="margin:24px 0 0;text-align:center;">
+                <a href="' . $safeUrl . '" style="display:inline-block;background:' . $brand . ';color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Open admin sign-in</a>
+              </p>
+              <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:' . $muted . ';text-align:center;word-break:break-all;">' . $safeUrl . '</p>';
+
+        $html = self::shell(
+            preheader: 'You have been added as a Witness World Connect admin. Sign in with the credentials inside.',
+            heading: 'Welcome to the admin panel',
+            intro: "Hi {$safeName}, you have been added as an administrator for Witness World Connect. Use the credentials below to sign in. You will receive a one-time code by email when signing in from a new browser.",
+            mainHtml: $credentialsBox,
+            footerLine: 'Please change your password after your first sign-in if your team policy requires it. Keep these details private.',
+            logoUrl: $logoUrl
+        );
+        $text = "Hi {$name},\n\nYou have been added as a Witness World Connect admin.\n\nUsername: {$username}\nPassword: {$password}\n\nSign in: {$loginUrl}\n\nYou will receive a one-time code by email when signing in from a new browser.\n\n— Witness World Connect Admin\n";
+        return ['html' => $html, 'text' => $text];
+    }
+
     private static function e(string $s): string
     {
         return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
@@ -74,9 +137,31 @@ final class EmailTemplates
         string $footerLine,
         ?string $logoUrl
     ): string {
+        $navy = self::NAVY;
+        $brandDark = self::BRAND_DARK;
+        $muted = self::MUTED;
+        $otpBlock = '
+              <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:' . $brandDark . ';">' . self::e($otpLabel) . '</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f9ff;border-radius:16px;border:1px solid rgba(31,170,242,0.28);">
+                <tr>
+                  <td align="center" style="padding:24px 16px;">
+                    <span style="font-family:\'SF Mono\',Consolas,Monaco,monospace;font-size:36px;font-weight:800;letter-spacing:0.35em;color:' . $navy . ';">' . $otp . '</span>
+                  </td>
+                </tr>
+              </table>';
+        return self::shell($preheader, $heading, $intro, $otpBlock, $footerLine, $logoUrl);
+    }
+
+    private static function shell(
+        string $preheader,
+        string $heading,
+        string $intro,
+        string $mainHtml,
+        string $footerLine,
+        ?string $logoUrl
+    ): string {
         $pre = self::e($preheader);
         $brand = self::BRAND;
-        $brandDark = self::BRAND_DARK;
         $navy = self::NAVY;
         $sand = self::SAND;
         $muted = self::MUTED;
@@ -126,14 +211,7 @@ final class EmailTemplates
             <td style="padding:32px 28px 24px;">
               <h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:' . $navy . ';letter-spacing:-0.02em;">' . self::e($heading) . '</h1>
               <p style="margin:0 0 28px;font-size:15px;line-height:1.55;color:' . $muted . ';">' . $intro . '</p>
-              <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:' . $brandDark . ';">' . self::e($otpLabel) . '</p>
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f9ff;border-radius:16px;border:1px solid rgba(31,170,242,0.28);">
-                <tr>
-                  <td align="center" style="padding:24px 16px;">
-                    <span style="font-family:\'SF Mono\',Consolas,Monaco,monospace;font-size:36px;font-weight:800;letter-spacing:0.35em;color:' . $navy . ';">' . $otp . '</span>
-                  </td>
-                </tr>
-              </table>
+              ' . $mainHtml . '
               <p style="margin:28px 0 0;font-size:13px;line-height:1.5;color:' . $muted . ';">' . self::e($footerLine) . '</p>
             </td>
           </tr>
