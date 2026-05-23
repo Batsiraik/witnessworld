@@ -17,19 +17,12 @@ $home = $base === '' ? 'index.php' : $base . '/index.php';
 $users = $base === '' ? 'users.php' : $base . '/users.php';
 $businesses = $base === '' ? 'businesses.php' : $base . '/businesses.php';
 $settings = $base === '' ? 'settings.php' : $base . '/settings.php';
-$listings = $base === '' ? 'listings.php' : $base . '/listings.php';
+$contentHub = $base === '' ? 'content.php' : $base . '/content.php';
+$categoriesHub = $base === '' ? 'categories.php' : $base . '/categories.php';
 $featuredListings = $base === '' ? 'featured_listings.php' : $base . '/featured_listings.php';
 $createContent = $base === '' ? 'create_content.php' : $base . '/create_content.php';
 $storeAddProducts = $base === '' ? 'store_add_products.php' : $base . '/store_add_products.php';
 $commerceRequests = $base === '' ? 'commerce_requests.php' : $base . '/commerce_requests.php';
-$stores = $base === '' ? 'stores.php' : $base . '/stores.php';
-$storeProducts = $base === '' ? 'store_products.php' : $base . '/store_products.php';
-$directoryAdmin = $base === '' ? 'directory.php' : $base . '/directory.php';
-$marketplaceCategories = $base === '' ? 'marketplace_categories.php' : $base . '/marketplace_categories.php';
-$serviceCategories = $base === '' ? 'service_categories.php' : $base . '/service_categories.php';
-$storeCategories = $base === '' ? 'store_categories.php' : $base . '/store_categories.php';
-$directoryCategories = $base === '' ? 'directory_categories.php' : $base . '/directory_categories.php';
-$communityCategories = $base === '' ? 'community_categories.php' : $base . '/community_categories.php';
 $moderation = $base === '' ? 'moderation.php' : $base . '/moderation.php';
 $admins = $base === '' ? 'admins.php' : $base . '/admins.php';
 $pushNotifications = $base === '' ? 'push_notifications.php' : $base . '/push_notifications.php';
@@ -92,12 +85,19 @@ $isSuper = !empty($cu['is_super']);
       </span>
       Customer support
     </a>
-    <a href="<?= htmlspecialchars($listings, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('listings'), ENT_QUOTES, 'UTF-8') ?>">
+    <a href="<?= htmlspecialchars($contentHub, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('content'), ENT_QUOTES, 'UTF-8') ?>">
       <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
       </span>
-      Listings & gigs
+      Listings &amp; content
+    </a>
+    <a href="<?= htmlspecialchars($categoriesHub, ENT_QUOTES, 'UTF-8') ?>"
+       class="<?= htmlspecialchars($navClass('categories'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      </span>
+      Categories
     </a>
     <a href="<?= htmlspecialchars($featuredListings, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('featured_listings'), ENT_QUOTES, 'UTF-8') ?>">
@@ -126,62 +126,6 @@ $isSuper = !empty($cu['is_super']);
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 4h10a2 2 0 012 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 012-2z"/></svg>
       </span>
       Commerce requests
-    </a>
-    <a href="<?= htmlspecialchars($stores, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('stores'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-      </span>
-      Online stores
-    </a>
-    <a href="<?= htmlspecialchars($storeProducts, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('store_products'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-      </span>
-      Store products
-    </a>
-    <a href="<?= htmlspecialchars($directoryAdmin, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('directory'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-      </span>
-      Business directory
-    </a>
-    <a href="<?= htmlspecialchars($marketplaceCategories, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('marketplace_categories'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-      </span>
-      Marketplace categories
-    </a>
-    <a href="<?= htmlspecialchars($serviceCategories, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('service_categories'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-      </span>
-      Service categories
-    </a>
-    <a href="<?= htmlspecialchars($storeCategories, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('store_categories'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
-      </span>
-      Store categories
-    </a>
-    <a href="<?= htmlspecialchars($directoryCategories, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('directory_categories'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-      </span>
-      Directory categories
-    </a>
-    <a href="<?= htmlspecialchars($communityCategories, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('community_categories'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-      </span>
-      Community categories
     </a>
     <a href="<?= htmlspecialchars($moderation, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('moderation'), ENT_QUOTES, 'UTF-8') ?>">

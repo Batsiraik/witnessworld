@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/push_triggers.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
-    header('Location: listings.php');
+    header('Location: ' . ww_admin_content_url('classified'));
     exit;
 }
 
@@ -75,7 +75,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             }
         }
     } catch (Throwable) {
-        header('Location: listings.php');
+        header('Location: ' . ww_admin_content_url('classified'));
         exit;
     }
     $returnTo = trim((string) ($_POST['return_to'] ?? ''));
@@ -98,16 +98,19 @@ try {
     $st->execute([$id]);
     $listing = $st->fetch(PDO::FETCH_ASSOC);
 } catch (Throwable) {
-    header('Location: listings.php');
+    header('Location: ' . ww_admin_content_url('classified'));
     exit;
 }
 if (!$listing) {
-    header('Location: listings.php');
+    header('Location: ' . ww_admin_content_url('classified'));
     exit;
 }
 
+$listBack = ww_admin_content_url(ww_admin_content_tab_for_entity('listing', (string) $listing['listing_type']), $base);
+$listReturn = ww_admin_content_return_token(ww_admin_content_tab_for_entity('listing', (string) $listing['listing_type']));
+
 $pageTitle = 'Listing #' . $id;
-$activeNav = 'listings';
+$activeNav = 'content';
 
 $status = (string) ($listing['moderation_status'] ?? '');
 
@@ -154,7 +157,7 @@ require __DIR__ . '/partials/shell_open.php';
 <div class="space-y-6">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <p class="text-sm text-slate-500"><a href="listings.php" class="font-semibold text-brand hover:underline">← Listings</a></p>
+      <p class="text-sm text-slate-500"><a href="<?= htmlspecialchars($listBack, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline">← Back to listings</a></p>
       <h2 class="text-lg font-semibold text-slate-900"><?= htmlspecialchars((string) $listing['title'], ENT_QUOTES, 'UTF-8') ?></h2>
       <p class="text-sm text-slate-600">#<?= (int) $listing['id'] ?> · <?= htmlspecialchars((string) $listing['listing_type'], ENT_QUOTES, 'UTF-8') ?></p>
     </div>

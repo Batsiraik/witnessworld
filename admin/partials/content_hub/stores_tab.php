@@ -1,0 +1,136 @@
+<?php
+/** @var PDO $pdo */
+/** @var string $tab */
+/** @var string $contentPage */
+/** @var string $base */
+/** @var string $hubReturn */
+/** @var array{label:string,desc:string} $tabMeta */
+
+$filter = (string) ($_GET['status'] ?? 'all');
+$allowed = ['all', 'pending_approval', 'approved', 'rejected', 'suspended'];
+if (!in_array($filter, $allowed, true)) {
+    $filter = 'all';
+}
+
+$sql = 'SELECT s.id, s.name, s.moderation_status, s.delivery_type, s.location_country_name, s.location_us_state,
+        s.created_at, stc.name AS category_name, u.email AS user_email, u.first_name, u.last_name, u.username
+        FROM stores s
+        INNER JOIN users u ON u.id = s.user_id
+        LEFT JOIN store_categories stc ON stc.id = s.category_id';
+$params = [];
+if ($filter !== 'all') {
+    $sql .= ' WHERE s.moderation_status = ?';
+    $params[] = $filter;
+}
+$sql .= ' ORDER BY s.id DESC';
+
+$rows = [];
+$dbError = null;
+try {
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable) {
+    $dbError = 'Store tables are missing. See database/README.md.';
+}
+
+$chipTones = [
+    'all' => 'brand',
+    'pending_approval' => 'warning',
+    'approved' => 'success',
+    'rejected' => 'neutral',
+    'suspended' => 'danger',
+];
+$chip = static function (string $key, string $label, string $cur) use ($contentPage, $tab, $chipTones): string {
+    return ww_admin_hub_status_chip($contentPage, $tab, $key, $label, $cur, $chipTones);
+};
+?>
+
+<?php if (isset($_GET['suspended']) && $_GET['suspended'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">Store suspended — hidden from the app until reviewed again.</div>
+<?php endif; ?>
+<?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
+  <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">Store deleted permanently.</div>
+<?php endif; ?>
+<?php if ($dbError !== null): ?>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><?= htmlspecialchars($dbError, ENT_QUOTES, 'UTF-8') ?></div>
+<?php endif; ?>
+
+<div class="rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden">
+  <div class="border-b border-slate-100 px-6 py-4 space-y-4">
+    <div>
+      <h2 class="text-base font-semibold text-slate-900"><?= htmlspecialchars($tabMeta['label'], ENT_QUOTES, 'UTF-8') ?></h2>
+      <p class="text-sm text-slate-500"><?= htmlspecialchars($tabMeta['desc'], ENT_QUOTES, 'UTF-8') ?></p>
+      <p class="mt-2 text-sm text-slate-700"><span class="font-semibold text-slate-900">How to approve:</span> open the store, scroll to <span class="font-semibold">Moderation</span>, then click <span class="font-semibold text-emerald-800">Approve store</span>.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <?= $chip('all', 'All', $filter) ?>
+      <?= $chip('pending_approval', 'Pending', $filter) ?>
+      <?= $chip('approved', 'Approved', $filter) ?>
+      <?= $chip('rejected', 'Rejected', $filter) ?>
+      <?= $chip('suspended', 'Suspended', $filter) ?>
+    </div>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-left text-sm">
+      <thead class="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <tr>
+          <th class="px-6 py-3">Store</th>
+          <th class="px-6 py-3">Owner</th>
+          <th class="px-6 py-3">Category</th>
+          <th class="px-6 py-3">Location</th>
+          <th class="px-6 py-3">Delivery</th>
+          <th class="px-6 py-3">Status</th>
+          <th class="px-6 py-3">Created</th>
+          <th class="px-6 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        <?php foreach ($rows as $r): ?>
+          <?php
+            $sid = (int) $r['id'];
+            $detail = ($base === '' || $base === '.') ? 'store.php?id=' . $sid : $base . '/store.php?id=' . $sid;
+            $loc = trim((string) ($r['location_country_name'] ?? ''));
+            $stt = trim((string) ($r['location_us_state'] ?? ''));
+            if ($stt !== '') {
+                $loc .= ($loc !== '' ? ' · ' : '') . $stt;
+            }
+            $del = str_replace('_', ' ', (string) ($r['delivery_type'] ?? ''));
+          ?>
+          <tr class="bg-white hover:bg-slate-50/80"<?= ww_admin_row_attrs((string) ($r['moderation_status'] ?? '')) ?>>
+            <td class="px-6 py-4">
+              <a href="<?= htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline"><?= htmlspecialchars((string) $r['name'], ENT_QUOTES, 'UTF-8') ?></a>
+            </td>
+            <td class="px-6 py-4 text-slate-700">
+              <?= htmlspecialchars(trim((string) $r['first_name'] . ' ' . (string) $r['last_name']), ENT_QUOTES, 'UTF-8') ?>
+              <span class="text-slate-500">(@<?= htmlspecialchars((string) $r['username'], ENT_QUOTES, 'UTF-8') ?>)</span>
+              <div class="text-xs text-slate-500"><?= htmlspecialchars((string) $r['user_email'], ENT_QUOTES, 'UTF-8') ?></div>
+            </td>
+            <td class="px-6 py-4 text-slate-700"><?= htmlspecialchars((string) ($r['category_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="px-6 py-4 text-slate-700"><?= $loc !== '' ? htmlspecialchars($loc, ENT_QUOTES, 'UTF-8') : '—' ?></td>
+            <td class="px-6 py-4 text-slate-700"><?= htmlspecialchars($del, ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="px-6 py-4"><?= ww_admin_status_badge((string) ($r['moderation_status'] ?? '')) ?></td>
+            <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <?= ww_admin_btn_link($detail, 'Moderate', 'primary', ['class' => 'admin-btn--sm']) ?>
+                <?php
+                  $entityType = 'store';
+                  $entityId = $sid;
+                  $row = $r;
+                  $return = $hubReturn;
+                  require __DIR__ . '/../content_list_action_buttons.php';
+                ?>
+              </div>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if ($rows === [] && $dbError === null): ?>
+          <tr><td colspan="8" class="px-6 py-10 text-center text-slate-500">No stores match this filter.</td></tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<?php require __DIR__ . '/../content_confirm_scripts.php'; ?>

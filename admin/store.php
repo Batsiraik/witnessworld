@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/push_triggers.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
-    header('Location: stores.php');
+    header('Location: ' . ww_admin_content_url('stores'));
     exit;
 }
 
@@ -60,7 +60,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             }
         }
     } catch (Throwable) {
-        header('Location: stores.php');
+        header('Location: ' . ww_admin_content_url('stores'));
         exit;
     }
     $returnTo = trim((string) ($_POST['return_to'] ?? ''));
@@ -81,16 +81,19 @@ try {
     $st->execute([$id]);
     $store = $st->fetch(PDO::FETCH_ASSOC);
 } catch (Throwable) {
-    header('Location: stores.php');
+    header('Location: ' . ww_admin_content_url('stores'));
     exit;
 }
 if (!$store) {
-    header('Location: stores.php');
+    header('Location: ' . ww_admin_content_url('stores'));
     exit;
 }
 
+$storeBack = ww_admin_content_url('stores', $base);
+$storeReturn = ww_admin_content_return_token('stores');
+
 $pageTitle = 'Store #' . $id;
-$activeNav = 'stores';
+$activeNav = 'content';
 
 $status = trim((string) ($store['moderation_status'] ?? ''));
 
@@ -115,7 +118,7 @@ require __DIR__ . '/partials/shell_open.php';
 <div class="space-y-6">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <p class="text-sm text-slate-500"><a href="stores.php" class="font-semibold text-brand hover:underline">← Stores</a></p>
+      <p class="text-sm text-slate-500"><a href="<?= htmlspecialchars($storeBack, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline">← Back to stores</a></p>
       <h2 class="text-lg font-semibold text-slate-900"><?= htmlspecialchars((string) $store['name'], ENT_QUOTES, 'UTF-8') ?></h2>
       <p class="text-sm text-slate-600">#<?= (int) $store['id'] ?> · <?= htmlspecialchars($delHuman, ENT_QUOTES, 'UTF-8') ?></p>
     </div>

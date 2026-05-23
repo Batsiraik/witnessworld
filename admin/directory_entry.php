@@ -8,7 +8,7 @@ require_once __DIR__ . '/../api/lib/directory_helpers.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
-    header('Location: directory.php');
+    header('Location: ' . ww_admin_content_url('directory'));
     exit;
 }
 
@@ -61,7 +61,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             }
         }
     } catch (Throwable) {
-        header('Location: directory.php');
+        header('Location: ' . ww_admin_content_url('directory'));
         exit;
     }
     $returnTo = trim((string) ($_POST['return_to'] ?? ''));
@@ -82,16 +82,19 @@ try {
     $st->execute([$id]);
     $entry = $st->fetch(PDO::FETCH_ASSOC);
 } catch (Throwable) {
-    header('Location: directory.php');
+    header('Location: ' . ww_admin_content_url('directory'));
     exit;
 }
 if (!$entry) {
-    header('Location: directory.php');
+    header('Location: ' . ww_admin_content_url('directory'));
     exit;
 }
 
+$directoryBack = ww_admin_content_url('directory', $base);
+$directoryReturn = ww_admin_content_return_token('directory');
+
 $pageTitle = 'Directory · ' . (string) $entry['business_name'];
-$activeNav = 'directory';
+$activeNav = 'content';
 
 $status = trim((string) ($entry['moderation_status'] ?? ''));
 $cats = ww_directory_categories();
@@ -107,7 +110,7 @@ require __DIR__ . '/partials/shell_open.php';
 <div class="space-y-6">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <p class="text-sm text-slate-500"><a href="directory.php" class="font-semibold text-brand hover:underline">← Directory</a></p>
+      <p class="text-sm text-slate-500"><a href="<?= htmlspecialchars($directoryBack, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline">← Back to directory</a></p>
       <h2 class="text-lg font-semibold text-slate-900"><?= htmlspecialchars((string) $entry['business_name'], ENT_QUOTES, 'UTF-8') ?></h2>
       <p class="text-sm text-slate-600">#<?= (int) $entry['id'] ?> · <?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></p>
     </div>

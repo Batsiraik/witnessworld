@@ -235,3 +235,9 @@ main .overflow-x-auto > table thead th {
 .admin-report-card[data-status-tone='neutral'] {
   border-left-color: #94a3b8;
 }
+
+/* Hub module tabs (Listings & content, Categories) */
+.admin-module-tabs {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}

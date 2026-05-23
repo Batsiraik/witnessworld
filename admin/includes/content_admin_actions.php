@@ -69,18 +69,44 @@ function ww_content_handler_url(string $type, int $id, string $base = ''): strin
     return $handler . '?id=' . $id;
 }
 
-function ww_content_list_url(string $type, string $base = ''): string
+function ww_content_list_url(string $type, string $base = '', ?string $contentTab = null): string
 {
-    $cfg = ww_content_entity_config($type);
-    if (!$cfg) {
-        return '#';
+    if (!function_exists('ww_admin_content_url')) {
+        require_once __DIR__ . '/admin_hub_config.php';
     }
-    $list = (string) $cfg['list'];
-    if ($base !== '' && $base !== '.') {
-        $list = $base . '/' . $list;
+    $tab = $contentTab !== null && $contentTab !== ''
+        ? ww_admin_content_tab_resolve($contentTab)
+        : ww_admin_content_tab_for_entity($type);
+
+    return ww_admin_content_url($tab, $base);
+}
+
+function ww_content_resolve_list_url(string $type, int $id, string $returnTo, string $base = ''): string
+{
+    if (!function_exists('ww_admin_content_url')) {
+        require_once __DIR__ . '/admin_hub_config.php';
+    }
+    if (str_starts_with($returnTo, 'list:')) {
+        return ww_admin_content_url(substr($returnTo, 5), $base);
+    }
+    if ($returnTo !== 'list') {
+        return ww_content_handler_url($type, $id, $base);
+    }
+    $tab = ww_admin_content_tab_for_entity($type);
+    if ($type === 'listing') {
+        try {
+            $st = witnessworld_pdo()->prepare('SELECT listing_type FROM listings WHERE id = ? LIMIT 1');
+            $st->execute([$id]);
+            $lt = $st->fetchColumn();
+            if (is_string($lt) && $lt !== '') {
+                $tab = ww_admin_content_tab_for_entity('listing', $lt);
+            }
+        } catch (Throwable) {
+            // use default tab
+        }
     }
 
-    return $list;
+    return ww_admin_content_url($tab, $base);
 }
 
 function ww_content_row_label(array $row, string $type): string
@@ -198,12 +224,11 @@ function ww_content_delete(PDO $pdo, string $type, int $id): bool
 function ww_content_redirect_after_action(string $type, int $id, string $action, string $returnTo, string $base = ''): void
 {
     if ($action === 'delete') {
-        $list = ww_content_list_url($type, $base);
-        header('Location: ' . $list . '?deleted=1');
+        header('Location: ' . ww_content_resolve_list_url($type, $id, $returnTo, $base) . '?deleted=1');
         exit;
     }
-    if ($returnTo === 'list') {
-        $list = ww_content_list_url($type, $base);
+    if ($returnTo === 'list' || str_starts_with($returnTo, 'list:')) {
+        $list = ww_content_resolve_list_url($type, $id, $returnTo, $base);
         $qs = $action === 'suspend' ? '?suspended=1' : '?moderated=1';
         header('Location: ' . $list . $qs);
         exit;

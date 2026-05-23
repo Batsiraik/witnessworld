@@ -54,7 +54,7 @@ require __DIR__ . '/partials/shell_open.php';
       <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-panel">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Gigs pending approval</p>
         <p class="mt-2 text-3xl font-bold text-amber-600"><?= (int) $listingsPending ?></p>
-        <a class="mt-2 inline-block text-xs font-semibold text-brand hover:underline" href="listings.php?status=pending_approval">Review listings →</a>
+        <a class="mt-2 inline-block text-xs font-semibold text-brand hover:underline" href="content.php?tab=classified&amp;status=pending_approval">Review listings →</a>
       </div>
       <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-panel">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Open content reports</p>
@@ -78,7 +78,7 @@ require __DIR__ . '/partials/shell_open.php';
       <h2 class="text-base font-semibold text-slate-900">Overview</h2>
       <p class="mt-2 text-sm leading-relaxed text-slate-600">
         Review new signups under <a class="font-semibold text-brand" href="users.php?status=pending_verification">App users</a> and approve gigs under
-        <a class="font-semibold text-brand" href="listings.php?status=pending_approval">Listings &amp; gigs</a>. Handle reports in
+        <a class="font-semibold text-brand" href="content.php?status=pending_approval">Listings &amp; content</a>. Handle reports in
         <a class="font-semibold text-brand" href="moderation.php">Content reports</a>. Email settings live in
         <a class="font-semibold text-brand" href="settings.php">Settings</a>.
       </p>

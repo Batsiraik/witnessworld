@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/push_triggers.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
-    header('Location: store_products.php');
+    header('Location: ' . ww_admin_content_url('products'));
     exit;
 }
 
@@ -67,7 +67,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             }
         }
     } catch (Throwable) {
-        header('Location: store_products.php');
+        header('Location: ' . ww_admin_content_url('products'));
         exit;
     }
     $returnTo = trim((string) ($_POST['return_to'] ?? ''));
@@ -89,16 +89,19 @@ try {
     $st->execute([$id]);
     $product = $st->fetch(PDO::FETCH_ASSOC);
 } catch (Throwable) {
-    header('Location: store_products.php');
+    header('Location: ' . ww_admin_content_url('products'));
     exit;
 }
 if (!$product) {
-    header('Location: store_products.php');
+    header('Location: ' . ww_admin_content_url('products'));
     exit;
 }
 
+$productBack = ww_admin_content_url('products', $base);
+$productReturn = ww_admin_content_return_token('products');
+
 $pageTitle = 'Product #' . $id;
-$activeNav = 'store_products';
+$activeNav = 'content';
 
 $status = (string) ($product['moderation_status'] ?? '');
 $priceLine = htmlspecialchars((string) $product['currency'] . ' ' . number_format((float) $product['price_amount'], 2), ENT_QUOTES, 'UTF-8');
@@ -111,7 +114,7 @@ require __DIR__ . '/partials/shell_open.php';
 <div class="space-y-6">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <p class="text-sm text-slate-500"><a href="store_products.php" class="font-semibold text-brand hover:underline">← Store products</a></p>
+      <p class="text-sm text-slate-500"><a href="<?= htmlspecialchars($productBack, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline">← Back to products</a></p>
       <h2 class="text-lg font-semibold text-slate-900"><?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8') ?></h2>
       <p class="text-sm text-slate-600">#<?= (int) $product['id'] ?> · <?= $priceLine ?></p>
     </div>

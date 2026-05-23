@@ -7,6 +7,9 @@ $_ww_category_delete_warning = isset($ww_category_delete_modal_warning) && is_st
     : 'Delete this category? This cannot be undone.';
 ?>
 <form id="delete-cat-form" method="post" class="hidden">
+  <?php if (!empty($categoryHubTab)): ?>
+    <input type="hidden" name="hub_tab" value="<?= htmlspecialchars((string) $categoryHubTab, ENT_QUOTES, 'UTF-8') ?>" />
+  <?php endif; ?>
   <input type="hidden" name="action" value="delete" />
   <input type="hidden" name="cat_id" id="delete-cat-id" />
 </form>
