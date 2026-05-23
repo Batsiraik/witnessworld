@@ -64,6 +64,17 @@ require __DIR__ . '/partials/shell_open.php';
     </div>
 
     <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
+      <h2 class="text-base font-semibold text-slate-900">Create content for members</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-600">
+        Post listings, stores, and directory profiles on behalf of users who send you their details. Content is published as approved immediately.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="create_content.php" class="admin-btn admin-btn--primary">Add a new listing</a>
+        <a href="store_add_products.php" class="admin-btn admin-btn--soft">Add store products</a>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
       <h2 class="text-base font-semibold text-slate-900">Overview</h2>
       <p class="mt-2 text-sm leading-relaxed text-slate-600">
         Review new signups under <a class="font-semibold text-brand" href="users.php?status=pending_verification">App users</a> and approve gigs under
