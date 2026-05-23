@@ -106,7 +106,7 @@ require __DIR__ . '/partials/shell_open.php';
         <label class="text-xs font-semibold text-slate-600">Email</label>
         <input type="email" name="email" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" required />
       </div>
-      <button type="submit" class="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">Add Adminstrator</button>
+      <button type="submit" class="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">Add Administrator</button>
     </form>
   </div>
 
