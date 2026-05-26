@@ -5,6 +5,12 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/push_triggers.php';
 require_once __DIR__ . '/../api/lib/directory_helpers.php';
+require_once __DIR__ . '/includes/admin_create_content.php';
+
+$apiConfig = dirname(__DIR__) . '/api/config.php';
+if (is_file($apiConfig)) {
+    require_once $apiConfig;
+}
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
@@ -53,6 +59,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $pdo->prepare(
                     'UPDATE directory_entries SET moderation_status = ?, admin_note = NULL, reviewed_at = NULL, reviewed_by_admin_id = NULL WHERE id = ?'
                 )->execute(['pending_approval', $id]);
+            } elseif ($action === 'update_logo') {
+                $newLogo = trim((string) ($_POST['logo_url'] ?? ''));
+                if ($newLogo !== '') {
+                    $pdo->prepare('UPDATE directory_entries SET logo_url = ? WHERE id = ?')->execute([$newLogo, $id]);
+                }
+                header('Location: directory_entry.php?id=' . $id . '&logo_updated=1');
+                exit;
             } elseif ($action === 'delete') {
                 if (ww_content_delete($pdo, 'directory', $id)) {
                     $returnTo = trim((string) ($_POST['return_to'] ?? ''));
@@ -127,14 +140,74 @@ require __DIR__ . '/partials/shell_open.php';
     <p class="mt-3"><a class="text-sm font-semibold text-brand hover:underline" href="user.php?id=<?= (int) $entry['user_id'] ?>">Open user profile</a></p>
   </div>
 
-  <?php if (!empty($entry['logo_url'])): ?>
-    <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
-      <h3 class="text-sm font-semibold text-slate-900">Logo</h3>
-      <a href="<?= htmlspecialchars((string) $entry['logo_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" class="mt-3 inline-block">
-        <img src="<?= htmlspecialchars((string) $entry['logo_url'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="h-24 w-24 rounded-xl object-cover ring-1 ring-slate-100" loading="lazy" />
-      </a>
-    </div>
+  <?php if (isset($_GET['logo_updated']) && $_GET['logo_updated'] === '1'): ?>
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">Logo updated.</div>
   <?php endif; ?>
+
+  <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
+    <h3 class="text-sm font-semibold text-slate-900">Logo</h3>
+    <?php if (!empty($entry['logo_url'])): ?>
+      <div class="mt-3">
+        <a href="<?= htmlspecialchars((string) $entry['logo_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
+          <img src="<?= htmlspecialchars((string) $entry['logo_url'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="h-24 w-24 rounded-xl object-cover ring-1 ring-slate-100" loading="lazy" />
+        </a>
+      </div>
+    <?php else: ?>
+      <p class="mt-2 text-sm text-amber-700 font-medium">No logo uploaded.</p>
+    <?php endif; ?>
+    <div class="mt-4 space-y-2">
+      <label class="block text-xs font-semibold text-slate-600"><?= !empty($entry['logo_url']) ? 'Replace logo' : 'Upload logo' ?></label>
+      <input type="file" accept="image/*" id="dir-logo-file" class="text-sm" />
+      <div id="dir-logo-status" class="text-xs text-slate-500"></div>
+      <div id="dir-logo-preview-new" class="hidden">
+        <img id="dir-logo-img-new" src="" alt="" class="h-16 w-16 rounded-xl object-cover ring-1 ring-slate-200" />
+      </div>
+      <form method="post" id="dir-logo-form">
+        <input type="hidden" name="action" value="update_logo" />
+        <input type="hidden" name="logo_url" id="dir-logo-url-hidden" value="" />
+        <button type="submit" id="dir-logo-save" class="admin-btn admin-btn--primary admin-btn--sm hidden">Save logo</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    var fileInput = document.getElementById('dir-logo-file');
+    var statusEl = document.getElementById('dir-logo-status');
+    var previewWrap = document.getElementById('dir-logo-preview-new');
+    var previewImg = document.getElementById('dir-logo-img-new');
+    var hiddenUrl = document.getElementById('dir-logo-url-hidden');
+    var saveBtn = document.getElementById('dir-logo-save');
+    if (!fileInput) return;
+
+    fileInput.addEventListener('change', function () {
+      if (!this.files || !this.files[0]) return;
+      statusEl.textContent = 'Uploading…';
+      saveBtn.classList.add('hidden');
+      previewWrap.classList.add('hidden');
+
+      var fd = new FormData();
+      fd.append('file', this.files[0]);
+      fd.append('user_id', String(<?= (int) $entry['user_id'] ?>));
+      fd.append('kind', 'directory');
+
+      fetch('admin_media_upload.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok && data.url) {
+            hiddenUrl.value = data.url;
+            previewImg.src = data.url;
+            previewWrap.classList.remove('hidden');
+            saveBtn.classList.remove('hidden');
+            statusEl.textContent = 'Uploaded — click Save logo to apply.';
+          } else {
+            statusEl.textContent = data.error || 'Upload failed';
+          }
+        })
+        .catch(function () { statusEl.textContent = 'Upload failed'; });
+    });
+  })();
+  </script>
 
   <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
     <h3 class="text-sm font-semibold text-slate-900">Contact & location (public)</h3>

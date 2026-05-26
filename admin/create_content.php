@@ -221,6 +221,10 @@ require __DIR__ . '/partials/shell_open.php';
         <label class="text-xs font-semibold text-slate-600">Logo (optional)</label>
         <input type="file" accept="image/*" class="ac-upload mt-1 text-sm" data-kind="directory" data-target="logo_url" />
         <input type="hidden" name="logo_url" id="ac-dir-logo-url" />
+        <div id="ac-dir-logo-preview" class="mt-2 hidden">
+          <img id="ac-dir-logo-img" src="" alt="" class="h-16 w-16 rounded-xl object-cover ring-1 ring-slate-200" />
+        </div>
+        <p class="mt-1 text-xs text-slate-500" id="ac-dir-logo-url-label"></p>
       </div>
       <div>
         <label class="text-xs font-semibold text-slate-600">Website</label>

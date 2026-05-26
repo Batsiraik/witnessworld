@@ -268,8 +268,14 @@
               var lbl = document.getElementById('ac-' + target.replace(/_/g, '-') + '-label');
               if (lbl) lbl.textContent = 'Uploaded: ' + data.url;
               else if (target === 'media_url') $('ac-media-url-label').textContent = 'Uploaded: ' + data.url;
-              else if (target === 'logo_url' && this.getAttribute('data-kind') === 'store')
+              if (target === 'logo_url' && this.getAttribute('data-kind') === 'store')
                 $('ac-logo-url-label').textContent = 'Uploaded: ' + data.url;
+              if (target === 'logo_url' && this.getAttribute('data-kind') === 'directory') {
+                $('ac-dir-logo-url-label').textContent = 'Uploaded ✓';
+                var prev = $('ac-dir-logo-preview');
+                var img = $('ac-dir-logo-img');
+                if (prev && img) { img.src = data.url; prev.classList.remove('hidden'); }
+              }
             } else {
               alert(data.error || 'Upload failed');
             }
