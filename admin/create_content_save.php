@@ -5,6 +5,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/admin_create_content.php';
 
+$apiConfig = dirname(__DIR__) . '/api/config.php';
+if (is_file($apiConfig)) {
+    require_once $apiConfig;
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     header('Location: create_content.php');
     exit;
