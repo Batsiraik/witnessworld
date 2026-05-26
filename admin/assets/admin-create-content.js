@@ -253,7 +253,7 @@
       if (target === 'media_url') hidden = $('ac-media-url');
       if (target === 'video_url') hidden = $('ac-video-url');
       if (target === 'logo_url' && this.getAttribute('data-kind') === 'directory') hidden = $('ac-dir-logo-url');
-      if (target === 'logo_url') hidden = $('ac-logo-url');
+      else if (target === 'logo_url') hidden = $('ac-logo-url');
       if (target === 'banner_url') hidden = $('ac-banner-url');
       this.disabled = true;
       fetch(uploadApi, { method: 'POST', body: fd, credentials: 'same-origin' })
