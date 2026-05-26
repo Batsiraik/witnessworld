@@ -12,7 +12,7 @@ if (!in_array($filter, $allowed, true)) {
     $filter = 'all';
 }
 
-$sql = 'SELECT s.id, s.name, s.moderation_status, s.delivery_type, s.location_country_name, s.location_us_state,
+$sql = 'SELECT s.id, s.name, s.logo_url, s.moderation_status, s.delivery_type, s.location_country_name, s.location_us_state,
         s.created_at, stc.name AS category_name, u.email AS user_email, u.first_name, u.last_name, u.username
         FROM stores s
         INNER JOIN users u ON u.id = s.user_id
@@ -75,6 +75,7 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
     <table class="min-w-full text-left text-sm">
       <thead class="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
         <tr>
+          <th class="px-3 py-3 w-14"></th>
           <th class="px-6 py-3">Store</th>
           <th class="px-6 py-3">Owner</th>
           <th class="px-6 py-3">Category</th>
@@ -98,6 +99,13 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
             $del = str_replace('_', ' ', (string) ($r['delivery_type'] ?? ''));
           ?>
           <tr class="bg-white hover:bg-slate-50/80"<?= ww_admin_row_attrs((string) ($r['moderation_status'] ?? '')) ?>>
+            <td class="px-3 py-4">
+              <?php if (!empty($r['logo_url'])): ?>
+                <img src="<?= htmlspecialchars((string) $r['logo_url'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="h-10 w-10 rounded-lg object-cover ring-1 ring-slate-100" loading="lazy" />
+              <?php else: ?>
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-400" title="No logo">—</span>
+              <?php endif; ?>
+            </td>
             <td class="px-6 py-4">
               <a href="<?= htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline"><?= htmlspecialchars((string) $r['name'], ENT_QUOTES, 'UTF-8') ?></a>
             </td>
@@ -126,7 +134,7 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
           </tr>
         <?php endforeach; ?>
         <?php if ($rows === [] && $dbError === null): ?>
-          <tr><td colspan="8" class="px-6 py-10 text-center text-slate-500">No stores match this filter.</td></tr>
+          <tr><td colspan="9" class="px-6 py-10 text-center text-slate-500">No stores match this filter.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>

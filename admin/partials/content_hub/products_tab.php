@@ -109,6 +109,7 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
     <table class="min-w-full text-left text-sm">
       <thead class="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
         <tr>
+          <th class="px-3 py-3 w-14"></th>
           <th class="px-6 py-3">Product</th>
           <th class="px-6 py-3">Store</th>
           <th class="px-6 py-3">Seller</th>
@@ -130,6 +131,13 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
             $btnVariant = $isPending ? 'success' : 'soft';
           ?>
           <tr class="bg-white hover:bg-slate-50/80"<?= ww_admin_row_attrs($st) ?>>
+            <td class="px-3 py-4">
+              <?php if (!empty($r['image_url'])): ?>
+                <img src="<?= htmlspecialchars((string) $r['image_url'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="h-10 w-10 rounded-lg object-cover ring-1 ring-slate-100" loading="lazy" />
+              <?php else: ?>
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-400" title="No image">—</span>
+              <?php endif; ?>
+            </td>
             <td class="px-6 py-4 font-semibold text-slate-900"><?= htmlspecialchars((string) $r['name'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-slate-700"><?= htmlspecialchars((string) $r['store_name'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-slate-700">
@@ -155,7 +163,7 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
           </tr>
         <?php endforeach; ?>
         <?php if ($rows === [] && $dbError === null): ?>
-          <tr><td colspan="7" class="px-6 py-10 text-center text-slate-500">No products match this filter.</td></tr>
+          <tr><td colspan="8" class="px-6 py-10 text-center text-slate-500">No products match this filter.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>

@@ -39,6 +39,7 @@ type Feed = {
   services: Record<string, unknown>[];
   products: Record<string, unknown>[];
   classifieds: Record<string, unknown>[];
+  community: Record<string, unknown>[];
   stores: Record<string, unknown>[];
   directory: Record<string, unknown>[];
   featured: FeaturedRow[];
@@ -78,6 +79,7 @@ function normalizeFeed(raw: unknown): Feed {
       services: [],
       products: [],
       classifieds: [],
+      community: [],
       stores: [],
       directory: [],
       featured: [],
@@ -89,6 +91,7 @@ function normalizeFeed(raw: unknown): Feed {
     services: arr('services'),
     products: arr('products'),
     classifieds: arr('classifieds'),
+    community: arr('community'),
     stores: arr('stores'),
     directory: arr('directory'),
     featured: normalizeFeatured(f.featured),
@@ -670,6 +673,9 @@ export function HomeScreen({ navigation }: Props) {
 
               {feed.services.length
                 ? rail('Service marketplace', () => navigation.navigate('Services'), feed.services.map((r) => compactListing(r, true)))
+                : null}
+              {feed.community.length
+                ? rail('Community', () => navigation.navigate('Community'), feed.community.map((r) => compactListing(r, false)))
                 : null}
               {feed.products.length
                 ? rail('Products', () => navigation.navigate('ProductsBrowse'), feed.products.map((r) => compactProduct(r)))
