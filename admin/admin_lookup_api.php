@@ -95,10 +95,21 @@ if ($action === 'categories') {
 }
 
 if ($action === 'locations') {
-    $countries = [];
+    $byCode = [];
     foreach (ww_listing_country_map() as $code => $name) {
-        $countries[] = ['code' => $code, 'name' => $name];
+        $byCode[$code] = ['code' => $code, 'name' => $name];
     }
+    $pinned = [];
+    foreach (['US', 'CA', 'GB'] as $pin) {
+        if (isset($byCode[$pin])) {
+            $pinned[] = $byCode[$pin];
+            unset($byCode[$pin]);
+        }
+    }
+    $rest = array_values($byCode);
+    usort($rest, static fn (array $a, array $b): int => strcasecmp((string) $a['name'], (string) $b['name']));
+    $countries = array_merge($pinned, $rest);
+
     $states = [];
     foreach (ww_listing_us_state_map() as $code => $name) {
         $states[] = ['code' => $code, 'name' => $name];
