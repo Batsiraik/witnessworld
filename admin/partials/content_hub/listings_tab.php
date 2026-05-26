@@ -154,6 +154,7 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
                 <?php
                   $entityType = 'listing';
                   $entityId = (int) $r['id'];
+                  $row = $r;
                   $return = $hubReturn;
                   require __DIR__ . '/../content_list_action_buttons.php';
                 ?>
