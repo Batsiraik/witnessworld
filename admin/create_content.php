@@ -129,8 +129,10 @@ require __DIR__ . '/partials/shell_open.php';
         <input name="soft_skills" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Design, Writing, …" />
       </div>
       <div>
-        <label class="text-xs font-semibold text-slate-600">Portfolio image URLs (one per line, after upload)</label>
-        <textarea name="portfolio_urls" rows="2" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono text-xs"></textarea>
+        <label class="text-xs font-semibold text-slate-600">Extra photos (optional, up to 12)</label>
+        <input type="file" accept="image/*" multiple class="ac-portfolio-upload mt-1 text-sm" />
+        <div id="ac-portfolio-thumbs" class="mt-2 flex flex-wrap gap-2"></div>
+        <div id="ac-portfolio-hidden"></div>
       </div>
     </div>
 

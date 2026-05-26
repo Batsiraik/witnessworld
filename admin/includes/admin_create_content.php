@@ -91,10 +91,16 @@ function ww_admin_create_listing(PDO $pdo, int $userId, int $adminId, array $dat
     }
 
     $portfolio = [];
-    foreach (preg_split('/\r\n|\r|\n/', (string) ($data['portfolio_urls'] ?? '')) as $u) {
-        $u = trim($u);
-        if ($u !== '' && ww_listing_url_belongs_to_user($u, $userId)) {
-            $portfolio[] = $u;
+    $rawPortfolio = $data['portfolio_url'] ?? $data['portfolio_urls'] ?? [];
+    if (is_string($rawPortfolio)) {
+        $rawPortfolio = preg_split('/\r\n|\r|\n/', $rawPortfolio);
+    }
+    if (is_array($rawPortfolio)) {
+        foreach ($rawPortfolio as $u) {
+            $u = trim((string) $u);
+            if ($u !== '' && ww_listing_url_belongs_to_user($u, $userId)) {
+                $portfolio[] = $u;
+            }
         }
     }
 

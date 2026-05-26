@@ -284,6 +284,80 @@
     });
   });
 
+  var portfolioUrls = [];
+  var portfolioThumbsEl = $('ac-portfolio-thumbs');
+  var portfolioHiddenEl = $('ac-portfolio-hidden');
+
+  function renderPortfolio() {
+    if (!portfolioThumbsEl) return;
+    portfolioThumbsEl.innerHTML = '';
+    portfolioHiddenEl.innerHTML = '';
+    portfolioUrls.forEach(function (url, i) {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;width:72px;height:72px;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;';
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = '';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+      wrap.appendChild(img);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = '\u00D7';
+      btn.style.cssText = 'position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:14px;line-height:20px;text-align:center;cursor:pointer;padding:0;';
+      btn.setAttribute('data-idx', String(i));
+      btn.addEventListener('click', function () {
+        portfolioUrls.splice(i, 1);
+        renderPortfolio();
+      });
+      wrap.appendChild(btn);
+      portfolioThumbsEl.appendChild(wrap);
+
+      var hid = document.createElement('input');
+      hid.type = 'hidden';
+      hid.name = 'portfolio_url[]';
+      hid.value = url;
+      portfolioHiddenEl.appendChild(hid);
+    });
+  }
+
+  document.querySelectorAll('.ac-portfolio-upload').forEach(function (input) {
+    input.addEventListener('change', function () {
+      if (!this.files || !this.files.length || !state.userId) return;
+      var files = Array.from(this.files);
+      var remaining = 12 - portfolioUrls.length;
+      if (remaining <= 0) {
+        alert('Maximum 12 portfolio images.');
+        this.value = '';
+        return;
+      }
+      files = files.slice(0, remaining);
+      this.disabled = true;
+      var pending = files.length;
+      var self = this;
+      files.forEach(function (file) {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('user_id', String(state.userId));
+        fd.append('kind', 'listing');
+        fetch(uploadApi, { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.ok && data.url && portfolioUrls.length < 12) {
+              portfolioUrls.push(data.url);
+              renderPortfolio();
+            } else if (!data.ok) {
+              alert(data.error || 'Upload failed');
+            }
+          })
+          .catch(function () { alert('Upload failed'); })
+          .finally(function () {
+            pending--;
+            if (pending <= 0) { self.disabled = false; self.value = ''; }
+          });
+      });
+    });
+  });
+
   function collectFormData() {
     setFieldsEnabled();
     var form = $('ac-form');
@@ -319,11 +393,19 @@
     hidden.innerHTML = '';
     Object.keys(formDataCache).forEach(function (k) {
       var v = formDataCache[k];
+      if (k === 'portfolio_url[]') return;
       if (Array.isArray(v)) v = v[v.length - 1];
       var inp = document.createElement('input');
       inp.type = 'hidden';
       inp.name = k;
       inp.value = v;
+      hidden.appendChild(inp);
+    });
+    portfolioUrls.forEach(function (url) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'portfolio_url[]';
+      inp.value = url;
       hidden.appendChild(inp);
     });
     var ct = document.createElement('input');
