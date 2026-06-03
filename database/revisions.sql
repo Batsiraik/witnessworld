@@ -395,3 +395,8 @@ CREATE TABLE IF NOT EXISTS admin_trusted_devices (
   UNIQUE KEY uq_atd_token (token_hash),
   INDEX idx_atd_admin_seen (admin_id, last_seen_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- 2026-06-03: In-app notification inbox (home bell) — see revisions_user_notifications.sql
+-- 2026-06-03: Admin in-app notification inbox — see revisions_admin_notifications.sql
+-- ---------------------------------------------------------------------------

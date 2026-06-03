@@ -13,6 +13,7 @@ export function openInboxChat(
   const tab = navigation.getParent();
   tab?.navigate('InboxTab', {
     screen: 'Chat',
+    initial: false,
     params: { conversationId, peerName, peerUserId, peerUsername, showHire },
   });
 }

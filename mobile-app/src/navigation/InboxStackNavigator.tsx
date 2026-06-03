@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { InboxChatBackButton } from '../components/InboxChatBackButton';
 import { ChatScreen } from '../screens/ChatScreen';
 import { InboxListScreen } from '../screens/InboxListScreen';
 import { MemberPublicProfileScreen } from '../screens/MemberPublicProfileScreen';
@@ -22,7 +23,12 @@ export function InboxStackNavigator() {
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
-        options={({ route }) => ({ title: route.params.peerName || 'Chat' })}
+        options={({ route, navigation }) => ({
+          title: route.params.peerName || 'Chat',
+          headerBackVisible: false,
+          headerLeft: () => <InboxChatBackButton navigation={navigation} />,
+          gestureEnabled: true,
+        })}
       />
       <Stack.Screen
         name="MemberPublicProfile"

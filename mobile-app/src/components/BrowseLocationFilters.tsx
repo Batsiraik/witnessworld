@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FullScreenPickerModal } from './FullScreenPickerModal';
 import { apiGet } from '../api/client';
 import { colors } from '../theme/colors';
 
@@ -103,96 +103,94 @@ export function BrowseLocationFilters({ country, usState, onCountryChange, onUsS
         </>
       ) : null}
 
-      <Modal visible={countryModal} animationType="slide" onRequestClose={() => setCountryModal(false)}>
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <Pressable onPress={() => setCountryModal(false)}>
-              <Text style={styles.modalDone}>Cancel</Text>
-            </Pressable>
-            <Text style={styles.modalTitle}>Country</Text>
-            <View style={{ width: 64 }} />
-          </View>
-          <Pressable
-            onPress={() => pickCountry(null)}
-            style={[styles.modalRow, styles.modalRowStrong]}
-          >
-            <Text style={styles.modalRowText}>All countries</Text>
-            {!country ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+      <FullScreenPickerModal
+        visible={countryModal}
+        onClose={() => setCountryModal(false)}
+        title="Country"
+        headerLeft={
+          <Pressable onPress={() => setCountryModal(false)}>
+            <Text style={styles.modalAction}>Cancel</Text>
           </Pressable>
-          <TextInput
-            value={countryQuery}
-            onChangeText={setCountryQuery}
-            placeholder="Search countries"
-            style={styles.modalSearch}
-            placeholderTextColor={colors.textMuted}
-          />
-          <FlatList
-            data={filteredCountries}
-            keyExtractor={(item) => item.code}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => pickCountry(item)}
-                style={styles.modalRow}
-              >
-                <Text style={styles.modalRowText}>
-                  {item.name} ({item.code})
-                </Text>
-                {country?.code === item.code ? (
-                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                ) : null}
-              </Pressable>
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
+        }
+      >
+        <Pressable
+          onPress={() => pickCountry(null)}
+          style={[styles.modalRow, styles.modalRowStrong]}
+        >
+          <Text style={styles.modalRowText}>All countries</Text>
+          {!country ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+        </Pressable>
+        <TextInput
+          value={countryQuery}
+          onChangeText={setCountryQuery}
+          placeholder="Search countries"
+          style={styles.modalSearch}
+          placeholderTextColor={colors.textMuted}
+        />
+        <FlatList
+          data={filteredCountries}
+          keyExtractor={(item) => item.code}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => pickCountry(item)}
+              style={styles.modalRow}
+            >
+              <Text style={styles.modalRowText}>
+                {item.name} ({item.code})
+              </Text>
+              {country?.code === item.code ? (
+                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+              ) : null}
+            </Pressable>
+          )}
+        />
+      </FullScreenPickerModal>
 
-      <Modal visible={stateModal} animationType="slide" onRequestClose={() => setStateModal(false)}>
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
+      <FullScreenPickerModal
+        visible={stateModal}
+        onClose={() => setStateModal(false)}
+        title="State"
+        headerLeft={
+          <Pressable
+            onPress={() => {
+              onUsStateChange(null);
+              setStateModal(false);
+              setStateQuery('');
+            }}
+          >
+            <Text style={styles.modalAction}>Clear</Text>
+          </Pressable>
+        }
+      >
+        <TextInput
+          value={stateQuery}
+          onChangeText={setStateQuery}
+          placeholder="Search states"
+          style={styles.modalSearch}
+          placeholderTextColor={colors.textMuted}
+        />
+        <FlatList
+          data={filteredStates}
+          keyExtractor={(item) => item.code}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
             <Pressable
               onPress={() => {
-                onUsStateChange(null);
+                onUsStateChange(item);
                 setStateModal(false);
                 setStateQuery('');
               }}
+              style={styles.modalRow}
             >
-              <Text style={styles.modalDone}>Clear</Text>
+              <Text style={styles.modalRowText}>{item.name}</Text>
+              {usState?.code === item.code ? (
+                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+              ) : null}
             </Pressable>
-            <Text style={styles.modalTitle}>State</Text>
-            <Pressable onPress={() => setStateModal(false)}>
-              <Text style={styles.modalDone}>Done</Text>
-            </Pressable>
-          </View>
-          <TextInput
-            value={stateQuery}
-            onChangeText={setStateQuery}
-            placeholder="Search states"
-            style={styles.modalSearch}
-            placeholderTextColor={colors.textMuted}
-          />
-          <FlatList
-            data={filteredStates}
-            keyExtractor={(item) => item.code}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => {
-                  onUsStateChange(item);
-                  setStateModal(false);
-                  setStateQuery('');
-                }}
-                style={styles.modalRow}
-              >
-                <Text style={styles.modalRowText}>{item.name}</Text>
-                {usState?.code === item.code ? (
-                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                ) : null}
-              </Pressable>
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
+          )}
+        />
+      </FullScreenPickerModal>
     </>
   );
 }
@@ -212,18 +210,7 @@ const styles = StyleSheet.create({
   },
   selectVal: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.text },
   selectPh: { flex: 1, fontSize: 14, color: colors.textMuted },
-  modalSafe: { flex: 1, backgroundColor: colors.white },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(11,18,32,0.1)',
-  },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  modalDone: { fontSize: 16, fontWeight: '700', color: colors.primaryDark },
+  modalAction: { fontSize: 16, fontWeight: '700', color: colors.primaryDark },
   modalSearch: {
     marginHorizontal: 16,
     marginVertical: 10,

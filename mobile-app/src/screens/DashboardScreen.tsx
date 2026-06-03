@@ -24,7 +24,7 @@ export function DashboardScreen({ navigation }: Props) {
   const [debugError, setDebugError] = useState('');
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
-  const [supportEmail, setSupportEmail] = useState('info@witnessworldconnect.com');
+  const [supportEmail, setSupportEmail] = useState('support@witnessworldconnect.com');
   const [supportAvailable, setSupportAvailable] = useState(false);
 
   const load = useCallback(async () => {

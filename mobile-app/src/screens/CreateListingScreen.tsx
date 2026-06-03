@@ -8,7 +8,6 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadListingMedia } from '../api/client';
+import { FullScreenPickerModal } from '../components/FullScreenPickerModal';
 import { GradientBackground } from '../components/GradientBackground';
 import { MediaUploadZone } from '../components/MediaUploadZone';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -748,110 +748,101 @@ export function CreateListingScreen({ navigation, route }: Props) {
         </SafeAreaView>
       </KeyboardAvoidingView>
 
-      <Modal visible={countryModal} animationType="slide" onRequestClose={() => setCountryModal(false)}>
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Country</Text>
-            <Pressable onPress={() => setCountryModal(false)} hitSlop={12}>
-              <Text style={styles.modalDone}>Done</Text>
+      <FullScreenPickerModal
+        visible={countryModal}
+        onClose={() => setCountryModal(false)}
+        title="Country"
+        backgroundColor={colors.bgTop}
+      >
+        <TextInput
+          value={countryQuery}
+          onChangeText={setCountryQuery}
+          placeholder="Search"
+          placeholderTextColor={colors.textMuted}
+          style={styles.modalSearch}
+        />
+        <FlatList
+          data={filteredCountries}
+          keyExtractor={(item) => item.code}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                setCountry(item);
+                if (item.code !== usCountryCode) setUsState(null);
+                setCountryModal(false);
+              }}
+              style={({ pressed }) => [styles.modalRow, pressed && styles.pickerRowPressed]}
+            >
+              <Text style={styles.modalRowText}>{item.name}</Text>
+              <Text style={styles.modalRowSub}>{item.code}</Text>
             </Pressable>
-          </View>
-          <TextInput
-            value={countryQuery}
-            onChangeText={setCountryQuery}
-            placeholder="Search"
-            placeholderTextColor={colors.textMuted}
-            style={styles.modalSearch}
-          />
-          <FlatList
-            data={filteredCountries}
-            keyExtractor={(item) => item.code}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => {
-                  setCountry(item);
-                  if (item.code !== usCountryCode) setUsState(null);
-                  setCountryModal(false);
-                }}
-                style={({ pressed }) => [styles.modalRow, pressed && styles.pickerRowPressed]}
-              >
-                <Text style={styles.modalRowText}>{item.name}</Text>
-                <Text style={styles.modalRowSub}>{item.code}</Text>
-              </Pressable>
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
+          )}
+        />
+      </FullScreenPickerModal>
 
-      <Modal visible={stateModal} animationType="slide" onRequestClose={() => setStateModal(false)}>
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>U.S. state</Text>
-            <Pressable onPress={() => setStateModal(false)} hitSlop={12}>
-              <Text style={styles.modalDone}>Done</Text>
+      <FullScreenPickerModal
+        visible={stateModal}
+        onClose={() => setStateModal(false)}
+        title="U.S. state"
+        backgroundColor={colors.bgTop}
+      >
+        <TextInput
+          value={stateQuery}
+          onChangeText={setStateQuery}
+          placeholder="Search"
+          placeholderTextColor={colors.textMuted}
+          style={styles.modalSearch}
+        />
+        <FlatList
+          data={filteredStates}
+          keyExtractor={(item) => item.code}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                setUsState(item);
+                setStateModal(false);
+              }}
+              style={({ pressed }) => [styles.modalRow, pressed && styles.pickerRowPressed]}
+            >
+              <Text style={styles.modalRowText}>{item.name}</Text>
+              <Text style={styles.modalRowSub}>{item.code}</Text>
             </Pressable>
-          </View>
-          <TextInput
-            value={stateQuery}
-            onChangeText={setStateQuery}
-            placeholder="Search"
-            placeholderTextColor={colors.textMuted}
-            style={styles.modalSearch}
-          />
-          <FlatList
-            data={filteredStates}
-            keyExtractor={(item) => item.code}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => {
-                  setUsState(item);
-                  setStateModal(false);
-                }}
-                style={({ pressed }) => [styles.modalRow, pressed && styles.pickerRowPressed]}
-              >
-                <Text style={styles.modalRowText}>{item.name}</Text>
-                <Text style={styles.modalRowSub}>{item.code}</Text>
-              </Pressable>
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
+          )}
+        />
+      </FullScreenPickerModal>
 
-      <Modal visible={catModal} animationType="slide" onRequestClose={() => setCatModal(false)}>
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Category</Text>
-            <Pressable onPress={() => setCatModal(false)} hitSlop={12}>
-              <Text style={styles.modalDone}>Done</Text>
+      <FullScreenPickerModal
+        visible={catModal}
+        onClose={() => setCatModal(false)}
+        title="Category"
+        backgroundColor={colors.bgTop}
+      >
+        <TextInput
+          value={catQuery}
+          onChangeText={setCatQuery}
+          placeholder="Search"
+          placeholderTextColor={colors.textMuted}
+          style={styles.modalSearch}
+        />
+        <FlatList
+          data={filteredCategories}
+          keyExtractor={(item) => String(item.id)}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                setCategory(item);
+                setCatModal(false);
+              }}
+              style={({ pressed }) => [styles.modalRow, pressed && styles.pickerRowPressed]}
+            >
+              <Text style={styles.modalRowText}>{item.name}</Text>
             </Pressable>
-          </View>
-          <TextInput
-            value={catQuery}
-            onChangeText={setCatQuery}
-            placeholder="Search"
-            placeholderTextColor={colors.textMuted}
-            style={styles.modalSearch}
-          />
-          <FlatList
-            data={filteredCategories}
-            keyExtractor={(item) => String(item.id)}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => {
-                  setCategory(item);
-                  setCatModal(false);
-                }}
-                style={({ pressed }) => [styles.modalRow, pressed && styles.pickerRowPressed]}
-              >
-                <Text style={styles.modalRowText}>{item.name}</Text>
-              </Pressable>
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
+          )}
+        />
+      </FullScreenPickerModal>
     </GradientBackground>
   );
 }
@@ -978,18 +969,6 @@ const styles = StyleSheet.create({
   },
   portfolioAddZone: { width: 112, minHeight: 96 },
   spacer: { height: 8 },
-  modalSafe: { flex: 1, backgroundColor: colors.bgTop },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.cardBorder,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  modalDone: { fontSize: 16, fontWeight: '800', color: colors.primaryDark },
   modalSearch: {
     marginHorizontal: 16,
     marginTop: 10,

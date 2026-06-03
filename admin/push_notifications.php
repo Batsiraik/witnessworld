@@ -153,8 +153,17 @@ if ($error === '' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $pdo->commit();
 
             if ($mode === 'user' && $targetUid !== null) {
+                ww_user_notification_add($pdo, $targetUid, $title, $body, 'admin', [
+                    'admin_push_log_id' => $logId,
+                ]);
                 $flash = 'Sent to user #' . $targetUid . ' (' . count($messages) . ' device(s)). Expo accepted: ' . $detail['accepted'] . ', rejected: ' . $detail['rejected'] . '.';
             } else {
+                $stUsers = $pdo->query('SELECT id FROM users WHERE status = \'verified\'');
+                while (($uid = $stUsers->fetchColumn()) !== false) {
+                    ww_user_notification_add($pdo, (int) $uid, $title, $body, 'admin_broadcast', [
+                        'admin_push_log_id' => $logId,
+                    ]);
+                }
                 $flash = 'Broadcast: ' . count($messages) . ' device(s). Expo accepted: ' . $detail['accepted'] . ', rejected: ' . $detail['rejected'] . '.';
             }
         } catch (Throwable) {

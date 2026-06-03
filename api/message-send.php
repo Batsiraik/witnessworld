@@ -187,7 +187,11 @@ try {
         $high = (int) $crow['user_high_id'];
         $peerId = $userId === $low ? $high : $low;
         if ($peerId === $suid) {
-            /* Member → support: do not notify the system support account. */
+            require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+            $preview = $text !== ''
+                ? (mb_strlen($text) > 140 ? mb_substr($text, 0, 137) . '…' : $text)
+                : ($hasFile ? 'Sent a file' : 'New message');
+            ww_admin_notification_support_message($pdo, $conversationId, $userId, $preview);
         } else {
             $preview = $text !== ''
                 ? (mb_strlen($text) > 140 ? mb_substr($text, 0, 137) . '…' : $text)

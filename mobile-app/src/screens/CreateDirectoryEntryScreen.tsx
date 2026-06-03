@@ -8,7 +8,6 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost, apiUploadDirectoryLogo } from '../api/client';
+import { FullScreenPickerModal } from '../components/FullScreenPickerModal';
 import { GradientBackground } from '../components/GradientBackground';
 import { MediaUploadZone } from '../components/MediaUploadZone';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -454,104 +454,77 @@ export function CreateDirectoryEntryScreen({ navigation, route }: Props) {
           </ScrollView>
         </KeyboardAvoidingView>
 
-        <Modal visible={countryModal} animationType="slide" onRequestClose={() => setCountryModal(false)}>
-          <SafeAreaView style={styles.modalSafe}>
-            <View style={styles.modalHeader}>
-              <Pressable onPress={() => setCountryModal(false)}>
-                <Text style={styles.modalDone}>Done</Text>
+        <FullScreenPickerModal visible={countryModal} onClose={() => setCountryModal(false)} title="Country">
+          <TextInput
+            value={countryQuery}
+            onChangeText={setCountryQuery}
+            placeholder="Search"
+            style={styles.modalSearch}
+            placeholderTextColor={colors.textMuted}
+          />
+          <FlatList
+            data={filteredCountries}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => {
+                  setCountry(item);
+                  setUsState(null);
+                  setCountryModal(false);
+                  setCountryQuery('');
+                }}
+                style={styles.modalRow}
+              >
+                <Text style={styles.modalRowText}>{item.name}</Text>
               </Pressable>
-              <Text style={styles.modalTitle}>Country</Text>
-              <View style={{ width: 48 }} />
-            </View>
-            <TextInput
-              value={countryQuery}
-              onChangeText={setCountryQuery}
-              placeholder="Search"
-              style={styles.modalSearch}
-              placeholderTextColor={colors.textMuted}
-            />
-            <FlatList
-              data={filteredCountries}
-              keyExtractor={(item) => item.code}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    setCountry(item);
-                    setUsState(null);
-                    setCountryModal(false);
-                    setCountryQuery('');
-                  }}
-                  style={styles.modalRow}
-                >
-                  <Text style={styles.modalRowText}>{item.name}</Text>
-                </Pressable>
-              )}
-            />
-          </SafeAreaView>
-        </Modal>
+            )}
+          />
+        </FullScreenPickerModal>
 
-        <Modal visible={stateModal} animationType="slide" onRequestClose={() => setStateModal(false)}>
-          <SafeAreaView style={styles.modalSafe}>
-            <View style={styles.modalHeader}>
-              <Pressable onPress={() => setStateModal(false)}>
-                <Text style={styles.modalDone}>Done</Text>
+        <FullScreenPickerModal visible={stateModal} onClose={() => setStateModal(false)} title="State">
+          <TextInput
+            value={stateQuery}
+            onChangeText={setStateQuery}
+            placeholder="Search"
+            style={styles.modalSearch}
+            placeholderTextColor={colors.textMuted}
+          />
+          <FlatList
+            data={filteredStates}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => {
+                  setUsState(item);
+                  setStateModal(false);
+                  setStateQuery('');
+                }}
+                style={styles.modalRow}
+              >
+                <Text style={styles.modalRowText}>{item.name}</Text>
               </Pressable>
-              <Text style={styles.modalTitle}>State</Text>
-              <View style={{ width: 48 }} />
-            </View>
-            <TextInput
-              value={stateQuery}
-              onChangeText={setStateQuery}
-              placeholder="Search"
-              style={styles.modalSearch}
-              placeholderTextColor={colors.textMuted}
-            />
-            <FlatList
-              data={filteredStates}
-              keyExtractor={(item) => item.code}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    setUsState(item);
-                    setStateModal(false);
-                    setStateQuery('');
-                  }}
-                  style={styles.modalRow}
-                >
-                  <Text style={styles.modalRowText}>{item.name}</Text>
-                </Pressable>
-              )}
-            />
-          </SafeAreaView>
-        </Modal>
+            )}
+          />
+        </FullScreenPickerModal>
 
-        <Modal visible={catModal} animationType="slide" onRequestClose={() => setCatModal(false)}>
-          <SafeAreaView style={styles.modalSafe}>
-            <View style={styles.modalHeader}>
-              <Pressable onPress={() => setCatModal(false)}>
-                <Text style={styles.modalDone}>Done</Text>
+        <FullScreenPickerModal visible={catModal} onClose={() => setCatModal(false)} title="Category">
+          <FlatList
+            data={categories}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => {
+                  setCategory(item);
+                  setCatModal(false);
+                }}
+                style={styles.modalRow}
+              >
+                <Text style={styles.modalRowText}>{item.name}</Text>
+                {category?.id === item.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
               </Pressable>
-              <Text style={styles.modalTitle}>Category</Text>
-              <View style={{ width: 48 }} />
-            </View>
-            <FlatList
-              data={categories}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    setCategory(item);
-                    setCatModal(false);
-                  }}
-                  style={styles.modalRow}
-                >
-                  <Text style={styles.modalRowText}>{item.name}</Text>
-                  {category?.id === item.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
-                </Pressable>
-              )}
-            />
-          </SafeAreaView>
-        </Modal>
+            )}
+          />
+        </FullScreenPickerModal>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -597,18 +570,6 @@ const styles = StyleSheet.create({
   selectVal: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   selectPh: { flex: 1, fontSize: 16, color: colors.textMuted },
   uploadPct: { marginTop: 8, fontSize: 14, fontWeight: '800', color: colors.primaryDark },
-  modalSafe: { flex: 1, backgroundColor: colors.white },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-  },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  modalDone: { fontSize: 16, fontWeight: '700', color: colors.primary },
   modalSearch: {
     marginHorizontal: 16,
     marginVertical: 10,

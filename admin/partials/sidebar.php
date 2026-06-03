@@ -79,11 +79,12 @@ $isSuper = !empty($cu['is_super']);
       Businesses
     </a>
     <a href="<?= htmlspecialchars($customerSupport, ENT_QUOTES, 'UTF-8') ?>"
-       class="<?= htmlspecialchars($navClass('support'), ENT_QUOTES, 'UTF-8') ?>">
+       class="<?= htmlspecialchars($navClass('support'), ENT_QUOTES, 'UTF-8') ?> flex items-center gap-3">
       <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-brand" aria-hidden="true">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
       </span>
       Customer support
+      <span id="admin-support-nav-badge" class="ml-auto hidden min-w-[1.25rem] rounded-full bg-red-500 px-1.5 text-center text-[10px] font-bold leading-5 text-white"></span>
     </a>
     <a href="<?= htmlspecialchars($contentHub, ENT_QUOTES, 'UTF-8') ?>"
        class="<?= htmlspecialchars($navClass('content'), ENT_QUOTES, 'UTF-8') ?>">

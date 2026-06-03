@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/settings_store.php';
+require_once __DIR__ . '/includes/admin_notifications.php';
 require_once __DIR__ . '/../api/lib/push_notify.php';
 
 $pageTitle = 'Customer support';
@@ -74,6 +75,7 @@ if ($openId > 0 && $suid > 0) {
             $pdo->prepare(
                 'UPDATE conversations SET support_last_read_at = CURRENT_TIMESTAMP WHERE id = ?'
             )->execute([$openId]);
+            ww_admin_notifications_mark_conversation_read($pdo, $openId);
         }
     } catch (Throwable) {
         /* ignore */

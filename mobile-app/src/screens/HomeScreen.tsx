@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { FeaturedBadge } from '../components/FeaturedBadge';
 import { GradientBackground } from '../components/GradientBackground';
+import { NotificationsModal } from '../components/NotificationsModal';
 import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -172,6 +173,8 @@ export function HomeScreen({ navigation }: Props) {
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [feedErr, setFeedErr] = useState<string | null>(null);
+  const [notifModal, setNotifModal] = useState(false);
+  const [notifUnread, setNotifUnread] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -203,6 +206,26 @@ export function HomeScreen({ navigation }: Props) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (isGuest) {
+      setNotifUnread(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiGet('user-notifications.php');
+        if (cancelled || !data.ok) return;
+        setNotifUnread(typeof data.unread_count === 'number' ? data.unread_count : 0);
+      } catch {
+        /* optional badge */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGuest]);
 
   const locationLabel = useMemo(() => {
     if (!country) return 'All locations';
@@ -594,11 +617,16 @@ export function HomeScreen({ navigation }: Props) {
               <Pressable
                 accessibilityLabel="Notifications"
                 onPress={() => {
-                  /* Reserved for future push / notification center */
+                  if (isGuest) {
+                    showGuestPrompt();
+                    return;
+                  }
+                  setNotifModal(true);
                 }}
                 style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
               >
                 <Ionicons name="notifications-outline" size={22} color={colors.text} />
+                {notifUnread > 0 ? <View style={styles.bellBadge} /> : null}
               </Pressable>
             </View>
           </View>
@@ -767,6 +795,12 @@ export function HomeScreen({ navigation }: Props) {
             </Pressable>
           </Pressable>
         </Modal>
+
+        <NotificationsModal
+          visible={notifModal}
+          onClose={() => setNotifModal(false)}
+          onUnreadChange={setNotifUnread}
+        />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -810,6 +844,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(11, 18, 32, 0.08)',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.danger,
+    borderWidth: 1.5,
+    borderColor: colors.white,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   locLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },

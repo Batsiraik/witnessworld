@@ -67,7 +67,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
   {
     title: '9. Contact Us',
     body: [
-      'For questions or concerns about this Privacy Policy, contact us at: info@witnessworldconnect.com',
+      'For questions or concerns about this Privacy Policy, contact us at: support@witnessworldconnect.com',
     ],
   },
 ];

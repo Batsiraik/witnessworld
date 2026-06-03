@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
-require_once dirname(__DIR__) . '/admin/includes/settings_store.php';
-require_once __DIR__ . '/lib/support_helpers.php';
-require_once __DIR__ . '/lib/subscription_helpers.php';
+require_once __DIR__ . '/lib/push_notify.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -23,13 +21,20 @@ if (!$user) {
     ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
 }
 
-$support = ww_get_setting($pdo, 'support_email', 'support@witnessworldconnect.com');
-$supportUid = ww_support_user_id($pdo);
+$userId = (int) $user['id'];
+$limit = (int) ($_GET['limit'] ?? 50);
+if ($limit < 1) {
+    $limit = 50;
+}
+if ($limit > 100) {
+    $limit = 100;
+}
+
+$notifications = ww_user_notifications_list($pdo, $userId, $limit);
+$unread = ww_user_notifications_unread_count($pdo, $userId);
 
 ww_json([
     'ok' => true,
-    'user' => ww_user_public($user),
-    'subscription' => ww_subscription_payload($pdo, $user),
-    'support_email' => $support,
-    'support_available' => $supportUid > 0,
+    'notifications' => $notifications,
+    'unread_count' => $unread,
 ]);

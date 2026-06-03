@@ -230,8 +230,106 @@ function ww_push_tokens_for_user(PDO $pdo, int $userId): array
 /**
  * @param array<string, string|int> $data
  */
+function ww_user_notification_add(
+    PDO $pdo,
+    int $userId,
+    string $title,
+    string $body,
+    string $type = 'general',
+    array $data = []
+): void {
+    if ($userId <= 0 || trim($title) === '') {
+        return;
+    }
+    try {
+        $pdo->prepare(
+            'INSERT INTO user_notifications (user_id, title, body, type, data_json) VALUES (?,?,?,?,?)'
+        )->execute([
+            $userId,
+            mb_substr(trim($title), 0, 200),
+            mb_substr(trim($body), 0, 500),
+            mb_substr($type !== '' ? $type : 'general', 0, 64),
+            $data === [] ? null : json_encode($data, JSON_UNESCAPED_UNICODE),
+        ]);
+    } catch (Throwable) {
+        // Table may not exist until migration is applied.
+    }
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function ww_user_notifications_list(PDO $pdo, int $userId, int $limit = 50): array
+{
+    if ($userId <= 0) {
+        return [];
+    }
+
+    /** @var list<array<string, mixed>> */
+    $rows = [];
+
+    try {
+        $st = $pdo->prepare(
+            'SELECT id, title, body, type, is_read, created_at
+             FROM user_notifications
+             WHERE user_id = ?
+             ORDER BY created_at DESC
+             LIMIT ' . (int) $limit
+        );
+        $st->execute([$userId]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $rows[] = [
+                'id' => (int) $r['id'],
+                'title' => (string) $r['title'],
+                'body' => (string) $r['body'],
+                'type' => (string) ($r['type'] ?? 'general'),
+                'is_read' => (int) ($r['is_read'] ?? 0) === 1,
+                'created_at' => (string) $r['created_at'],
+            ];
+        }
+    } catch (Throwable) {
+        // user_notifications table missing
+    }
+
+    return $rows;
+}
+
+function ww_user_notifications_unread_count(PDO $pdo, int $userId): int
+{
+    if ($userId <= 0) {
+        return 0;
+    }
+
+    try {
+        $st = $pdo->prepare('SELECT COUNT(*) FROM user_notifications WHERE user_id = ? AND is_read = 0');
+        $st->execute([$userId]);
+        return (int) $st->fetchColumn();
+    } catch (Throwable) {
+        return 0;
+    }
+}
+
+function ww_user_notifications_mark_all_read(PDO $pdo, int $userId): void
+{
+    if ($userId <= 0) {
+        return;
+    }
+
+    try {
+        $pdo->prepare('UPDATE user_notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0')
+            ->execute([$userId]);
+    } catch (Throwable) {
+    }
+}
+
+/**
+ * @param array<string, string|int> $data
+ */
 function ww_push_to_user(PDO $pdo, int $userId, string $title, string $body, array $data = []): void
 {
+    $type = (string) ($data['type'] ?? 'general');
+    ww_user_notification_add($pdo, $userId, $title, $body, $type, $data);
+
     $tokens = ww_push_tokens_for_user($pdo, $userId);
     if ($tokens === []) {
         return;
@@ -245,6 +343,7 @@ function ww_push_to_user(PDO $pdo, int $userId, string $title, string $body, arr
 
 /**
  * @param list<int> $userIds
+ * @param array<string, string|int> $data
  */
 function ww_push_broadcast_users(PDO $pdo, array $userIds, string $title, string $body, array $data = []): void
 {

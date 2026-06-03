@@ -2,14 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import {
   FlatList,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FullScreenPickerModal } from './FullScreenPickerModal';
 import { colors } from '../theme/colors';
 import { radii, surfaces } from '../theme/designSystem';
 
@@ -75,45 +74,45 @@ export function BrowseCategoryFilters({
         </Text>
       ) : null}
 
-      <Modal visible={catModal} animationType="slide" onRequestClose={() => setCatModal(false)}>
-        <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <Pressable onPress={() => setCatModal(false)}>
-              <Text style={styles.modalDone}>Cancel</Text>
-            </Pressable>
-            <Text style={styles.modalTitle}>Category</Text>
-            <View style={{ width: 64 }} />
-          </View>
-          <Pressable
-            onPress={() => {
-              onFilterCatChange(null);
-              setCatModal(false);
-            }}
-            style={[styles.modalRow, styles.modalRowStrong]}
-          >
-            <Text style={styles.modalRowText}>All categories</Text>
-            {!filterCat ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+      <FullScreenPickerModal
+        visible={catModal}
+        onClose={() => setCatModal(false)}
+        title="Category"
+        headerLeft={
+          <Pressable onPress={() => setCatModal(false)}>
+            <Text style={styles.modalAction}>Cancel</Text>
           </Pressable>
-          <FlatList
-            data={categories}
-            keyExtractor={(c) => String(c.id)}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => {
-                  onFilterCatChange(item);
-                  setCatModal(false);
-                }}
-                style={styles.modalRow}
-              >
-                <Text style={styles.modalRowText}>{item.name}</Text>
-                {filterCat?.id === item.id ? (
-                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                ) : null}
-              </Pressable>
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
+        }
+      >
+        <Pressable
+          onPress={() => {
+            onFilterCatChange(null);
+            setCatModal(false);
+          }}
+          style={[styles.modalRow, styles.modalRowStrong]}
+        >
+          <Text style={styles.modalRowText}>All categories</Text>
+          {!filterCat ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+        </Pressable>
+        <FlatList
+          data={categories}
+          keyExtractor={(c) => String(c.id)}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                onFilterCatChange(item);
+                setCatModal(false);
+              }}
+              style={styles.modalRow}
+            >
+              <Text style={styles.modalRowText}>{item.name}</Text>
+              {filterCat?.id === item.id ? (
+                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+              ) : null}
+            </Pressable>
+          )}
+        />
+      </FullScreenPickerModal>
     </>
   );
 }
@@ -151,18 +150,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: -2,
   },
-  modalSafe: { flex: 1, backgroundColor: colors.white },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
-  },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  modalDone: { fontSize: 16, fontWeight: '700', color: colors.primaryDark },
+  modalAction: { fontSize: 16, fontWeight: '700', color: colors.primaryDark },
   modalRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS questionnaire_answers;
 DROP TABLE IF EXISTS admin_push_opens;
 DROP TABLE IF EXISTS admin_push_tickets;
 DROP TABLE IF EXISTS admin_push_logs;
+DROP TABLE IF EXISTS admin_notifications;
+DROP TABLE IF EXISTS user_notifications;
 DROP TABLE IF EXISTS user_push_tokens;
 DROP TABLE IF EXISTS user_api_tokens;
 DROP TABLE IF EXISTS questionnaire_questions;
@@ -29,7 +31,7 @@ CREATE TABLE settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO settings (`key`, `value`) VALUES
-  ('support_email', 'info@witnessworldconnect.com'),
+  ('support_email', 'support@witnessworldconnect.com'),
   ('support_user_id', '0'),
   ('membership_trial_days', '90'),
   ('stripe_publishable_key', ''),
@@ -143,6 +145,20 @@ CREATE TABLE user_push_tokens (
   INDEX idx_upt_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE user_notifications (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  body VARCHAR(500) NOT NULL,
+  type VARCHAR(64) NOT NULL DEFAULT 'general',
+  data_json TEXT NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_un_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_un_user_created (user_id, created_at DESC),
+  INDEX idx_un_user_unread (user_id, is_read)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE admin_push_logs (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   admin_id INT UNSIGNED NULL,
@@ -180,6 +196,19 @@ CREATE TABLE admin_push_opens (
   PRIMARY KEY (log_id, user_id),
   CONSTRAINT fk_apo_log FOREIGN KEY (log_id) REFERENCES admin_push_logs(id) ON DELETE CASCADE,
   CONSTRAINT fk_apo_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE admin_notifications (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  type VARCHAR(64) NOT NULL DEFAULT 'general',
+  title VARCHAR(200) NOT NULL,
+  body VARCHAR(500) NOT NULL,
+  link_url VARCHAR(500) NULL,
+  ref_id INT UNSIGNED NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_admin_notif_unread (is_read, created_at DESC),
+  INDEX idx_admin_notif_ref (type, ref_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Marketplace categories (admin-managed, seeded with defaults)

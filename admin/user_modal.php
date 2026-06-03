@@ -24,7 +24,7 @@ if (!$user) {
 }
 
 $id = (int) $user['id'];
-$support = ww_get_setting($pdo, 'support_email', 'info@witnessworldconnect.com');
+$support = ww_get_setting($pdo, 'support_email', 'support@witnessworldconnect.com');
 $formReturn = 'users';
 $showOpenFullPageLink = true;
 

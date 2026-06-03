@@ -64,7 +64,7 @@ if (!$user) {
     exit;
 }
 
-$support = ww_get_setting($pdo, 'support_email', 'info@witnessworldconnect.com');
+$support = ww_get_setting($pdo, 'support_email', 'support@witnessworldconnect.com');
 $formReturn = '';
 $showOpenFullPageLink = false;
 

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -16,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { BrowseLocationFilters, type LocCountry, type LocState } from '../components/BrowseLocationFilters';
+import { FullScreenPickerModal } from '../components/FullScreenPickerModal';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
 import type { DiscoverStackParamList, HomeStackParamList } from '../navigation/types';
@@ -528,33 +528,25 @@ export function DiscoverScreen({ navigation }: Props) {
           />
         )}
 
-        <Modal visible={filterOpen} animationType="slide" onRequestClose={() => setFilterOpen(false)}>
-          <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
-            <View style={styles.modalHead}>
-              <Text style={styles.modalTitle}>Filters</Text>
-              <Pressable onPress={() => setFilterOpen(false)} hitSlop={12}>
-                <Text style={styles.modalDone}>Done</Text>
-              </Pressable>
-            </View>
-            <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
-              <BrowseLocationFilters
-                country={country}
-                usState={usState}
-                onCountryChange={setCountry}
-                onUsStateChange={setUsState}
-              />
-              <Pressable
-                onPress={() => {
-                  setFilterOpen(false);
-                  void load('full');
-                }}
-                style={styles.applyLoc}
-              >
-                <Text style={styles.applyLocText}>Apply</Text>
-              </Pressable>
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
+        <FullScreenPickerModal visible={filterOpen} onClose={() => setFilterOpen(false)} title="Filters">
+          <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
+            <BrowseLocationFilters
+              country={country}
+              usState={usState}
+              onCountryChange={setCountry}
+              onUsStateChange={setUsState}
+            />
+            <Pressable
+              onPress={() => {
+                setFilterOpen(false);
+                void load('full');
+              }}
+              style={styles.applyLoc}
+            >
+              <Text style={styles.applyLocText}>Apply</Text>
+            </Pressable>
+          </ScrollView>
+        </FullScreenPickerModal>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -652,18 +644,6 @@ const styles = StyleSheet.create({
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   loc: { flex: 1, fontSize: 11, fontWeight: '600', color: colors.textMuted },
   pressed: { opacity: 0.9 },
-  modalSafe: { flex: 1, backgroundColor: colors.white },
-  modalHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(11, 18, 32, 0.1)',
-  },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  modalDone: { fontSize: 16, fontWeight: '800', color: colors.primaryDark },
   modalBody: { padding: 16, paddingBottom: 32 },
   applyLoc: {
     marginTop: 16,
