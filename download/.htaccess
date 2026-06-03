@@ -1,0 +1,5 @@
+# Correct MIME type so Android browsers treat .apk as a download
+AddType application/vnd.android.package-archive .apk
+
+# Optional: discourage directory listing if index is missing
+Options -Indexes
