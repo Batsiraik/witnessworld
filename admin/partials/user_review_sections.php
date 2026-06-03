@@ -37,15 +37,15 @@ $hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollAccountManager
       <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_account_type_label($pollAcct), ENT_QUOTES, 'UTF-8') ?></dd>
     </div>
     <div class="sm:col-span-2">
-      <dt class="text-slate-500">2. Primary purpose</dt>
-      <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_primary_purpose_label($pollPurpose), ENT_QUOTES, 'UTF-8') ?></dd>
-    </div>
-    <div class="sm:col-span-2">
       <dt class="text-slate-500">2. Account manager support</dt>
       <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_account_manager_label($pollAccountManager), ENT_QUOTES, 'UTF-8') ?></dd>
     </div>
     <div class="sm:col-span-2">
-      <dt class="text-slate-500">3. How they heard about WWC</dt>
+      <dt class="text-slate-500">3. Primary purpose</dt>
+      <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_primary_purpose_label($pollPurpose), ENT_QUOTES, 'UTF-8') ?></dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-slate-500">4. How they heard about WWC</dt>
       <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_referral_label($pollReferral, $pollReferralOther), ENT_QUOTES, 'UTF-8') ?></dd>
     </div>
   </dl>

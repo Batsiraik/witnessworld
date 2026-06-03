@@ -2,9 +2,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppTextField } from '../components/AppTextField';
 import { GlassCard } from '../components/GlassCard';
 import { GradientBackground } from '../components/GradientBackground';
+import { OtpCodeField } from '../components/OtpCodeField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { apiPost } from '../api/client';
@@ -60,13 +60,10 @@ export function ForgotPasswordOtpScreen({ navigation, route }: Props) {
                 <Text style={styles.email}>{email}</Text>. Enter it below to continue.
               </Text>
               <GlassCard>
-                <AppTextField
+                <OtpCodeField
                   label="One-time code"
                   value={otp}
-                  onChangeText={(t) => setOtp(t.replace(/\D/g, '').slice(0, 6))}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  placeholder="••••••"
+                  onChangeText={setOtp}
                   error={error}
                 />
                 <PrimaryButton label="Continue" onPress={submit} loading={loading} />

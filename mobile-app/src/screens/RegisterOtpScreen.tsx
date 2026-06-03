@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiPost, setStoredToken } from '../api/client';
-import { AppTextField } from '../components/AppTextField';
 import { AuthFormCard } from '../components/AuthFormCard';
 import { AuthFormIntro } from '../components/AuthFormIntro';
 import { GradientBackground } from '../components/GradientBackground';
+import { OtpCodeField } from '../components/OtpCodeField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
 import type { RootStackParamList } from '../navigation/types';
@@ -73,15 +73,10 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
               showLogo={false}
             />
             <AuthFormCard>
-              <AppTextField
+              <OtpCodeField
                 label="Verification code"
                 value={otp}
-                onChangeText={(t) => setOtp(t.replace(/\D/g, '').slice(0, 6))}
-                keyboardType="number-pad"
-                maxLength={6}
-                placeholder="000000"
-                leftIcon="keypad-outline"
-                inputStyle={styles.otpInput}
+                onChangeText={setOtp}
                 error={error}
               />
               <PrimaryButton label="Continue" onPress={submit} loading={loading} />
@@ -103,11 +98,5 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingTop: 4,
     paddingBottom: 32,
-  },
-  otpInput: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 10,
-    textAlign: 'center',
   },
 });

@@ -253,7 +253,18 @@ export function VerificationLockOverlay({
                     onSelect={setAccountType}
                   />
 
-                  <Text style={styles.pollSection}>2. Primary purpose</Text>
+                  <Text style={styles.pollSection}>2. Account manager</Text>
+                  <Text style={styles.pollQuestion}>
+                    Would you like a WWC account manager to help create and manage your listings and
+                    services for you? <Text style={styles.required}>*</Text>
+                  </Text>
+                  <PollRadioGroup
+                    options={ACCOUNT_MANAGER_OPTIONS}
+                    selected={wantsAccountManager}
+                    onSelect={setWantsAccountManager}
+                  />
+
+                  <Text style={styles.pollSection}>3. Primary purpose</Text>
                   <Text style={styles.pollQuestion}>
                     What is the primary purpose of your registration?{' '}
                     <Text style={styles.required}>*</Text>
@@ -264,17 +275,7 @@ export function VerificationLockOverlay({
                     onSelect={setPrimaryPurpose}
                   />
 
-                  <Text style={[styles.pollQuestion, styles.pollQuestionFollowUp]}>
-                    Would you like a WWC account manager to help create and manage your listings and
-                    services for you? <Text style={styles.required}>*</Text>
-                  </Text>
-                  <PollRadioGroup
-                    options={ACCOUNT_MANAGER_OPTIONS}
-                    selected={wantsAccountManager}
-                    onSelect={setWantsAccountManager}
-                  />
-
-                  <Text style={styles.pollSection}>3. Referral</Text>
+                  <Text style={styles.pollSection}>4. Referral</Text>
                   <Text style={styles.pollQuestion}>
                     How did you hear about Witness World Connect (WWC)?{' '}
                     <Text style={styles.required}>*</Text>
@@ -397,9 +398,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
-  },
-  pollQuestionFollowUp: {
-    marginTop: 10,
   },
   required: { color: colors.danger },
   optionRow: {
