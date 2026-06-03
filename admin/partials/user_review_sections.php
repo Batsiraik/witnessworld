@@ -9,9 +9,10 @@ $showOpenFullPageLink = $showOpenFullPageLink ?? false;
 require_once __DIR__ . '/../includes/registration_poll_labels.php';
 $pollAcct = (string) ($user['registration_account_type'] ?? '');
 $pollPurpose = (string) ($user['registration_primary_purpose'] ?? '');
+$pollAccountManager = (string) ($user['registration_wants_account_manager'] ?? '');
 $pollReferral = (string) ($user['registration_referral_source'] ?? '');
 $pollReferralOther = (string) ($user['registration_referral_other'] ?? '');
-$hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollReferral !== '';
+$hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollAccountManager !== '' || $pollReferral !== '';
 ?>
 <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-panel">
   <h3 class="text-sm font-semibold text-slate-900">Profile</h3>
@@ -38,6 +39,10 @@ $hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollReferral !== '
     <div class="sm:col-span-2">
       <dt class="text-slate-500">2. Primary purpose</dt>
       <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_primary_purpose_label($pollPurpose), ENT_QUOTES, 'UTF-8') ?></dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-slate-500">2. Account manager support</dt>
+      <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_account_manager_label($pollAccountManager), ENT_QUOTES, 'UTF-8') ?></dd>
     </div>
     <div class="sm:col-span-2">
       <dt class="text-slate-500">3. How they heard about WWC</dt>

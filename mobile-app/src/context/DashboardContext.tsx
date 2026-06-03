@@ -12,6 +12,7 @@ export type DashboardUser = {
   status?: string;
   registration_account_type?: 'individual' | 'business' | null;
   registration_primary_purpose?: 'browsing_connecting' | 'promoting_business' | 'both' | null;
+  registration_wants_account_manager?: 'yes' | 'no' | null;
   registration_referral_source?:
     | 'friend_family'
     | 'social_media'

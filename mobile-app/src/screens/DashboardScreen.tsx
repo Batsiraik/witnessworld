@@ -70,6 +70,8 @@ export function DashboardScreen({ navigation }: Props) {
             registration_account_type: result.registration_account_type as DashboardUser['registration_account_type'],
             registration_primary_purpose:
               result.registration_primary_purpose as DashboardUser['registration_primary_purpose'],
+            registration_wants_account_manager:
+              result.registration_wants_account_manager as DashboardUser['registration_wants_account_manager'],
             registration_referral_source:
               result.registration_referral_source as DashboardUser['registration_referral_source'],
             registration_referral_other: result.registration_referral_other || null,

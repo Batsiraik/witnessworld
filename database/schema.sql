@@ -91,6 +91,7 @@ CREATE TABLE users (
   registration_country_name VARCHAR(120) NULL,
   registration_account_type ENUM('individual','business') NULL,
   registration_primary_purpose ENUM('browsing_connecting','promoting_business','both') NULL,
+  registration_wants_account_manager ENUM('yes','no') NULL,
   registration_referral_source ENUM('friend_family','social_media','whatsapp_group','wwc_team_member','other') NULL,
   registration_referral_other VARCHAR(200) NULL,
   avatar_url VARCHAR(512) NULL,

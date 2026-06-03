@@ -400,4 +400,5 @@ CREATE TABLE IF NOT EXISTS admin_trusted_devices (
 -- 2026-06-03: In-app notification inbox (home bell) — see revisions_user_notifications.sql
 -- 2026-06-03: Admin in-app notification inbox — see revisions_admin_notifications.sql
 -- 2026-06-03: Monetization toggle — see revisions_monetization_toggle.sql
+-- 2026-06-03: Verification poll account manager — see revisions_registration_account_manager.sql
 -- ---------------------------------------------------------------------------

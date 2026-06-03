@@ -152,6 +152,7 @@ export async function apiGet(path: string, withAuth = true): Promise<Json> {
 export type RegistrationPollPayload = {
   account_type: 'individual' | 'business';
   primary_purpose: 'browsing_connecting' | 'promoting_business' | 'both';
+  wants_account_manager: 'yes' | 'no';
   referral_source: 'friend_family' | 'social_media' | 'whatsapp_group' | 'wwc_team_member' | 'other';
   referral_other?: string;
 };
@@ -159,6 +160,7 @@ export type RegistrationPollPayload = {
 export type RegistrationPollResult = {
   registration_account_type: string;
   registration_primary_purpose: string;
+  registration_wants_account_manager: string;
   registration_referral_source: string;
   registration_referral_other: string;
 };
@@ -169,13 +171,15 @@ export async function submitRegistrationPoll(
   const data = await apiPost('registration-account-type.php', payload, true);
   const account = data.registration_account_type as string | undefined;
   const purpose = data.registration_primary_purpose as string | undefined;
+  const accountManager = data.registration_wants_account_manager as string | undefined;
   const referral = data.registration_referral_source as string | undefined;
-  if (!account || !purpose || !referral) {
+  if (!account || !purpose || !accountManager || !referral) {
     throw new Error('Could not save your answers');
   }
   return {
     registration_account_type: account,
     registration_primary_purpose: purpose,
+    registration_wants_account_manager: accountManager,
     registration_referral_source: referral,
     registration_referral_other: (data.registration_referral_other as string) || '',
   };

@@ -19,6 +19,7 @@ import { colors } from '../theme/colors';
 
 export type RegistrationAccountType = 'individual' | 'business';
 export type RegistrationPrimaryPurpose = 'browsing_connecting' | 'promoting_business' | 'both';
+export type RegistrationWantsAccountManager = 'yes' | 'no';
 export type RegistrationReferralSource =
   | 'friend_family'
   | 'social_media'
@@ -29,6 +30,7 @@ export type RegistrationReferralSource =
 type PollUser = {
   registration_account_type?: RegistrationAccountType | null;
   registration_primary_purpose?: RegistrationPrimaryPurpose | null;
+  registration_wants_account_manager?: RegistrationWantsAccountManager | null;
   registration_referral_source?: RegistrationReferralSource | null;
   registration_referral_other?: string | null;
 };
@@ -73,6 +75,19 @@ const PURPOSE_OPTIONS: RadioOption<RegistrationPrimaryPurpose>[] = [
     value: 'both',
     label: 'Both',
     hint: 'I want to utilize the platform to both offer services/goods and browse other listings',
+  },
+];
+
+const ACCOUNT_MANAGER_OPTIONS: RadioOption<RegistrationWantsAccountManager>[] = [
+  {
+    value: 'yes',
+    label: 'Yes, please',
+    hint: 'I would like a WWC account manager to help set up and manage my listings and services',
+  },
+  {
+    value: 'no',
+    label: 'No, thank you',
+    hint: 'I will create and manage my own listings and services in the app',
   },
 ];
 
@@ -134,6 +149,7 @@ export function VerificationLockOverlay({
 }: Props) {
   const [accountType, setAccountType] = useState<RegistrationAccountType | null>(null);
   const [primaryPurpose, setPrimaryPurpose] = useState<RegistrationPrimaryPurpose | null>(null);
+  const [wantsAccountManager, setWantsAccountManager] = useState<RegistrationWantsAccountManager | null>(null);
   const [referralSource, setReferralSource] = useState<RegistrationReferralSource | null>(null);
   const [referralOther, setReferralOther] = useState('');
   const [submitBusy, setSubmitBusy] = useState(false);
@@ -155,6 +171,7 @@ export function VerificationLockOverlay({
     }
     setAccountType(user?.registration_account_type ?? null);
     setPrimaryPurpose(user?.registration_primary_purpose ?? null);
+    setWantsAccountManager(user?.registration_wants_account_manager ?? null);
     setReferralSource(user?.registration_referral_source ?? null);
     setReferralOther(user?.registration_referral_other ?? '');
   }, [visible, user]);
@@ -171,6 +188,7 @@ export function VerificationLockOverlay({
   const canSubmit =
     accountType &&
     primaryPurpose &&
+    wantsAccountManager &&
     referralSource &&
     (referralSource !== 'other' || referralOther.trim().length >= 2);
 
@@ -182,6 +200,7 @@ export function VerificationLockOverlay({
       await onSubmitPoll({
         account_type: accountType,
         primary_purpose: primaryPurpose,
+        wants_account_manager: wantsAccountManager,
         referral_source: referralSource,
         referral_other: referralSource === 'other' ? referralOther.trim() : undefined,
       });
@@ -243,6 +262,16 @@ export function VerificationLockOverlay({
                     options={PURPOSE_OPTIONS}
                     selected={primaryPurpose}
                     onSelect={setPrimaryPurpose}
+                  />
+
+                  <Text style={[styles.pollQuestion, styles.pollQuestionFollowUp]}>
+                    Would you like a WWC account manager to help create and manage your listings and
+                    services for you? <Text style={styles.required}>*</Text>
+                  </Text>
+                  <PollRadioGroup
+                    options={ACCOUNT_MANAGER_OPTIONS}
+                    selected={wantsAccountManager}
+                    onSelect={setWantsAccountManager}
                   />
 
                   <Text style={styles.pollSection}>3. Referral</Text>
@@ -368,6 +397,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
+  },
+  pollQuestionFollowUp: {
+    marginTop: 10,
   },
   required: { color: colors.danger },
   optionRow: {

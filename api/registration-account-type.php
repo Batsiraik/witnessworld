@@ -37,6 +37,11 @@ if (!in_array($purpose, ['browsing_connecting', 'promoting_business', 'both'], t
     ww_json(['ok' => false, 'error' => 'Select your primary purpose'], 422);
 }
 
+$wantsAccountManager = strtolower(trim((string) ($in['wants_account_manager'] ?? $in['registration_wants_account_manager'] ?? '')));
+if (!in_array($wantsAccountManager, ['yes', 'no'], true)) {
+    ww_json(['ok' => false, 'error' => 'Please indicate if you would like account manager support'], 422);
+}
+
 $referral = strtolower(trim((string) ($in['referral_source'] ?? $in['registration_referral_source'] ?? '')));
 if (!in_array($referral, ['friend_family', 'social_media', 'whatsapp_group', 'wwc_team_member', 'other'], true)) {
     ww_json(['ok' => false, 'error' => 'Select how you heard about WWC'], 422);
@@ -56,26 +61,29 @@ if ($referral === 'other') {
 
 $existingAcct = (string) ($user['registration_account_type'] ?? '');
 $existingPurpose = (string) ($user['registration_primary_purpose'] ?? '');
+$existingAccountManager = (string) ($user['registration_wants_account_manager'] ?? '');
 $existingReferral = (string) ($user['registration_referral_source'] ?? '');
-if ($existingAcct !== '' && $existingPurpose !== '' && $existingReferral !== '') {
+if ($existingAcct !== '' && $existingPurpose !== '' && $existingAccountManager !== '' && $existingReferral !== '') {
     ww_json([
         'ok' => true,
         'registration_account_type' => $existingAcct,
         'registration_primary_purpose' => $existingPurpose,
+        'registration_wants_account_manager' => $existingAccountManager,
         'registration_referral_source' => $existingReferral,
         'registration_referral_other' => (string) ($user['registration_referral_other'] ?? ''),
     ]);
 }
 
 $up = $pdo->prepare(
-    'UPDATE users SET registration_account_type = ?, registration_primary_purpose = ?, registration_referral_source = ?, registration_referral_other = ? WHERE id = ?'
+    'UPDATE users SET registration_account_type = ?, registration_primary_purpose = ?, registration_wants_account_manager = ?, registration_referral_source = ?, registration_referral_other = ? WHERE id = ?'
 );
-$up->execute([$accountType, $purpose, $referral, $referralOther !== '' ? $referralOther : null, (int) $user['id']]);
+$up->execute([$accountType, $purpose, $wantsAccountManager, $referral, $referralOther !== '' ? $referralOther : null, (int) $user['id']]);
 
 ww_json([
     'ok' => true,
     'registration_account_type' => $accountType,
     'registration_primary_purpose' => $purpose,
+    'registration_wants_account_manager' => $wantsAccountManager,
     'registration_referral_source' => $referral,
     'registration_referral_other' => $referralOther,
 ]);

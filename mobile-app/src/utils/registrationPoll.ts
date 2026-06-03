@@ -2,7 +2,7 @@ import type { DashboardUser } from '../context/DashboardContext';
 
 export function isRegistrationPollComplete(user: DashboardUser | null | undefined): boolean {
   if (!user) return false;
-  if (!user.registration_account_type || !user.registration_primary_purpose || !user.registration_referral_source) {
+  if (!user.registration_account_type || !user.registration_primary_purpose || !user.registration_wants_account_manager || !user.registration_referral_source) {
     return false;
   }
   if (user.registration_referral_source === 'other') {

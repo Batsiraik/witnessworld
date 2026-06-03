@@ -21,6 +21,15 @@ function ww_poll_primary_purpose_label(string $v): string
     };
 }
 
+function ww_poll_account_manager_label(string $v): string
+{
+    return match ($v) {
+        'yes' => 'Yes — interested in account manager support',
+        'no' => 'No — I will manage my own listings',
+        default => '—',
+    };
+}
+
 function ww_poll_referral_label(string $source, ?string $other = null): string
 {
     $base = match ($source) {
