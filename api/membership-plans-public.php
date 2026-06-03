@@ -14,5 +14,6 @@ $pdo = witnessworld_pdo();
 ww_json([
     'ok' => true,
     'trial_days' => ww_membership_trial_days($pdo),
+    'monetization_enabled' => ww_monetization_enabled($pdo),
     'plans' => array_values(ww_subscription_plans()),
 ]);

@@ -24,6 +24,14 @@ if (!$user) {
 $body = ww_read_json();
 $plan = ww_valid_membership_plan(strtolower(trim((string) ($body['membership_plan'] ?? 'free'))));
 $userId = (int) $user['id'];
+
+if ($plan !== 'free' && !ww_monetization_enabled($pdo)) {
+    ww_json([
+        'ok' => false,
+        'error' => 'Membership billing is not active yet. Early access includes full posting at no charge.',
+    ], 422);
+}
+
 $trialDays = ww_membership_trial_days($pdo);
 $now = date('Y-m-d H:i:s');
 

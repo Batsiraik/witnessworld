@@ -23,13 +23,17 @@ type HubRow = {
 export function ProviderHubScreen({ navigation }: Props) {
   const { user, subscription } = useDashboardContext();
   const hasAvatar = Boolean(user?.avatar_url && String(user.avatar_url).trim() !== '');
-  const canPost = subscription?.features?.can_post === true;
+  const monetizationOn = subscription?.monetization_enabled === true;
+  const canPost = monetizationOn ? subscription?.features?.can_post === true : true;
   const planTitle = subscription?.plan_title ?? 'User Member';
   const trialEnds = subscription?.trial_ends_at ? `Trial ends ${String(subscription.trial_ends_at).slice(0, 10)}` : null;
-  const hasBusiness = subscription?.has_business_membership === true;
+  const hasBusiness = monetizationOn ? subscription?.has_business_membership === true : true;
   const storefrontAddon = subscription?.storefront_addon ?? 'none';
 
   const usageLine = useMemo(() => {
+    if (!monetizationOn) {
+      return null;
+    }
     const lim = subscription?.usage?.marketplace_listings_limit ?? 0;
     const rem = subscription?.usage?.marketplace_listings_remaining ?? 0;
     if (!canPost || lim <= 0) {
@@ -39,10 +43,10 @@ export function ProviderHubScreen({ navigation }: Props) {
       return 'At your plan limit for marketplace ads.';
     }
     return `${rem} marketplace ad${rem === 1 ? '' : 's'} left`;
-  }, [subscription, canPost]);
+  }, [subscription, canPost, monetizationOn]);
 
   const requireAvatar = (then: () => void) => {
-    if (!canPost) {
+    if (monetizationOn && !canPost) {
       Alert.alert('Upgrade required', 'Free members can browse and message, but posting requires a paid plan.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Change plan', onPress: () => navigation.navigate('MembershipPlans') },
@@ -93,7 +97,7 @@ export function ProviderHubScreen({ navigation }: Props) {
       iconColor: '#15803D',
       onPress: () =>
         requireAvatar(() => {
-          if (!hasBusiness) {
+          if (monetizationOn && !hasBusiness) {
             Alert.alert(
               'Business plan required',
               'Storefronts are for Starter, Growth, or Elite. Upgrade your membership, then choose a storefront add-on.',
@@ -104,7 +108,7 @@ export function ProviderHubScreen({ navigation }: Props) {
             );
             return;
           }
-          if (storefrontAddon !== 'small' && storefrontAddon !== 'large') {
+          if (monetizationOn && storefrontAddon !== 'small' && storefrontAddon !== 'large') {
             navigation.navigate('StorefrontAddon');
             return;
           }
@@ -136,25 +140,27 @@ export function ProviderHubScreen({ navigation }: Props) {
     <GradientBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.planCard}>
-            <View style={styles.planCardHeader}>
-              <Text style={styles.planLabel}>Current plan</Text>
-              <Pressable onPress={() => navigation.navigate('MembershipPlans')} style={styles.planBtn}>
-                <Text style={styles.planBtnText}>Change plan</Text>
+          {monetizationOn ? (
+            <View style={styles.planCard}>
+              <View style={styles.planCardHeader}>
+                <Text style={styles.planLabel}>Current plan</Text>
+                <Pressable onPress={() => navigation.navigate('MembershipPlans')} style={styles.planBtn}>
+                  <Text style={styles.planBtnText}>Change plan</Text>
+                </Pressable>
+              </View>
+              <Text style={styles.planTitle}>{planTitle}</Text>
+              {trialEnds ? <Text style={styles.planMeta}>{trialEnds}</Text> : null}
+              {usageLine ? <Text style={styles.planUsage}>{usageLine}</Text> : null}
+              <Pressable onPress={() => navigation.navigate('StorefrontAddon')} style={styles.addonRow} hitSlop={6}>
+                <Text style={styles.addonRowLabel}>
+                  {storefrontAddon === 'small' || storefrontAddon === 'large'
+                    ? `Storefront · ${storefrontAddon === 'small' ? 'Small' : 'Large'}`
+                    : 'Storefront add-on'}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </Pressable>
             </View>
-            <Text style={styles.planTitle}>{planTitle}</Text>
-            {trialEnds ? <Text style={styles.planMeta}>{trialEnds}</Text> : null}
-            <Text style={styles.planUsage}>{usageLine}</Text>
-            <Pressable onPress={() => navigation.navigate('StorefrontAddon')} style={styles.addonRow} hitSlop={6}>
-              <Text style={styles.addonRowLabel}>
-                {storefrontAddon === 'small' || storefrontAddon === 'large'
-                  ? `Storefront · ${storefrontAddon === 'small' ? 'Small' : 'Large'}`
-                  : 'Storefront add-on'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </Pressable>
-          </View>
+          ) : null}
           <Text style={styles.pageSub}>What would you like to post?</Text>
 
           {rows.map((row) => (

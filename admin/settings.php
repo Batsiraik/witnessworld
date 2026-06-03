@@ -16,6 +16,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         'support_email',
         'support_user_id',
         'membership_trial_days',
+        'monetization_enabled',
         'stripe_publishable_key',
         'stripe_price_plus',
         'stripe_price_starter',
@@ -29,6 +30,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         'smtp_encryption',
     ];
     foreach ($keys as $k) {
+        if ($k === 'monetization_enabled') {
+            ww_set_setting($pdo, $k, !empty($_POST['monetization_enabled']) ? '1' : '0');
+            continue;
+        }
         $v = trim((string) ($_POST[$k] ?? ''));
         if ($k === 'smtp_pass' && $v === '') {
             continue;
@@ -45,6 +50,7 @@ $get = static function (string $k) use ($pdo): string {
 $support = $get('support_email');
 $supportUserId = $get('support_user_id');
 $membershipTrialDays = $get('membership_trial_days') ?: '90';
+$monetizationEnabled = $get('monetization_enabled') === '1';
 $stripePublishableKey = $get('stripe_publishable_key');
 $stripePricePlus = $get('stripe_price_plus');
 $stripePriceStarter = $get('stripe_price_starter');
@@ -120,6 +126,27 @@ require __DIR__ . '/partials/shell_open.php';
         class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
       />
       <p class="mt-1 text-xs text-slate-500">Set this to <strong>90</strong> for launch promo. Change to <strong>30</strong> after launch. New paid signups use this value.</p>
+    </div>
+    <hr class="border-slate-100" />
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Monetization</p>
+    <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+      <label class="flex cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          name="monetization_enabled"
+          value="1"
+          class="mt-1 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand"
+          <?= $monetizationEnabled ? 'checked' : '' ?>
+        />
+        <span>
+          <span class="block text-sm font-semibold text-slate-900">Turn on monetization</span>
+          <span class="mt-1 block text-xs leading-relaxed text-slate-600">
+            When <strong>off</strong> (recommended for launch / early access), the app hides membership plan and payment
+            sections. All verified users can post unlimited listings, stores, and products with no upgrade prompts.
+            When <strong>on</strong>, paid plans, limits, and payment method UI return — no app update required.
+          </span>
+        </span>
+      </label>
     </div>
     <hr class="border-slate-100" />
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Stripe billing</p>

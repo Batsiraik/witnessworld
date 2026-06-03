@@ -27,6 +27,7 @@ export type DashboardUser = {
 };
 
 export type SubscriptionInfo = {
+  monetization_enabled?: boolean;
   plan: string;
   status: string;
   plan_title: string;

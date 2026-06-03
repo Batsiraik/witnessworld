@@ -109,6 +109,7 @@ function formatCardBrand(brand: string | null | undefined): string {
 export function ProfileSettingsScreen(_props: Props) {
   const { user, subscription, refreshProfile, stackNavigation, supportAvailable, supportEmail } =
     useDashboardContext();
+  const monetizationOn = subscription?.monetization_enabled === true;
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarUploadPct, setAvatarUploadPct] = useState<number | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -345,7 +346,7 @@ export function ProfileSettingsScreen(_props: Props) {
                   {accountUsername ? (
                     <Text style={styles.profileMeta}>@{accountUsername}</Text>
                   ) : null}
-                  <Text style={styles.profilePlan}>{planLabel}</Text>
+                  {monetizationOn ? <Text style={styles.profilePlan}>{planLabel}</Text> : null}
                 </View>
               </View>
               <MenuDivider />
@@ -389,7 +390,8 @@ export function ProfileSettingsScreen(_props: Props) {
               ))}
             </GlassCard>
 
-            {(() => {
+            {monetizationOn
+              ? (() => {
               const plan = subscription?.plan ?? 'free';
               const planTitle =
                 subscription?.plan_title && String(subscription.plan_title).trim() !== ''
@@ -438,7 +440,8 @@ export function ProfileSettingsScreen(_props: Props) {
                   ) : null}
                 </GlassCard>
               );
-            })()}
+            })()
+              : null}
 
             <GlassCard style={[styles.card, styles.menuCard]}>
               <MenuRow

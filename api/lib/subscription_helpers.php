@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/admin/includes/settings_store.php';
 
+/** When false (launch default), all verified users get full posting access with no plan limits. */
+function ww_monetization_enabled(PDO $pdo): bool
+{
+    return (ww_get_setting($pdo, 'monetization_enabled', '0') ?? '0') === '1';
+}
+
 /**
  * @return array<string, array<string, mixed>>
  */
@@ -137,6 +143,9 @@ function ww_subscription_count_marketplace_listings(PDO $pdo, int $userId): int
  */
 function ww_subscription_enforce_listing_cap(PDO $pdo, array $user): void
 {
+    if (!ww_monetization_enabled($pdo)) {
+        return;
+    }
     $planKey = ww_valid_membership_plan((string) ($user['membership_plan'] ?? 'free'));
     $status = (string) ($user['subscription_status'] ?? 'free');
     $paidAccess = $planKey !== 'free' && in_array($status, ['trialing', 'active', 'grace'], true);
@@ -164,13 +173,18 @@ function ww_subscription_enforce_listing_cap(PDO $pdo, array $user): void
  */
 function ww_subscription_payload(PDO $pdo, array $user): array
 {
+    $monetization = ww_monetization_enabled($pdo);
     $plans = ww_subscription_plans();
     $planKey = ww_valid_membership_plan((string) ($user['membership_plan'] ?? 'free'));
     $status = (string) ($user['subscription_status'] ?? 'free');
     $plan = $plans[$planKey];
     $paidAccess = $planKey !== 'free' && in_array($status, ['trialing', 'active', 'grace'], true);
     $features = $plan;
-    $features['can_post'] = $paidAccess && !empty($plan['can_post']);
+    if ($monetization) {
+        $features['can_post'] = $paidAccess && !empty($plan['can_post']);
+    } else {
+        $features['can_post'] = true;
+    }
 
     $userId = (int) ($user['id'] ?? 0);
     $usedListings = ww_subscription_count_marketplace_listings($pdo, $userId);
@@ -190,7 +204,7 @@ function ww_subscription_payload(PDO $pdo, array $user): array
 
     $pmStatus = (string) ($user['stripe_payment_method_status'] ?? 'none');
     $paymentMethod = null;
-    if ($pmStatus === 'attached') {
+    if ($monetization && $pmStatus === 'attached') {
         $l4 = trim((string) ($user['stripe_pm_last4'] ?? ''));
         $br = strtolower(trim((string) ($user['stripe_pm_brand'] ?? '')));
         $paymentMethod = [
@@ -199,23 +213,31 @@ function ww_subscription_payload(PDO $pdo, array $user): array
         ];
     }
 
+    $productCap = ww_storefront_product_cap($addon);
+    if (!$monetization) {
+        $productCap = 0;
+    }
+
     return [
+        'monetization_enabled' => $monetization,
         'plan' => $planKey,
         'status' => $status,
         'plan_title' => (string) $plan['title'],
         'trial_ends_at' => $user['trial_ends_at'] ?? null,
         'grace_ends_at' => $user['grace_ends_at'] ?? null,
-        'stripe_payment_method_status' => $pmStatus,
+        'stripe_payment_method_status' => $monetization ? $pmStatus : 'none',
         'payment_method' => $paymentMethod,
         'storefront_addon' => $addon,
         'storefront_addon_title' => $addonTitle,
         'storefront_addon_monthly' => $addonMonthly,
-        'storefront_product_cap' => ww_storefront_product_cap($addon),
-        'has_business_membership' => ww_subscription_has_business_membership($planKey),
+        'storefront_product_cap' => $productCap,
+        'has_business_membership' => $monetization
+            ? ww_subscription_has_business_membership($planKey)
+            : true,
         'usage' => [
             'marketplace_listings_used' => $usedListings,
-            'marketplace_listings_limit' => $limitAds,
-            'marketplace_listings_remaining' => max(0, $limitAds - $usedListings),
+            'marketplace_listings_limit' => $monetization ? $limitAds : 0,
+            'marketplace_listings_remaining' => $monetization ? max(0, $limitAds - $usedListings) : 0,
         ],
         'features' => $features,
         'plans' => array_values($plans),
@@ -228,6 +250,9 @@ function ww_subscription_payload(PDO $pdo, array $user): array
  */
 function ww_subscription_can_post(PDO $pdo, array $user): bool
 {
+    if (!ww_monetization_enabled($pdo)) {
+        return true;
+    }
     $payload = ww_subscription_payload($pdo, $user);
     return !empty($payload['features']['can_post']);
 }

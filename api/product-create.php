@@ -51,25 +51,27 @@ if ((string) ($store['moderation_status'] ?? '') !== 'approved') {
     ww_json(['ok' => false, 'error' => 'Your store must be approved before you can add products'], 403);
 }
 
-$addon = (string) ($user['storefront_addon'] ?? 'none');
-$cap = ww_storefront_product_cap($addon);
-if ($cap <= 0) {
-    ww_json(['ok' => false, 'error' => 'Your account does not include a storefront product allowance.'], 403);
-}
-try {
-    $cst = $pdo->prepare(
-        "SELECT COUNT(*) FROM store_products WHERE store_id = ? AND moderation_status IN ('pending_approval','approved')"
-    );
-    $cst->execute([$storeId]);
-    $have = (int) $cst->fetchColumn();
-} catch (\Throwable) {
-    ww_json(['ok' => false, 'error' => 'Database error'], 500);
-}
-if ($have >= $cap) {
-    ww_json([
-        'ok' => false,
-        'error' => 'You have reached the product limit for your storefront add-on. Choose Large or remove a product.',
-    ], 402);
+if (ww_monetization_enabled($pdo)) {
+    $addon = (string) ($user['storefront_addon'] ?? 'none');
+    $cap = ww_storefront_product_cap($addon);
+    if ($cap <= 0) {
+        ww_json(['ok' => false, 'error' => 'Your account does not include a storefront product allowance.'], 403);
+    }
+    try {
+        $cst = $pdo->prepare(
+            "SELECT COUNT(*) FROM store_products WHERE store_id = ? AND moderation_status IN ('pending_approval','approved')"
+        );
+        $cst->execute([$storeId]);
+        $have = (int) $cst->fetchColumn();
+    } catch (\Throwable) {
+        ww_json(['ok' => false, 'error' => 'Database error'], 500);
+    }
+    if ($have >= $cap) {
+        ww_json([
+            'ok' => false,
+            'error' => 'You have reached the product limit for your storefront add-on. Choose Large or remove a product.',
+        ], 402);
+    }
 }
 
 $name = trim((string) ($body['name'] ?? ''));

@@ -34,6 +34,7 @@ INSERT INTO settings (`key`, `value`) VALUES
   ('support_email', 'support@witnessworldconnect.com'),
   ('support_user_id', '0'),
   ('membership_trial_days', '90'),
+  ('monetization_enabled', '0'),
   ('stripe_publishable_key', ''),
   ('stripe_price_plus', ''),
   ('stripe_price_starter', ''),

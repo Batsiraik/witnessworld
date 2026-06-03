@@ -35,18 +35,20 @@ if ($avatar === '') {
 ww_subscription_require_posting($pdo, $user);
 
 $planKey = ww_valid_membership_plan((string) ($user['membership_plan'] ?? 'free'));
-if (!ww_subscription_has_business_membership($planKey)) {
-    ww_json([
-        'ok' => false,
-        'error' => 'Online storefront requires a Business membership (Starter, Growth, or Elite).',
-    ], 402);
-}
-$addon = (string) ($user['storefront_addon'] ?? 'none');
-if (!in_array($addon, ['small', 'large'], true)) {
-    ww_json([
-        'ok' => false,
-        'error' => 'Choose a Storefront add-on from Create listing before opening a store.',
-    ], 402);
+if (ww_monetization_enabled($pdo)) {
+    if (!ww_subscription_has_business_membership($planKey)) {
+        ww_json([
+            'ok' => false,
+            'error' => 'Online storefront requires a Business membership (Starter, Growth, or Elite).',
+        ], 402);
+    }
+    $addon = (string) ($user['storefront_addon'] ?? 'none');
+    if (!in_array($addon, ['small', 'large'], true)) {
+        ww_json([
+            'ok' => false,
+            'error' => 'Choose a Storefront add-on from Create listing before opening a store.',
+        ], 402);
+    }
 }
 
 $userId = (int) $user['id'];

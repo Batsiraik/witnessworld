@@ -27,7 +27,7 @@ if (!ww_storefront_addon_valid($addon)) {
     ww_json(['ok' => false, 'error' => 'storefront_addon must be none, small, or large'], 422);
 }
 
-if ($addon !== 'none') {
+if ($addon !== 'none' && ww_monetization_enabled($pdo)) {
     if (!ww_subscription_can_post($pdo, $user)) {
         ww_json(['ok' => false, 'error' => 'An active paid membership is required for storefront add-ons.'], 402);
     }
