@@ -30,7 +30,7 @@
       }
     },
     "android": {
-      "package": "com.witnessworldconnect.app",
+      "package": "com.witnessworldconnect.wwc",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.jpg",

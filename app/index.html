@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Witness World Connect — marketplace, services, community, and business directory for Jehovah's Witnesses worldwide." />
+  <meta name="theme-color" content="#1FAAF2" />
+  <title>Home · Witness World Connect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/app.css" />
+  <link rel="stylesheet" href="assets/css/home.css" />
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+<body>
+  <div class="wwc-app">
+    <div id="wwc-shell-top"></div>
+
+    <main class="wwc-main">
+      <header class="wwc-home-header">
+        <div class="wwc-home-brand">
+          <img src="assets/images/logo.jpg" alt="WWC logo" width="44" height="44" />
+          <span>WWC</span>
+        </div>
+        <div class="wwc-home-actions">
+          <button type="button" class="wwc-icon-btn" id="home-fav-btn" aria-label="Favorites">
+            <ion-icon name="heart-outline" aria-hidden="true"></ion-icon>
+          </button>
+          <button type="button" class="wwc-icon-btn" id="home-orders-btn" aria-label="My orders">
+            <ion-icon name="receipt-outline" aria-hidden="true"></ion-icon>
+          </button>
+          <button type="button" class="wwc-icon-btn" id="home-notif-btn" aria-label="Notifications">
+            <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
+            <span class="wwc-badge-dot" id="home-notif-badge" hidden></span>
+          </button>
+        </div>
+      </header>
+
+      <button type="button" class="wwc-home-loc" id="home-loc-btn">
+        <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+        <span id="home-loc-label">All locations</span>
+      </button>
+
+      <form class="wwc-home-search" role="search" onsubmit="return false;">
+        <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
+        <input
+          type="search"
+          id="home-search"
+          placeholder="Search services, products, businesses…"
+          autocomplete="off"
+          enterkeyhint="search"
+        />
+      </form>
+
+      <nav class="wwc-cats" id="home-cats" aria-label="Browse categories"></nav>
+
+      <div id="home-feed">
+        <div class="wwc-loading">
+          <div class="wwc-spinner" role="status" aria-label="Loading feed"></div>
+        </div>
+      </div>
+
+      <p class="wwc-footnote">
+        Message sellers from listing and product screens — threads appear in Messages.
+      </p>
+    </main>
+
+    <div id="wwc-shell-bottom"></div>
+  </div>
+
+  <!-- Location filter modal -->
+  <div class="wwc-modal-backdrop" id="loc-modal" hidden>
+    <div class="wwc-modal-sheet" role="dialog" aria-labelledby="loc-modal-title">
+      <h2 class="wwc-modal-title" id="loc-modal-title">Locations</h2>
+      <p class="wwc-modal-hint">Filter the home feed by country and state (US).</p>
+      <button type="button" class="wwc-modal-row" data-loc-all>All locations</button>
+      <input type="search" class="wwc-modal-search" id="loc-country-search" placeholder="Search countries" />
+      <div class="wwc-modal-list" id="loc-country-list"></div>
+      <div id="loc-state-section" hidden>
+        <p class="wwc-modal-subhead">US state (optional)</p>
+        <div class="wwc-modal-list" id="loc-state-list"></div>
+      </div>
+      <button type="button" class="wwc-modal-done" data-loc-done>Done</button>
+    </div>
+  </div>
+
+  <!-- Notifications modal -->
+  <div class="wwc-modal-backdrop" id="notif-modal" hidden>
+    <div class="wwc-modal-sheet" role="dialog" aria-labelledby="notif-modal-title">
+      <h2 class="wwc-modal-title" id="notif-modal-title">Notifications</h2>
+      <div class="wwc-modal-list" id="notif-list"></div>
+      <button type="button" class="wwc-modal-done" data-notif-close>Close</button>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/page-init.js"></script>
+  <script src="assets/js/shell.js"></script>
+  <script src="assets/js/home.js"></script>
+  <script>WWC_PAGE.init({});</script>
+</body>
+</html>
