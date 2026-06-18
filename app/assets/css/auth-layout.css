@@ -1,0 +1,48 @@
+/* Auth pages — login, register, forgot password */
+
+.wwc-auth-wrap {
+  box-sizing: border-box;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px 40px;
+}
+
+.wwc-auth-main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.wwc-auth-brand {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  margin: 0 auto 24px;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--wwc-text, #0b1220);
+  text-decoration: none;
+}
+
+.wwc-auth-brand img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.wwc-auth-brand span {
+  display: block;
+  width: 100%;
+  text-align: center;
+}

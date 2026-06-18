@@ -7,8 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/app.css" />
+  <link rel="stylesheet" href="assets/css/app.css?v=3" />
+  <link rel="stylesheet" href="assets/css/auth-layout.css?v=1" />
   <style>
+    .wwc-auth-wrap { min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center; padding:28px 20px 40px; box-sizing:border-box; }
+    .wwc-auth-main { width:100%; max-width:480px; margin:0 auto; box-sizing:border-box; }
+    .wwc-auth-brand { display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; margin:0 auto 24px; font-weight:800; font-size:18px; color:#0b1220; text-decoration:none; }
+    .wwc-auth-brand img { display:block; width:48px; height:48px; border-radius:12px; object-fit:cover; }
+    .wwc-auth-brand span { display:block; width:100%; text-align:center; }
     .wwc-auth-card {
       max-width: 400px;
       margin: 0 auto;
@@ -36,11 +42,11 @@
 </head>
 <body class="wwc-auth-page">
   <div class="wwc-auth-wrap">
-    <a href="../index.html" class="wwc-auth-brand">
-      <img src="assets/images/logo.jpg" alt="" width="44" height="44" />
-      <span>Witness World Connect</span>
-    </a>
-    <main class="wwc-main">
+    <main class="wwc-auth-main">
+      <a href="../index.html" class="wwc-auth-brand">
+        <img src="assets/images/logo.jpg" alt="" width="48" height="48" />
+        <span>Witness World Connect</span>
+      </a>
       <div class="wwc-auth-card">
         <h1>Sign in</h1>
         <p>Use the same account as the mobile app.</p>
