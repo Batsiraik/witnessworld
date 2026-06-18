@@ -96,9 +96,14 @@ body.wwc-auth-page .wwc-auth-wrap {
 
 body.wwc-auth-page .wwc-auth-brand {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
   margin-bottom: 28px;
+  width: 100%;
+  max-width: 480px;
   font-weight: 800;
   font-size: 18px;
   letter-spacing: -0.02em;
