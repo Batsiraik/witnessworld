@@ -40,10 +40,9 @@
     a.addEventListener('click', closeDrawer);
   });
 
-  function authHtml(loggedIn, name) {
+  function authHtml(loggedIn) {
     if (loggedIn) {
-      const label = name ? `Dashboard` : 'Dashboard';
-      return `<a href="app/index.html" class="wwc-btn wwc-btn-primary">${escapeHtml(label)}</a>`;
+      return `<a href="app/index.html" class="wwc-btn wwc-btn-primary">Go to dashboard</a>`;
     }
     return `
       <a href="app/login.html" class="wwc-btn wwc-btn-ghost">Sign in</a>
@@ -52,28 +51,17 @@
 
   function mobileAuthHtml(loggedIn) {
     if (loggedIn) {
-      return `<a href="app/index.html" style="color:#1590d4">Dashboard</a>`;
+      return `<a href="app/index.html" style="color:#1590d4">Go to dashboard</a>`;
     }
     return `
       <a href="app/login.html">Sign in</a>
       <a href="app/register.html" style="color:#1590d4">Join WWC</a>`;
   }
 
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
   function updateAuthUI() {
     const auth = window.WWC_AUTH;
-    if (!auth) return;
-    const user = auth.getUser();
-    const loggedIn = auth.isLoggedIn();
-    const name = user?.first_name || user?.username || '';
-    if (navAuth) navAuth.innerHTML = authHtml(loggedIn, name);
+    const loggedIn = auth?.isLoggedIn?.() ?? false;
+    if (navAuth) navAuth.innerHTML = authHtml(loggedIn);
     if (mobileAuth) mobileAuth.innerHTML = mobileAuthHtml(loggedIn);
 
     document.querySelectorAll('[data-auth-when]').forEach((el) => {
@@ -83,10 +71,10 @@
     });
   }
 
+  updateAuthUI();
+
   if (window.WWC_AUTH) {
     void window.WWC_AUTH.bootstrap().then(updateAuthUI);
     window.WWC_AUTH.subscribe(updateAuthUI);
-  } else {
-    updateAuthUI();
   }
 })();
