@@ -14,51 +14,55 @@
     .wwc-auth-submit { width:100%; padding:14px; margin-top:8px; }
     .wwc-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   </style>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </head>
 <body>
-  <div class="wwc-app"><div id="wwc-shell-top"></div>
-  <main class="wwc-main">
-    <div class="wwc-auth-card">
-      <h1>Create account</h1>
-      <p style="color:var(--wwc-text-muted);font-weight:600;margin:0 0 16px">Same account works on web and mobile app.</p>
-      <div class="wwc-auth-error" id="reg-error" hidden></div>
-      <form id="reg-form">
-        <div class="wwc-grid-2">
-          <div class="wwc-field"><label>First name</label><input id="first_name" required /></div>
-          <div class="wwc-field"><label>Last name</label><input id="last_name" required /></div>
-        </div>
-        <div class="wwc-field"><label>Email</label><input type="email" id="email" required /></div>
-        <div class="wwc-field"><label>Username</label><input id="username" required /></div>
-        <div class="wwc-field"><label>Phone</label><input id="phone" required /></div>
-        <div class="wwc-field"><label for="dob">Date of birth</label><input type="date" id="dob" required /></div>
-        <div class="wwc-field"><label for="member_type">Member type</label>
-          <select id="member_type" required>
-            <option value="">Select member type</option>
-            <option value="Unbaptized publisher">Unbaptized publisher</option>
-            <option value="Baptized publisher">Baptized publisher</option>
-            <option value="Pioneer">Pioneer</option>
-            <option value="Servant">Servant</option>
-            <option value="Elder">Elder</option>
-          </select>
-        </div>
-        <div class="wwc-field"><label for="baptism_date" id="baptism_label">Baptism date</label><input type="date" id="baptism_date" /></div>
-        <div class="wwc-field"><label>Congregation</label><input id="congregation" required /></div>
-        <div class="wwc-field"><label>Country</label><select id="country" required><option value="">Select country</option></select></div>
-        <div class="wwc-field"><label>Password</label><input type="password" id="password" required minlength="8" /></div>
-        <button type="submit" class="wwc-btn wwc-btn-primary wwc-auth-submit" id="reg-btn">Create account</button>
-      </form>
-      <div id="otp-box" hidden>
-        <h2 style="font-size:18px;font-weight:800;margin:0 0 8px">Verify your email</h2>
-        <p style="font-size:14px;color:var(--wwc-text-muted)">Code sent to <strong id="otp-email"></strong></p>
-        <p style="font-size:13px;color:var(--wwc-text-muted);line-height:1.5;margin:8px 0 0">If you don&apos;t see the email within a few minutes, please check your <strong>spam or junk</strong> folder — your code may have been filtered there.</p>
-        <form id="otp-form" style="margin-top:16px">
-          <div class="wwc-field"><label>6-digit code</label><input id="otp" inputmode="numeric" maxlength="6" required /></div>
-          <button type="submit" class="wwc-btn wwc-btn-primary wwc-auth-submit" id="otp-btn">Verify &amp; sign in</button>
+  <div class="wwc-auth-wrap">
+    <a href="../index.html" class="wwc-auth-brand">
+      <img src="assets/images/logo.jpg" alt="" width="44" height="44" />
+      <span>Witness World Connect</span>
+    </a>
+    <main class="wwc-main">
+      <div class="wwc-auth-card">
+        <h1>Create account</h1>
+        <p style="color:var(--wwc-text-muted);font-weight:600;margin:0 0 16px">Same account works on web and mobile app.</p>
+        <div class="wwc-auth-error" id="reg-error" hidden></div>
+        <form id="reg-form">
+          <div class="wwc-grid-2">
+            <div class="wwc-field"><label>First name</label><input id="first_name" required /></div>
+            <div class="wwc-field"><label>Last name</label><input id="last_name" required /></div>
+          </div>
+          <div class="wwc-field"><label>Email</label><input type="email" id="email" required /></div>
+          <div class="wwc-field"><label>Username</label><input id="username" required /></div>
+          <div class="wwc-field"><label>Phone</label><input id="phone" required /></div>
+          <div class="wwc-field"><label for="dob">Date of birth</label><input type="date" id="dob" required /></div>
+          <div class="wwc-field"><label for="member_type">Member type</label>
+            <select id="member_type" required>
+              <option value="">Select member type</option>
+              <option value="Unbaptized publisher">Unbaptized publisher</option>
+              <option value="Baptized publisher">Baptized publisher</option>
+              <option value="Pioneer">Pioneer</option>
+              <option value="Servant">Servant</option>
+              <option value="Elder">Elder</option>
+            </select>
+          </div>
+          <div class="wwc-field"><label for="baptism_date" id="baptism_label">Baptism date</label><input type="date" id="baptism_date" /></div>
+          <div class="wwc-field"><label>Congregation</label><input id="congregation" required /></div>
+          <div class="wwc-field"><label>Country</label><select id="country" required><option value="">Select country</option></select></div>
+          <div class="wwc-field"><label>Password</label><input type="password" id="password" required minlength="8" /></div>
+          <button type="submit" class="wwc-btn wwc-btn-primary wwc-auth-submit" id="reg-btn">Create account</button>
         </form>
+        <div id="otp-box" hidden>
+          <h2 style="font-size:18px;font-weight:800;margin:0 0 8px">Verify your email</h2>
+          <p style="font-size:14px;color:var(--wwc-text-muted)">Code sent to <strong id="otp-email"></strong></p>
+          <p style="font-size:13px;color:var(--wwc-text-muted);line-height:1.5;margin:8px 0 0">If you don&apos;t see the email within a few minutes, please check your <strong>spam or junk</strong> folder — your code may have been filtered there.</p>
+          <form id="otp-form" style="margin-top:16px">
+            <div class="wwc-field"><label>6-digit code</label><input id="otp" inputmode="numeric" maxlength="6" required /></div>
+            <button type="submit" class="wwc-btn wwc-btn-primary wwc-auth-submit" id="otp-btn">Verify &amp; sign in</button>
+          </form>
+        </div>
+        <p style="text-align:center;margin-top:20px;font-size:14px;color:var(--wwc-text-muted)">Already have an account? <a href="login.html" style="font-weight:800;color:var(--wwc-primary-dark)">Sign in</a></p>
       </div>
-      <p style="text-align:center;margin-top:20px;font-size:14px;color:var(--wwc-text-muted)">Already have an account? <a href="login.html" style="font-weight:800;color:var(--wwc-primary-dark)">Sign in</a></p>
-    </div>
-  </main><div id="wwc-shell-bottom"></div></div>
-  <script src="assets/js/config.js"></script><script src="assets/js/api.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/utils.js"></script><script src="assets/js/page-init.js"></script><script src="assets/js/shell.js"></script><script src="assets/js/register.js"></script>
+    </main>
+  </div>
+  <script src="assets/js/config.js"></script><script src="assets/js/api.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/utils.js"></script><script src="assets/js/page-init.js"></script><script src="assets/js/register.js"></script>
 </body></html>

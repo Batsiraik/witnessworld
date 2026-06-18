@@ -1,0 +1,208 @@
+/* Platform module guide — matches trust cards & category strip */
+
+.wwc-mod-section {
+  padding: 56px 20px 72px;
+  background: linear-gradient(180deg, #f8fcff 0%, #fff 100%);
+}
+
+.wwc-mod-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: var(--wwc-max);
+  margin: 0 auto;
+}
+
+.wwc-mod-card {
+  scroll-margin-top: calc(var(--wwc-nav-h) + 20px);
+  background: var(--wwc-white);
+  border: 1px solid var(--wwc-line);
+  border-radius: 20px;
+  padding: 28px 24px 26px;
+  box-shadow: 0 8px 32px rgba(11, 18, 32, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.wwc-mod-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--mod-accent, var(--wwc-primary));
+}
+
+.wwc-mod-card[data-theme='marketplace'] { --mod-accent: #1d4ed8; --mod-soft: #e8f4fd; --mod-icon: #1d4ed8; }
+.wwc-mod-card[data-theme='services'] { --mod-accent: #7c3aed; --mod-soft: #f3e8ff; --mod-icon: #7c3aed; }
+.wwc-mod-card[data-theme='stores'] { --mod-accent: #c2410c; --mod-soft: #ffedd5; --mod-icon: #c2410c; }
+.wwc-mod-card[data-theme='directory'] { --mod-accent: #15803d; --mod-soft: #dcfce7; --mod-icon: #15803d; }
+.wwc-mod-card[data-theme='classifieds'] { --mod-accent: #b45309; --mod-soft: #fef3c7; --mod-icon: #b45309; }
+
+.wwc-mod-head {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.wwc-mod-icon {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mod-soft);
+  color: var(--mod-icon);
+}
+
+.wwc-mod-head-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.wwc-mod-tag {
+  display: inline-block;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  background: var(--mod-soft);
+  color: var(--mod-accent);
+  margin-bottom: 8px;
+}
+
+.wwc-mod-head h2 {
+  margin: 0 0 6px;
+  font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--wwc-text);
+}
+
+.wwc-mod-sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--wwc-text-muted);
+  font-weight: 600;
+}
+
+.wwc-mod-lead {
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--wwc-text);
+  font-weight: 500;
+}
+
+.wwc-mod-tip {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--mod-soft) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border: 1px solid color-mix(in srgb, var(--mod-accent) 28%, transparent);
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 600;
+  color: var(--wwc-text);
+}
+
+.wwc-mod-tip svg {
+  flex-shrink: 0;
+  color: var(--mod-accent);
+  margin-top: 1px;
+}
+
+.wwc-mod-duo {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+@media (min-width: 640px) {
+  .wwc-mod-duo {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.wwc-mod-panel {
+  padding: 18px 16px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fcff 0%, #fff 100%);
+  border: 1px solid rgba(11, 18, 32, 0.07);
+}
+
+.wwc-mod-panel h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mod-accent);
+}
+
+.wwc-mod-panel p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--wwc-text-muted);
+  font-weight: 500;
+}
+
+.wwc-mod-cats-head {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wwc-text-muted);
+}
+
+.wwc-mod-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wwc-mod-tags li {
+  display: block;
+}
+
+.wwc-mod-tags span {
+  display: inline-block;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--wwc-text);
+  background: rgba(11, 18, 32, 0.04);
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  white-space: nowrap;
+}
+
+.wwc-mod-tags li.is-other span {
+  background: transparent;
+  border-style: dashed;
+  color: var(--wwc-text-muted);
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .wwc-mod-card {
+    padding: 32px 32px 28px;
+  }
+}

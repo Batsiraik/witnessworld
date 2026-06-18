@@ -33,11 +33,13 @@
     .wwc-auth-footer { text-align: center; margin-top: 20px; font-size: 14px; color: var(--wwc-text-muted); }
     .wwc-auth-footer a { color: var(--wwc-primary-dark); font-weight: 700; }
   </style>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </head>
 <body>
-  <div class="wwc-app">
-    <div id="wwc-shell-top"></div>
+  <div class="wwc-auth-wrap">
+    <a href="../index.html" class="wwc-auth-brand">
+      <img src="assets/images/logo.jpg" alt="" width="44" height="44" />
+      <span>Witness World Connect</span>
+    </a>
     <main class="wwc-main">
       <div class="wwc-auth-card">
         <h1>Sign in</h1>
@@ -58,20 +60,16 @@
         <p class="wwc-auth-footer">No account? <a href="register.html">Create one</a></p>
       </div>
     </main>
-    <div id="wwc-shell-bottom"></div>
   </div>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
-  <script src="assets/js/shell.js"></script>
+  <script src="assets/js/page-init.js"></script>
   <script>
     (async function () {
-      await WWC_AUTH.bootstrap();
-      if (WWC_AUTH.isLoggedIn()) {
-        window.location.replace('index.html');
-        return;
-      }
-      WWC_SHELL.mountShell();
+      const ok = await WWC_PAGE.init({ authPage: true });
+      if (!ok) return;
+
       const form = document.getElementById('login-form');
       const errEl = document.getElementById('login-error');
       const btn = document.getElementById('login-btn');

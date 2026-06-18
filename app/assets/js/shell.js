@@ -7,7 +7,7 @@
   const NAV_ITEMS = [
     { id: 'home', label: 'Home', href: 'index.html', icon: 'home-outline', match: /\/(index\.html)?$/ },
     { id: 'discover', label: 'Discover', href: 'discover.html', icon: 'search-outline', match: /discover/ },
-    { id: 'post', label: 'Create', href: 'post.html', icon: 'add', fab: true },
+    { id: 'post', label: '+ Ad', href: 'post.html', icon: 'add', fab: true },
     { id: 'inbox', label: 'Messages', href: 'messages.html', icon: 'chatbubble-outline', match: /messages/ },
     { id: 'profile', label: 'Profile', href: 'profile.html', icon: 'person-outline', match: /profile/ },
   ];
@@ -20,8 +20,11 @@
   function navLink(item, active) {
     if (item.fab) {
       return `
-        <a href="${item.href}" class="wwc-nav-fab" aria-label="Create post or listing">
-          <span class="wwc-nav-fab-ring"><ion-icon name="add" aria-hidden="true"></ion-icon></span>
+        <a href="${item.href}" class="wwc-nav-fab" data-shell-post aria-label="Post an ad">
+          <span class="wwc-nav-fab-stack">
+            <span class="wwc-nav-fab-ring"><ion-icon name="add" aria-hidden="true"></ion-icon></span>
+            <span class="wwc-nav-fab-label">${item.label}</span>
+          </span>
         </a>`;
     }
     const cls = active ? 'wwc-nav-item is-active' : 'wwc-nav-item';
@@ -78,9 +81,9 @@
                 return navLink(item, active);
               })
               .join('')}
-            <a href="post.html" class="wwc-topnav-post" aria-label="Create post or listing">
+            <a href="post.html" class="wwc-topnav-post" data-shell-post aria-label="Post an ad">
               <ion-icon name="add" aria-hidden="true"></ion-icon>
-              <span>Create</span>
+              <span>+ Ad</span>
             </a>
           </nav>
           <div class="wwc-topnav-auth" id="wwc-topnav-auth"></div>
@@ -201,18 +204,42 @@
   function bindAuthActions(root) {
     if (!root) return;
     root.querySelector('[data-shell-fav]')?.addEventListener('click', () => {
-      if (global.WWC_AUTH.requireAuth()) window.location.href = 'favorites.html';
+      if (!global.WWC_AUTH.requireAuth()) return;
+      window.location.href = 'favorites.html';
     });
     root.querySelector('[data-shell-orders]')?.addEventListener('click', () => {
-      if (global.WWC_AUTH.requireAuth()) window.location.href = 'orders.html';
+      if (!global.WWC_AUTH.requireAuth()) return;
+      window.location.href = 'orders.html';
     });
     root.querySelector('[data-shell-notif]')?.addEventListener('click', () => {
+      if (!global.WWC_AUTH.requireAuth('Sign in to view notifications.')) return;
       void openNotifications();
     });
     root.querySelector('[data-shell-logout]')?.addEventListener('click', async () => {
       await global.WWC_AUTH.logout();
       window.location.reload();
     });
+  }
+
+  function bindPostLinks() {
+    document.querySelectorAll('[data-shell-post]').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        if (!global.WWC_AUTH.isLoggedIn()) return;
+        if (global.WWC_AUTH.isVerificationLocked()) e.preventDefault();
+      });
+    });
+  }
+
+  function ensureVerificationModule() {
+    if (document.querySelector('script[data-wwc-verify]')) {
+      global.WWC_VERIFY?.render?.();
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = 'assets/js/verification-lock.js';
+    s.dataset.wwcVerify = '1';
+    s.onload = () => global.WWC_VERIFY?.init?.();
+    document.body.appendChild(s);
   }
 
   function mountShell() {
@@ -224,7 +251,13 @@
     if (bottom) bottom.innerHTML = renderBottomNav();
     ensureNotifModal();
     updateAuthUI();
-    global.WWC_AUTH.subscribe(updateAuthUI);
+    bindPostLinks();
+    ensureVerificationModule();
+    global.WWC_AUTH.subscribe(() => {
+      updateAuthUI();
+      bindPostLinks();
+      global.WWC_VERIFY?.render?.();
+    });
   }
 
   function updateAuthUI() {

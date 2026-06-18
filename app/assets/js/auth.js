@@ -1,5 +1,5 @@
 /**
- * Session bootstrap — mirrors mobile RootNavigator + DashboardScreen.
+ * Session bootstrap — mirrors mobile DashboardScreen + VerificationLockOverlay.
  */
 (function (global) {
   const { apiGet, getToken, setToken } = global.WWC_API;
@@ -9,6 +9,8 @@
 
   let currentUser = null;
   let subscription = null;
+  let supportEmail = 'support@witnessworldconnect.com';
+  let supportAvailable = false;
   const listeners = new Set();
 
   function subscribe(fn) {
@@ -26,6 +28,18 @@
     });
   }
 
+  function applySessionData(data) {
+    if (!data?.ok || !data.user) return false;
+    currentUser = data.user;
+    subscription = data.subscription ?? null;
+    if (typeof data.support_email === 'string' && data.support_email) {
+      supportEmail = data.support_email;
+    }
+    supportAvailable = data.support_available === true;
+    notify();
+    return true;
+  }
+
   function bootstrapWithTimeout() {
     return Promise.race([
       apiGet('me.php', false, false, ME_FETCH_TIMEOUT_MS),
@@ -40,33 +54,61 @@
     if (!token) {
       currentUser = null;
       subscription = null;
+      supportAvailable = false;
       notify();
       return null;
     }
     try {
       const data = await bootstrapWithTimeout();
-      if (data.ok && data.user) {
-        currentUser = data.user;
-        subscription = data.subscription ?? null;
-        notify();
-        return currentUser;
-      }
+      if (applySessionData(data)) return currentUser;
     } catch (e) {
       if (e && typeof e === 'object' && e.status === 401) setToken(null);
     }
     currentUser = null;
     subscription = null;
+    supportAvailable = false;
     notify();
     return null;
   }
 
-  function requireAuth(message) {
-    if (currentUser) return true;
-    const msg = message || 'Sign in to use this feature.';
-    if (confirm(`${msg}\n\nGo to sign in now?`)) {
-      window.location.href = 'login.html';
+  async function refreshProfile() {
+    const token = getToken();
+    if (!token) return null;
+    try {
+      const data = await apiGet('me.php', false, false, ME_FETCH_TIMEOUT_MS);
+      if (applySessionData(data)) return currentUser;
+    } catch {
+      /* keep existing session on transient errors */
     }
-    return false;
+    return currentUser;
+  }
+
+  function getUserStatus() {
+    return currentUser?.status ? String(currentUser.status) : '';
+  }
+
+  function isVerificationLocked() {
+    if (!currentUser) return false;
+    const s = getUserStatus();
+    return s === 'pending_verification' || s === 'declined';
+  }
+
+  function patchUser(fields) {
+    if (!currentUser) return;
+    currentUser = { ...currentUser, ...fields };
+    notify();
+  }
+
+  function requireAuth(message) {
+    if (!currentUser) {
+      const msg = message || 'Sign in to use this feature.';
+      if (confirm(`${msg}\n\nGo to sign in now?`)) {
+        window.location.href = 'login.html';
+      }
+      return false;
+    }
+    if (isVerificationLocked()) return false;
+    return true;
   }
 
   function getUser() {
@@ -86,16 +128,23 @@
     setToken(null);
     currentUser = null;
     subscription = null;
+    supportAvailable = false;
     notify();
   }
 
   global.WWC_AUTH = {
     bootstrap,
+    refreshProfile,
     subscribe,
     requireAuth,
     getUser,
     isLoggedIn,
+    isVerificationLocked,
+    getUserStatus,
+    patchUser,
     logout,
     getSubscription: () => subscription,
+    getSupportEmail: () => supportEmail,
+    isSupportAvailable: () => supportAvailable,
   };
 })(window);

@@ -485,8 +485,4 @@
   }
 
   window.WWC_HOME = { init };
-
-  if (document.getElementById('home-feed')) {
-    void init();
-  }
 })();

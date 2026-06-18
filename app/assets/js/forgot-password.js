@@ -95,11 +95,5 @@
     }
   });
 
-  WWC_PAGE.init({
-    onReady: async () => {
-      if (WWC_AUTH.isLoggedIn()) {
-        window.location.replace('index.html');
-      }
-    },
-  });
+  WWC_PAGE.init({ authPage: true });
 })();

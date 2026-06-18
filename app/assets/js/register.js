@@ -114,6 +114,7 @@
   });
 
   WWC_PAGE.init({
+    authPage: true,
     onReady: async () => {
       setupDateLimits();
       updateBaptismField();
