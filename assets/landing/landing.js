@@ -23,14 +23,19 @@
 
   const heroVideo = document.getElementById('hero-video');
   if (heroVideo) {
-    heroVideo.addEventListener('canplay', () => {
+    const showVideo = () => {
       heroVideo.style.opacity = '1';
-    });
+    };
+    heroVideo.addEventListener('loadeddata', showVideo);
+    heroVideo.addEventListener('canplay', showVideo);
     heroVideo.addEventListener('error', () => {
       heroVideo.remove();
     });
     if (heroVideo.readyState >= 2) {
-      heroVideo.style.opacity = '1';
+      showVideo();
     }
+    void heroVideo.play().catch(() => {
+      /* autoplay blocked — poster + gradient still show */
+    });
   }
 })();
