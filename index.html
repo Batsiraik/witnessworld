@@ -1,214 +1,475 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Witness World Connect — a trusted marketplace for Jehovah's Witnesses to find services, buy and sell locally, list businesses, and connect as a community." />
-  <meta name="theme-color" content="#1FAAF2" />
-  <title>Witness World Connect — Trusted community marketplace</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/landing/landing.css" />
-</head>
-<body>
-  <a class="wwc-skip" href="#main">Skip to content</a>
-
-  <header class="wwc-nav">
-    <div class="wwc-nav-inner">
-      <a href="index.html" class="wwc-brand">
-        <img src="app/assets/images/logo.jpg" alt="" width="40" height="40" />
-        <span>WWC</span>
-      </a>
-      <nav class="wwc-nav-links" aria-label="Explore">
-        <a href="app/services.html">Services</a>
-        <a href="app/classifieds.html">Marketplace</a>
-        <a href="app/directory.html">Businesses</a>
-        <a href="app/community.html">Community</a>
-      </nav>
-      <div class="wwc-nav-spacer"></div>
-      <div class="wwc-nav-auth">
-        <a href="app/login.html" class="wwc-btn wwc-btn-ghost">Sign in</a>
-        <a href="app/register.html" class="wwc-btn wwc-btn-primary">Join WWC</a>
-      </div>
-      <button type="button" class="wwc-menu-btn" id="menu-btn" aria-label="Open menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <div class="wwc-mobile-drawer" id="mobile-drawer" aria-hidden="true">
-    <div class="wwc-mobile-sheet" role="dialog" aria-label="Menu">
-      <button type="button" id="drawer-close" style="font-weight:800;margin-bottom:8px">Close ✕</button>
-      <a href="app/index.html">Browse home</a>
-      <a href="app/services.html">Services</a>
-      <a href="app/classifieds.html">Marketplace</a>
-      <a href="app/directory.html">Business directory</a>
-      <a href="app/stores.html">Online stores</a>
-      <a href="app/community.html">Community</a>
-      <hr />
-      <a href="app/login.html">Sign in</a>
-      <a href="app/register.html" style="color:#1590d4">Join WWC</a>
-    </div>
-  </div>
-
-  <main id="main">
-    <section class="wwc-hero">
-      <div class="wwc-hero-fallback" aria-hidden="true"></div>
-      <div class="wwc-hero-overlay" aria-hidden="true"></div>
-
-      <div class="wwc-hero-inner">
-        <div class="wwc-hero-badge"><span aria-hidden="true"></span> Now live — web &amp; mobile</div>
-        <h1>Find trusted services &amp; business in our community</h1>
-        <p class="wwc-hero-lead">
-          Witness World Connect is a platform for brothers and sisters to buy, sell, hire, and grow
-          businesses within a verified Jehovah's Witnesses community — locally and worldwide.
-        </p>
-
-        <div class="wwc-hero-actions">
-          <a href="app/index.html" class="wwc-btn wwc-btn-lg wwc-btn-primary">Explore marketplace</a>
-          <a href="app/register.html" class="wwc-btn wwc-btn-lg wwc-btn-outline">Create free account</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="wwc-categories" aria-label="Browse categories">
-      <div class="wwc-categories-inner">
-        <div class="wwc-categories-scroll">
-          <a href="app/services.html" class="wwc-cat-card">
-            <div class="wwc-cat-icon" style="background:#f3e8ff;color:#7c3aed">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-            </div>
-            <div class="wwc-cat-label">Professional services</div>
-          </a>
-          <a href="app/classifieds.html" class="wwc-cat-card">
-            <div class="wwc-cat-icon" style="background:#e8f4fd;color:#1d4ed8">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
-            </div>
-            <div class="wwc-cat-label">Marketplace</div>
-          </a>
-          <a href="app/directory.html" class="wwc-cat-card">
-            <div class="wwc-cat-icon" style="background:#dcfce7;color:#15803d">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
-            </div>
-            <div class="wwc-cat-label">Business directory</div>
-          </a>
-          <a href="app/stores.html" class="wwc-cat-card">
-            <div class="wwc-cat-icon" style="background:#ffedd5;color:#c2410c">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
-            </div>
-            <div class="wwc-cat-label">Online stores</div>
-          </a>
-          <a href="app/community.html" class="wwc-cat-card">
-            <div class="wwc-cat-icon" style="background:#fef3c7;color:#b45309">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            </div>
-            <div class="wwc-cat-label">Community</div>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section class="wwc-section wwc-bg-soft">
-      <div class="wwc-section-inner">
-        <div class="wwc-section-head">
-          <h2>Built for a community you can trust</h2>
-          <p>
-            WWC helps publishers connect for honest business — whether you need a skilled brother or
-            sister for a project, want to sell an item locally, or are growing a small business among
-            friends in the truth.
-          </p>
-        </div>
-        <div class="wwc-trust-grid">
-          <article class="wwc-trust-card">
-            <div class="wwc-trust-icon" style="background:#e8f4fd;color:#1590d4">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
-            </div>
-            <h3>Verified members</h3>
-            <p>New accounts are reviewed so the marketplace stays aligned with our community standards.</p>
-          </article>
-          <article class="wwc-trust-card">
-            <div class="wwc-trust-icon" style="background:#f3e8ff;color:#7c3aed">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            </div>
-            <h3>Message in-app</h3>
-            <p>Contact sellers and service providers directly — no need to share personal details publicly.</p>
-          </article>
-          <article class="wwc-trust-card">
-            <div class="wwc-trust-icon" style="background:#dcfce7;color:#15803d">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-            </div>
-            <h3>Local &amp; global</h3>
-            <p>Filter by location for nearby deals, or offer digital services to brothers and sisters worldwide.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="wwc-section">
-      <div class="wwc-section-inner">
-        <div class="wwc-section-head">
-          <h2>How it works</h2>
-          <p>Getting started takes just a few minutes.</p>
-        </div>
-        <div class="wwc-steps">
-          <div class="wwc-step">
-            <div class="wwc-step-num">1</div>
-            <h3>Join WWC</h3>
-            <p>Create your account and complete verification.</p>
-          </div>
-          <div class="wwc-step">
-            <div class="wwc-step-num">2</div>
-            <h3>Browse or post</h3>
-            <p>Search listings or tap + to offer a service, item, or business.</p>
-          </div>
-          <div class="wwc-step">
-            <div class="wwc-step-num">3</div>
-            <h3>Connect safely</h3>
-            <p>Message through the app and agree on details privately.</p>
-          </div>
-          <div class="wwc-step">
-            <div class="wwc-step-num">4</div>
-            <h3>Grow together</h3>
-            <p>Build your reputation with reviews and repeat customers in the community.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="wwc-section wwc-cta-band">
-      <div class="wwc-section-inner">
-        <h2>Ready to explore Witness World Connect?</h2>
-        <p>
-          Open the marketplace on the web today, or download the app for the full experience on
-          Android and iPhone.
-        </p>
-        <a href="app/index.html" class="wwc-btn wwc-btn-lg wwc-btn-primary">Go to marketplace</a>
-        <div class="wwc-store-row">
-          <a href="#" class="wwc-store-badge" aria-label="Google Play — coming soon">
-            <span style="font-size:28px">▶</span>
-            <span><small>Get it on</small><strong>Google Play</strong></span>
-          </a>
-          <a href="#" class="wwc-store-badge" aria-label="App Store — coming soon">
-            <span style="font-size:28px"></span>
-            <span><small>Download on the</small><strong>App Store</strong></span>
-          </a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="wwc-footer">
-    <p>© 2026 Witness World Connect. All rights reserved.</p>
-    <div class="wwc-footer-links">
-      <a href="app/index.html">Marketplace</a>
-      <a href="app/login.html">Sign in</a>
-      <a href="privacy/index.html">Privacy policy</a>
-    </div>
-  </footer>
-
-  <script src="assets/landing/landing.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Witness World Connect — a trusted marketplace for Jehovah's Witnesses to find services, buy and sell locally, list businesses, and connect as a community." />
+  <meta name="theme-color" content="#1FAAF2" />
+  <title>Witness World Connect — Trusted community marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/landing/landing.css" />
+</head>
+<body>
+  <a class="wwc-skip" href="#main">Skip to content</a>
+
+  <header class="wwc-nav">
+    <div class="wwc-nav-inner">
+      <a href="index.html" class="wwc-brand">
+        <img src="app/assets/images/logo.jpg" alt="" width="40" height="40" />
+        <span>WWC</span>
+      </a>
+      <nav class="wwc-nav-links" aria-label="Explore modules">
+        <a href="#module-marketplace" data-scroll="module-marketplace">Marketplace</a>
+        <a href="#module-services" data-scroll="module-services">Services</a>
+        <a href="#module-stores" data-scroll="module-stores">Stores</a>
+        <a href="#module-directory" data-scroll="module-directory">Directory</a>
+        <a href="#module-classifieds" data-scroll="module-classifieds">Classifieds</a>
+      </nav>
+      <div class="wwc-nav-spacer"></div>
+      <div class="wwc-nav-auth" id="wwc-nav-auth">
+        <a href="app/login.html" class="wwc-btn wwc-btn-ghost">Sign in</a>
+        <a href="app/register.html" class="wwc-btn wwc-btn-primary">Join WWC</a>
+      </div>
+      <button type="button" class="wwc-menu-btn" id="menu-btn" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="wwc-mobile-drawer" id="mobile-drawer" aria-hidden="true">
+    <div class="wwc-mobile-sheet" role="dialog" aria-label="Menu">
+      <button type="button" id="drawer-close" style="font-weight:800;margin-bottom:8px">Close ✕</button>
+      <a href="#module-marketplace" data-scroll="module-marketplace">Marketplace</a>
+      <a href="#module-services" data-scroll="module-services">Professional services</a>
+      <a href="#module-stores" data-scroll="module-stores">Online stores</a>
+      <a href="#module-directory" data-scroll="module-directory">Business directory</a>
+      <a href="#module-classifieds" data-scroll="module-classifieds">Community classifieds</a>
+      <hr />
+      <div id="wwc-mobile-auth">
+        <a href="app/login.html">Sign in</a>
+        <a href="app/register.html" style="color:#1590d4">Join WWC</a>
+      </div>
+    </div>
+  </div>
+
+  <main id="main">
+    <section class="wwc-hero">
+      <div class="wwc-hero-fallback" aria-hidden="true"></div>
+      <div class="wwc-hero-overlay" aria-hidden="true"></div>
+
+      <div class="wwc-hero-inner">
+        <div class="wwc-hero-badge"><span aria-hidden="true"></span> Now live — web &amp; mobile</div>
+        <h1>Find trusted services &amp; business in our community</h1>
+        <p class="wwc-hero-lead">
+          Witness World Connect is a platform for brothers and sisters to buy, sell, hire, and grow
+          businesses within a verified Jehovah's Witnesses community — locally and worldwide.
+        </p>
+
+        <div class="wwc-hero-actions">
+          <a href="#module-marketplace" class="wwc-btn wwc-btn-lg wwc-btn-primary" data-scroll="module-marketplace">Explore modules</a>
+          <a href="app/register.html" class="wwc-btn wwc-btn-lg wwc-btn-outline" data-auth-when="logged-out">Create free account</a>
+          <a href="app/index.html" class="wwc-btn wwc-btn-lg wwc-btn-outline" data-auth-when="logged-in" hidden>Go to dashboard</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-categories" aria-label="Platform modules">
+      <div class="wwc-categories-inner">
+        <div class="wwc-categories-scroll">
+          <a href="#module-services" class="wwc-cat-card" data-scroll="module-services">
+            <div class="wwc-cat-icon" style="background:#f3e8ff;color:#7c3aed">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div class="wwc-cat-label">Professional services</div>
+          </a>
+          <a href="#module-marketplace" class="wwc-cat-card" data-scroll="module-marketplace">
+            <div class="wwc-cat-icon" style="background:#e8f4fd;color:#1d4ed8">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            </div>
+            <div class="wwc-cat-label">Marketplace</div>
+          </a>
+          <a href="#module-directory" class="wwc-cat-card" data-scroll="module-directory">
+            <div class="wwc-cat-icon" style="background:#dcfce7;color:#15803d">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+            </div>
+            <div class="wwc-cat-label">Business directory</div>
+          </a>
+          <a href="#module-stores" class="wwc-cat-card" data-scroll="module-stores">
+            <div class="wwc-cat-icon" style="background:#ffedd5;color:#c2410c">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <div class="wwc-cat-label">Online stores</div>
+          </a>
+          <a href="#module-classifieds" class="wwc-cat-card" data-scroll="module-classifieds">
+            <div class="wwc-cat-icon" style="background:#fef3c7;color:#b45309">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="wwc-cat-label">Community classifieds</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-section wwc-bg-soft">
+      <div class="wwc-section-inner">
+        <div class="wwc-section-head">
+          <h2>Built for a community you can trust</h2>
+          <p>
+            WWC helps publishers connect for honest business — whether you need a skilled brother or
+            sister for a project, want to sell an item locally, or are growing a small business among
+            friends in the truth.
+          </p>
+        </div>
+        <div class="wwc-trust-grid">
+          <article class="wwc-trust-card">
+            <div class="wwc-trust-icon" style="background:#e8f4fd;color:#1590d4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <h3>Verified members</h3>
+            <p>New accounts are reviewed so the marketplace stays aligned with our community standards.</p>
+          </article>
+          <article class="wwc-trust-card">
+            <div class="wwc-trust-icon" style="background:#f3e8ff;color:#7c3aed">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <h3>Message in-app</h3>
+            <p>Contact sellers and service providers directly — no need to share personal details publicly.</p>
+          </article>
+          <article class="wwc-trust-card">
+            <div class="wwc-trust-icon" style="background:#dcfce7;color:#15803d">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            </div>
+            <h3>Local &amp; global</h3>
+            <p>Filter by location for nearby deals, or offer digital services to brothers and sisters worldwide.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-section">
+      <div class="wwc-section-inner">
+        <div class="wwc-section-head">
+          <h2>How it works</h2>
+          <p>Getting started takes just a few minutes.</p>
+        </div>
+        <div class="wwc-steps">
+          <div class="wwc-step">
+            <div class="wwc-step-num">1</div>
+            <h3>Join WWC</h3>
+            <p>Create your account and complete verification.</p>
+          </div>
+          <div class="wwc-step">
+            <div class="wwc-step-num">2</div>
+            <h3>Browse or post</h3>
+            <p>Explore modules below, then post when you are ready.</p>
+          </div>
+          <div class="wwc-step">
+            <div class="wwc-step-num">3</div>
+            <h3>Connect safely</h3>
+            <p>Message through the app and agree on details privately.</p>
+          </div>
+          <div class="wwc-step">
+            <div class="wwc-step-num">4</div>
+            <h3>Grow together</h3>
+            <p>Build your reputation with repeat customers in the community.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Module guide -->
+    <section class="wwc-section wwc-modules-intro wwc-bg-soft" id="modules">
+      <div class="wwc-section-inner">
+        <div class="wwc-section-head">
+          <h2>Five ways to connect on WWC</h2>
+          <p>
+            Each module has a clear purpose — so the right listings reach the right people.
+            Browse below to learn what you can find and post in each area.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. Marketplace -->
+    <section class="wwc-module" id="module-marketplace" aria-labelledby="mod-marketplace-title">
+      <div class="wwc-module-inner">
+        <aside class="wwc-module-aside">
+          <span class="wwc-module-badge" style="background:#e8f4fd;color:#1d4ed8">Local exchange</span>
+          <div class="wwc-module-icon" style="background:#e8f4fd;color:#1d4ed8">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
+          </div>
+          <h2 id="mod-marketplace-title">Marketplace</h2>
+          <p class="wwc-module-purpose">For neighbors buying, selling, or giving away household items locally — not shippable retail inventory.</p>
+        </aside>
+        <div class="wwc-module-body">
+          <p class="wwc-module-lead">
+            Give quality items a second home. Decluttering? Moving? Offering something for free?
+            This is where brothers and sisters trade household goods face-to-face in their local area.
+            Items that need shipping belong in the Online Store instead.
+          </p>
+          <div class="wwc-module-callout">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span>When posting, you can mark an item as <strong>FREE</strong> under price — perfect for giveaways and acts of kindness.</span>
+          </div>
+          <div class="wwc-module-grid">
+            <div class="wwc-module-block">
+              <h3>What you can find</h3>
+              <p>Used furniture, appliances, electronics, clothing, baby gear, garden tools, and more from publishers near you.</p>
+            </div>
+            <div class="wwc-module-block">
+              <h3>What you can post</h3>
+              <p>Household items you want to sell, trade, or give away locally. Keep it pick-up friendly — no mail-order inventory here.</p>
+            </div>
+          </div>
+          <div class="wwc-module-block" style="margin-top:20px">
+            <h3>Categories</h3>
+            <div class="wwc-cat-pills">
+              <span class="wwc-cat-pill">Furniture</span>
+              <span class="wwc-cat-pill">Appliances</span>
+              <span class="wwc-cat-pill">Home decor</span>
+              <span class="wwc-cat-pill">Electronics</span>
+              <span class="wwc-cat-pill">Clothing &amp; accessories</span>
+              <span class="wwc-cat-pill">Baby &amp; kids</span>
+              <span class="wwc-cat-pill">Garden &amp; outdoor</span>
+              <span class="wwc-cat-pill">Home improvement</span>
+              <span class="wwc-cat-pill">Sports &amp; fitness</span>
+              <span class="wwc-cat-pill">Books, media &amp; hobbies</span>
+              <span class="wwc-cat-pill">Toys &amp; games</span>
+              <span class="wwc-cat-pill">Pet supplies</span>
+              <span class="wwc-cat-pill">Office supplies</span>
+              <span class="wwc-cat-pill">Health &amp; beauty</span>
+              <span class="wwc-cat-pill is-muted">+ Other (custom)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Professional Services -->
+    <section class="wwc-module" id="module-services" aria-labelledby="mod-services-title">
+      <div class="wwc-module-inner">
+        <aside class="wwc-module-aside">
+          <span class="wwc-module-badge" style="background:#f3e8ff;color:#7c3aed">Digital &amp; virtual</span>
+          <div class="wwc-module-icon" style="background:#f3e8ff;color:#7c3aed">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h2 id="mod-services-title">Professional services</h2>
+          <p class="wwc-module-purpose">A global hub for expert-level, task-based digital and virtual work.</p>
+        </aside>
+        <div class="wwc-module-body">
+          <p class="wwc-module-lead">
+            Showcase your expertise to entrepreneurs and businesses in the truth. Whether you are a
+            creative, a technical specialist, or a strategic consultant, this module helps you find
+            clients and manage professional projects — often fully remote.
+          </p>
+          <div class="wwc-module-grid">
+            <div class="wwc-module-block">
+              <h3>What you can find</h3>
+              <p>Skilled brothers and sisters offering design, development, marketing, writing, consulting, and more.</p>
+            </div>
+            <div class="wwc-module-block">
+              <h3>What you can post</h3>
+              <p>Your professional service — scoped by project or hourly rate — for digital and virtual delivery worldwide.</p>
+            </div>
+          </div>
+          <div class="wwc-module-block" style="margin-top:20px">
+            <h3>Categories</h3>
+            <div class="wwc-cat-pills">
+              <span class="wwc-cat-pill">Graphic design &amp; branding</span>
+              <span class="wwc-cat-pill">Web &amp; tech development</span>
+              <span class="wwc-cat-pill">Digital marketing</span>
+              <span class="wwc-cat-pill">Writing &amp; translation</span>
+              <span class="wwc-cat-pill">Virtual assistance</span>
+              <span class="wwc-cat-pill">Business consulting</span>
+              <span class="wwc-cat-pill">Financial &amp; legal</span>
+              <span class="wwc-cat-pill">Multimedia</span>
+              <span class="wwc-cat-pill is-muted">+ Other (custom)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Online Store -->
+    <section class="wwc-module" id="module-stores" aria-labelledby="mod-stores-title">
+      <div class="wwc-module-inner">
+        <aside class="wwc-module-aside">
+          <span class="wwc-module-badge" style="background:#ffedd5;color:#c2410c">Retail &amp; brand</span>
+          <div class="wwc-module-icon" style="background:#ffedd5;color:#c2410c">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+          </div>
+          <h2 id="mod-stores-title">Online store</h2>
+          <p class="wwc-module-purpose">For established brands and entrepreneurs selling consistent, shippable inventory.</p>
+        </aside>
+        <div class="wwc-module-body">
+          <p class="wwc-module-lead">
+            Launch a permanent retail presence inside WWC. Built for makers, retailers, and product
+            lines that ship nationwide or worldwide — from handmade goods to professional beauty and
+            wellness brands.
+          </p>
+          <div class="wwc-module-grid">
+            <div class="wwc-module-block">
+              <h3>What you can find</h3>
+              <p>New products from verified storefronts — beauty, fashion, artisan goods, specialty foods, ministry supplies, and more.</p>
+            </div>
+            <div class="wwc-module-block">
+              <h3>What you can post</h3>
+              <p>A dedicated storefront with your catalog of new, shippable products — not one-off used household items.</p>
+            </div>
+          </div>
+          <div class="wwc-module-block" style="margin-top:20px">
+            <h3>Store categories</h3>
+            <div class="wwc-cat-pills">
+              <span class="wwc-cat-pill">Beauty &amp; personal care</span>
+              <span class="wwc-cat-pill">Health &amp; wellness</span>
+              <span class="wwc-cat-pill">Fashion &amp; apparel</span>
+              <span class="wwc-cat-pill">Artisan &amp; handmade</span>
+              <span class="wwc-cat-pill">Specialty foods</span>
+              <span class="wwc-cat-pill">Tech &amp; gadgets</span>
+              <span class="wwc-cat-pill">JW products</span>
+              <span class="wwc-cat-pill is-muted">+ Other (custom)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Business Directory -->
+    <section class="wwc-module" id="module-directory" aria-labelledby="mod-directory-title">
+      <div class="wwc-module-inner">
+        <aside class="wwc-module-aside">
+          <span class="wwc-module-badge" style="background:#dcfce7;color:#15803d">Local business</span>
+          <div class="wwc-module-icon" style="background:#dcfce7;color:#15803d">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg>
+          </div>
+          <h2 id="mod-directory-title">Business directory</h2>
+          <p class="wwc-module-purpose">Help the community find and support local physical businesses owned by brothers and sisters.</p>
+        </aside>
+        <div class="wwc-module-body">
+          <p class="wwc-module-lead">
+            List your brick-and-mortar or local service business so neighbors can discover you.
+            Add your location, hours, and contact details — ideal for shops, offices, and establishments
+            you visit in person.
+          </p>
+          <div class="wwc-module-grid">
+            <div class="wwc-module-block">
+              <h3>What you can find</h3>
+              <p>Trusted local businesses — dining, medical, legal, retail, home services, and professional offices near you.</p>
+            </div>
+            <div class="wwc-module-block">
+              <h3>What you can post</h3>
+              <p>Your business profile with address, category, and how the community can reach you.</p>
+            </div>
+          </div>
+          <div class="wwc-module-block" style="margin-top:20px">
+            <h3>Categories</h3>
+            <div class="wwc-cat-pills">
+              <span class="wwc-cat-pill">Educational</span>
+              <span class="wwc-cat-pill">Legal</span>
+              <span class="wwc-cat-pill">Food &amp; dining</span>
+              <span class="wwc-cat-pill">Health &amp; medical</span>
+              <span class="wwc-cat-pill">Home improvement &amp; repair</span>
+              <span class="wwc-cat-pill">Beauty &amp; spas</span>
+              <span class="wwc-cat-pill">Professional offices</span>
+              <span class="wwc-cat-pill">Retail shops</span>
+              <span class="wwc-cat-pill is-muted">+ Other (custom)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Classifieds -->
+    <section class="wwc-module" id="module-classifieds" aria-labelledby="mod-classifieds-title">
+      <div class="wwc-module-inner">
+        <aside class="wwc-module-aside">
+          <span class="wwc-module-badge" style="background:#fef3c7;color:#b45309">Community &amp; personal</span>
+          <div class="wwc-module-icon" style="background:#fef3c7;color:#b45309">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h2 id="mod-classifieds-title">Community classifieds</h2>
+          <p class="wwc-module-purpose">Personal needs, community notices, and non-business requests — keeping professional modules focused.</p>
+        </aside>
+        <div class="wwc-module-body">
+          <p class="wwc-module-lead">
+            The go-to spot for everyday community life. Looking for a reliable sitter, a roommate,
+            tutoring, or sharing a neighborhood update? Post here to reach brothers and sisters nearby —
+            without mixing personal notices into business listings.
+          </p>
+          <div class="wwc-module-grid">
+            <div class="wwc-module-block">
+              <h3>What you can find</h3>
+              <p>Jobs, housing, childcare, pet care, lessons, events, healthcare help, real estate, and local announcements.</p>
+            </div>
+            <div class="wwc-module-block">
+              <h3>What you can post</h3>
+              <p>Personal or community-based notices — not commercial product listings or professional service gigs.</p>
+            </div>
+          </div>
+          <div class="wwc-module-block" style="margin-top:20px">
+            <h3>Categories</h3>
+            <div class="wwc-cat-pills">
+              <span class="wwc-cat-pill">Careers &amp; jobs</span>
+              <span class="wwc-cat-pill">Roommates &amp; housing</span>
+              <span class="wwc-cat-pill">Childcare &amp; babysitting</span>
+              <span class="wwc-cat-pill">Pet sitting &amp; dog walking</span>
+              <span class="wwc-cat-pill">Tutoring &amp; lessons</span>
+              <span class="wwc-cat-pill">Travel &amp; events</span>
+              <span class="wwc-cat-pill">Healthcare</span>
+              <span class="wwc-cat-pill">Real estate</span>
+              <span class="wwc-cat-pill">Vacation homes</span>
+              <span class="wwc-cat-pill">Transportation</span>
+              <span class="wwc-cat-pill">Classes</span>
+              <span class="wwc-cat-pill is-muted">+ Other (custom)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-section wwc-cta-band">
+      <div class="wwc-section-inner">
+        <h2>Ready to use Witness World Connect?</h2>
+        <p>
+          Sign in or create your free account to browse listings, post, and message members in the app.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+          <a href="app/index.html" class="wwc-btn wwc-btn-lg wwc-btn-primary" data-auth-when="logged-in" hidden>Open dashboard</a>
+          <a href="app/register.html" class="wwc-btn wwc-btn-lg wwc-btn-primary" data-auth-when="logged-out">Create free account</a>
+          <a href="app/login.html" class="wwc-btn wwc-btn-lg wwc-btn-outline" style="border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.1);color:#fff" data-auth-when="logged-out">Sign in</a>
+        </div>
+        <div class="wwc-store-row">
+          <a href="#" class="wwc-store-badge" aria-label="Google Play — coming soon">
+            <span style="font-size:28px">▶</span>
+            <span><small>Get it on</small><strong>Google Play</strong></span>
+          </a>
+          <a href="#" class="wwc-store-badge" aria-label="App Store — coming soon">
+            <span style="font-size:28px"></span>
+            <span><small>Download on the</small><strong>App Store</strong></span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wwc-footer">
+    <p>© 2026 Witness World Connect. All rights reserved.</p>
+    <div class="wwc-footer-links">
+      <a href="#modules" data-scroll="modules">About WWC</a>
+      <a href="app/index.html" data-auth-when="logged-in" hidden>Dashboard</a>
+      <a href="app/login.html" data-auth-when="logged-out">Sign in</a>
+      <a href="privacy/index.html">Privacy policy</a>
+    </div>
+  </footer>
+
+  <script src="app/assets/js/config.js"></script>
+  <script src="app/assets/js/api.js"></script>
+  <script src="app/assets/js/auth.js"></script>
+  <script src="assets/landing/landing.js"></script>
+</body>
+</html>
+

@@ -2,6 +2,8 @@
   const menuBtn = document.getElementById('menu-btn');
   const drawer = document.getElementById('mobile-drawer');
   const closeBtn = document.getElementById('drawer-close');
+  const navAuth = document.getElementById('wwc-nav-auth');
+  const mobileAuth = document.getElementById('wwc-mobile-auth');
 
   function openDrawer() {
     drawer?.classList.add('is-open');
@@ -20,4 +22,71 @@
   drawer?.addEventListener('click', (e) => {
     if (e.target === drawer) closeDrawer();
   });
+
+  document.querySelectorAll('[data-scroll]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      const target = el.getAttribute('data-scroll') || el.getAttribute('href')?.slice(1);
+      if (!target) return;
+      const node = document.getElementById(target);
+      if (!node) return;
+      e.preventDefault();
+      closeDrawer();
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', `#${target}`);
+    });
+  });
+
+  drawer?.querySelectorAll('a[data-scroll]').forEach((a) => {
+    a.addEventListener('click', closeDrawer);
+  });
+
+  function authHtml(loggedIn, name) {
+    if (loggedIn) {
+      const label = name ? `Dashboard` : 'Dashboard';
+      return `<a href="app/index.html" class="wwc-btn wwc-btn-primary">${escapeHtml(label)}</a>`;
+    }
+    return `
+      <a href="app/login.html" class="wwc-btn wwc-btn-ghost">Sign in</a>
+      <a href="app/register.html" class="wwc-btn wwc-btn-primary">Join WWC</a>`;
+  }
+
+  function mobileAuthHtml(loggedIn) {
+    if (loggedIn) {
+      return `<a href="app/index.html" style="color:#1590d4">Dashboard</a>`;
+    }
+    return `
+      <a href="app/login.html">Sign in</a>
+      <a href="app/register.html" style="color:#1590d4">Join WWC</a>`;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function updateAuthUI() {
+    const auth = window.WWC_AUTH;
+    if (!auth) return;
+    const user = auth.getUser();
+    const loggedIn = auth.isLoggedIn();
+    const name = user?.first_name || user?.username || '';
+    if (navAuth) navAuth.innerHTML = authHtml(loggedIn, name);
+    if (mobileAuth) mobileAuth.innerHTML = mobileAuthHtml(loggedIn);
+
+    document.querySelectorAll('[data-auth-when]').forEach((el) => {
+      const when = el.getAttribute('data-auth-when');
+      const show = when === 'logged-in' ? loggedIn : when === 'logged-out' ? !loggedIn : true;
+      el.hidden = !show;
+    });
+  }
+
+  if (window.WWC_AUTH) {
+    void window.WWC_AUTH.bootstrap().then(updateAuthUI);
+    window.WWC_AUTH.subscribe(updateAuthUI);
+  } else {
+    updateAuthUI();
+  }
 })();
