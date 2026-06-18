@@ -84,54 +84,78 @@
   color: var(--wwc-text-muted);
 }
 
-/* Category tiles */
-.wwc-cats {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+/* Category cards — matches landing page module strip */
+.wwc-home-categories {
   margin-bottom: 22px;
 }
 
-.wwc-cat {
+.wwc-home-categories-scroll {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-  text-align: center;
-  transition: opacity 0.15s;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-.wwc-cat:active {
-  opacity: 0.88;
+.wwc-home-categories-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.wwc-cat-card {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: min(140px, 28vw);
+  padding: 16px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--wwc-line);
+  background: var(--wwc-white);
+  text-align: center;
+  transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+}
+
+.wwc-cat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(11, 18, 32, 0.08);
+  border-color: rgba(31, 170, 242, 0.35);
+}
+
+.wwc-cat-card:active {
+  transform: scale(0.98);
 }
 
 .wwc-cat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--wwc-radius-lg);
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
 }
 
-.wwc-cat-icon ion-icon {
-  font-size: 26px;
+.wwc-cat-icon svg {
+  display: block;
 }
 
 .wwc-cat-label {
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  width: 100%;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--wwc-text);
 }
 
-@media (max-width: 374px) {
-  .wwc-cat-label {
-    font-size: 10px;
+@media (min-width: 900px) {
+  .wwc-home-categories-scroll {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    overflow: visible;
+    gap: 14px;
+  }
+
+  .wwc-cat-card {
+    width: auto;
   }
 }
 

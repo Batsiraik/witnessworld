@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/app.css" />
-  <link rel="stylesheet" href="assets/css/home.css" />
+  <link rel="stylesheet" href="assets/css/home.css?v=2" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
@@ -42,7 +42,9 @@
         />
       </form>
 
-      <nav class="wwc-cats" id="home-cats" aria-label="Browse categories"></nav>
+      <div class="wwc-home-categories">
+        <nav class="wwc-home-categories-scroll" id="home-cats" aria-label="Browse categories"></nav>
+      </div>
 
       <div id="home-feed">
         <div class="wwc-loading">

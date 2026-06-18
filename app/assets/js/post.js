@@ -8,6 +8,7 @@
     { title: 'Community post', sub: 'Share with the community', href: 'create-listing.html?type=community', icon: 'people-outline', bg: '#FEF3C7', color: '#B45309' },
     { title: 'Online store', sub: 'Open a storefront', href: 'create-store.html', icon: 'storefront-outline', bg: '#FFEDD5', color: '#C2410C' },
     { title: 'Business directory', sub: 'List your business', href: 'create-directory.html', icon: 'business-outline', bg: '#DCFCE7', color: '#15803D' },
+    { title: 'Add store product', sub: 'Add products to an approved store', href: 'my-office.html', icon: 'cube-outline', bg: '#E0E7FF', color: '#4338CA' },
   ];
 
   function render() {
@@ -15,7 +16,7 @@
     const sub = WWC_AUTH.getSubscription();
     const hasAvatar = !!(user?.avatar_url && String(user.avatar_url).trim());
     let notice = '';
-    if (!hasAvatar) notice = '<p class="wwc-feed-error" style="margin-bottom:16px">Upload a profile photo in Profile before posting.</p>';
+    if (!hasAvatar) notice = '<p class="wwc-feed-error" style="margin-bottom:16px">Upload a profile photo in <a href="profile.html" style="color:inherit;font-weight:800">Profile</a> before posting.</p>';
     const monetization = sub?.monetization_enabled === true;
     if (monetization && sub?.features?.can_post !== true) {
       notice = '<p class="wwc-feed-error" style="margin-bottom:16px">Posting requires a paid plan when monetization is enabled.</p>';

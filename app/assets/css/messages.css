@@ -1,0 +1,170 @@
+/* Messages inbox */
+
+.wwc-inbox-wrap {
+  max-width: 720px;
+}
+
+.wwc-inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wwc-inbox-thread {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--wwc-white);
+  border: 1px solid var(--wwc-line);
+  border-radius: 16px;
+  box-shadow: 0 2px 14px rgba(11, 18, 32, 0.05);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+.wwc-inbox-thread:hover {
+  border-color: rgba(31, 170, 242, 0.35);
+  box-shadow: 0 6px 22px rgba(11, 18, 32, 0.08);
+}
+
+.wwc-inbox-thread:active {
+  transform: scale(0.995);
+}
+
+.wwc-inbox-thread.is-unread {
+  border-color: rgba(90, 95, 225, 0.32);
+  background: linear-gradient(180deg, #f8fcff 0%, #fff 100%);
+  box-shadow: 0 4px 18px rgba(90, 95, 225, 0.1);
+}
+
+.wwc-inbox-avatar {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--wwc-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--wwc-primary-dark);
+  border: 2px solid rgba(31, 170, 242, 0.15);
+}
+
+.wwc-inbox-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wwc-inbox-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.wwc-inbox-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.wwc-inbox-name {
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wwc-inbox-thread.is-unread .wwc-inbox-name {
+  color: var(--wwc-text);
+}
+
+.wwc-inbox-time {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wwc-text-muted);
+}
+
+.wwc-inbox-thread.is-unread .wwc-inbox-time {
+  color: var(--wwc-tab-active);
+}
+
+.wwc-inbox-preview {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--wwc-text-muted);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wwc-inbox-thread.is-unread .wwc-inbox-preview {
+  color: var(--wwc-text);
+  font-weight: 700;
+}
+
+.wwc-inbox-badge {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--wwc-tab-active);
+  color: var(--wwc-white);
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wwc-inbox-empty {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--wwc-white);
+  border: 1px dashed rgba(11, 18, 32, 0.12);
+  border-radius: 16px;
+}
+
+.wwc-inbox-empty ion-icon {
+  font-size: 40px;
+  color: var(--wwc-primary);
+  margin-bottom: 12px;
+}
+
+.wwc-inbox-empty p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--wwc-text);
+}
+
+.wwc-inbox-empty small {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--wwc-text-muted);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.wwc-inbox-pills {
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .wwc-inbox-thread {
+    padding: 18px 20px;
+  }
+}

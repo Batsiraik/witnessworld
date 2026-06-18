@@ -4,15 +4,19 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Messages · Witness World Connect</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/app.css" /><link rel="stylesheet" href="assets/css/browse.css" />
+  <link rel="stylesheet" href="assets/css/app.css" />
+  <link rel="stylesheet" href="assets/css/browse.css" />
+  <link rel="stylesheet" href="assets/css/messages.css?v=1" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </head>
 <body>
   <div class="wwc-app"><div id="wwc-shell-top"></div>
   <main class="wwc-main">
     <div class="wwc-page-head"><h1 class="wwc-page-title">Messages</h1></div>
-    <div class="wwc-pills" id="msg-pills" style="margin-bottom:16px"></div>
-    <div id="msg-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="wwc-inbox-wrap">
+      <div class="wwc-pills wwc-inbox-pills" id="msg-pills"></div>
+      <div class="wwc-inbox-list" id="msg-list"></div>
+    </div>
   </main><div id="wwc-shell-bottom"></div></div>
   <script src="assets/js/config.js"></script><script src="assets/js/api.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/utils.js"></script><script src="assets/js/page-init.js"></script><script src="assets/js/shell.js"></script><script src="assets/js/messages.js"></script>
 </body></html>

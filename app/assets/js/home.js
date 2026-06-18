@@ -5,11 +5,41 @@
   const { apiGet, resolveMediaUrl } = window.WWC_API;
 
   const TOP_CATEGORIES = [
-    { label: 'Marketplace', href: 'classifieds.html', icon: 'bag-handle-outline', bg: '#E8F4FD', color: '#1D4ED8' },
-    { label: 'Services', href: 'services.html', icon: 'construct-outline', bg: '#F3E8FF', color: '#7C3AED' },
-    { label: 'Community', href: 'community.html', icon: 'people-outline', bg: '#FEF3C7', color: '#B45309' },
-    { label: 'Businesses', href: 'directory.html', icon: 'business-outline', bg: '#DCFCE7', color: '#15803D' },
-    { label: 'Stores', href: 'stores.html', icon: 'storefront-outline', bg: '#FFEDD5', color: '#C2410C' },
+    {
+      label: 'Professional services',
+      href: 'services.html',
+      bg: '#f3e8ff',
+      color: '#7c3aed',
+      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
+    },
+    {
+      label: 'Marketplace',
+      href: 'classifieds.html',
+      bg: '#e8f4fd',
+      color: '#1d4ed8',
+      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>',
+    },
+    {
+      label: 'Business directory',
+      href: 'directory.html',
+      bg: '#dcfce7',
+      color: '#15803d',
+      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>',
+    },
+    {
+      label: 'Online stores',
+      href: 'stores.html',
+      bg: '#ffedd5',
+      color: '#c2410c',
+      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+    },
+    {
+      label: 'Community classifieds',
+      href: 'community.html',
+      bg: '#fef3c7',
+      color: '#b45309',
+      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+    },
   ];
 
   /** Max cards per home feed section — use “See all” for the full browse page. */
@@ -347,11 +377,9 @@
     if (!els.cats) return;
     els.cats.innerHTML = TOP_CATEGORIES.map(
       (c) => `
-      <a href="${c.href}" class="wwc-cat">
-        <span class="wwc-cat-icon" style="background:${c.bg}">
-          <ion-icon name="${c.icon}" style="color:${c.color}" aria-hidden="true"></ion-icon>
-        </span>
-        <span class="wwc-cat-label">${c.label}</span>
+      <a href="${c.href}" class="wwc-cat-card">
+        <div class="wwc-cat-icon" style="background:${c.bg};color:${c.color}">${c.svg}</div>
+        <div class="wwc-cat-label">${c.label}</div>
       </a>`
     ).join('');
   }

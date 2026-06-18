@@ -127,6 +127,32 @@
     return data;
   }
 
+  /** Multipart upload — do not set Content-Type (browser adds boundary). */
+  async function apiUpload(path, formData) {
+    const headers = {
+      Accept: 'application/json',
+      'User-Agent': APP_USER_AGENT,
+    };
+    const token = getToken();
+    if (!token) throw new Error('Please sign in to continue.');
+    attachAuth(headers, token);
+
+    const res = await fetchWithTimeout(`${API_BASE}/${path}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    const data = await parseJson(res);
+    if (!res.ok) {
+      const msg = typeof data.error === 'string' ? data.error : 'Upload failed.';
+      const err = new Error(msg);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
   /** Resolve relative / localhost media URLs to the current API host. */
   function resolveMediaUrl(url) {
     if (url == null) return null;
@@ -157,6 +183,7 @@
     setToken,
     apiGet,
     apiPost,
+    apiUpload,
     resolveMediaUrl,
   };
 })(window);
