@@ -85,7 +85,7 @@
       }
       try {
         const form = new FormData();
-        form.append('file', file, file.name || 'avatar.jpg');
+        form.append('avatar', file, file.name || 'avatar.jpg');
         const data = await apiUpload('profile-avatar.php', form);
         if (data.avatar_url) {
           WWC_AUTH.patchUser({ avatar_url: data.avatar_url });
