@@ -14,7 +14,9 @@
 
   /** Max cards per home feed section — use “See all” for the full browse page. */
   const HOME_RAIL_LIMIT = 4;
+  const FEED_FETCH_TIMEOUT_MS = 15_000;
 
+  let booted = false;
   let countries = [];
   let usStates = [];
   let country = null;
@@ -328,7 +330,7 @@
       const qs = new URLSearchParams({ section: 'all', limit: String(HOME_RAIL_LIMIT) });
       if (country?.code) qs.set('country', country.code);
       if (usState?.name) qs.set('us_state', usState.name);
-      const data = await apiGet(`marketplace-home-feed.php?${qs}`, true);
+      const data = await apiGet(`marketplace-home-feed.php?${qs}`, true, false, FEED_FETCH_TIMEOUT_MS);
       feed = normalizeFeed(data.feed);
       renderFeed();
     } catch (e) {
@@ -461,7 +463,8 @@
   }
 
   async function init() {
-    if (!els.feed) return;
+    if (!els.feed || booted) return;
+    booted = true;
     try {
       renderCategories();
       updateLocLabel();
@@ -474,9 +477,16 @@
           <p class="wwc-feed-error">${escapeHtml(e.message || 'Could not load home page')}</p>
           <button type="button" class="wwc-feed-retry" id="feed-retry">Try again</button>
         </div>`;
-      document.getElementById('feed-retry')?.addEventListener('click', () => void init());
+      document.getElementById('feed-retry')?.addEventListener('click', () => {
+        booted = false;
+        void init();
+      });
     }
   }
 
   window.WWC_HOME = { init };
+
+  if (document.getElementById('home-feed')) {
+    void init();
+  }
 })();

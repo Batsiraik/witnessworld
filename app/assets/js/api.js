@@ -36,9 +36,10 @@
     );
   }
 
-  async function fetchWithTimeout(url, init) {
+  async function fetchWithTimeout(url, init, timeoutMs) {
+    const ms = timeoutMs || FETCH_TIMEOUT_MS;
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    const t = setTimeout(() => ctrl.abort(), ms);
     try {
       return await fetch(url, { ...init, signal: ctrl.signal });
     } catch (e) {
@@ -66,7 +67,7 @@
     }
   }
 
-  async function apiGet(path, authOptional, retried) {
+  async function apiGet(path, authOptional, retried, timeoutMs) {
     const headers = {
       Accept: 'application/json',
       'User-Agent': APP_USER_AGENT,
@@ -75,12 +76,12 @@
     if (token) attachAuth(headers, token);
     else if (!authOptional) throw new Error('Please sign in to continue.');
 
-    const res = await fetchWithTimeout(`${API_BASE}/${path}`, { headers });
+    const res = await fetchWithTimeout(`${API_BASE}/${path}`, { headers }, timeoutMs);
     const data = await parseJson(res);
     if (!res.ok) {
       if (authOptional && !retried && res.status === 401 && token) {
         setToken(null);
-        return apiGet(path, authOptional, true);
+        return apiGet(path, authOptional, true, timeoutMs);
       }
       const msg =
         typeof data.error === 'string'

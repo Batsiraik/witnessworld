@@ -4,7 +4,8 @@
 (function (global) {
   const { apiGet, getToken, setToken } = global.WWC_API;
 
-  const BOOTSTRAP_TIMEOUT_MS = 12_000;
+  const BOOTSTRAP_TIMEOUT_MS = 8_000;
+  const ME_FETCH_TIMEOUT_MS = 8_000;
 
   let currentUser = null;
   let subscription = null;
@@ -27,7 +28,7 @@
 
   function bootstrapWithTimeout() {
     return Promise.race([
-      apiGet('me.php'),
+      apiGet('me.php', false, false, ME_FETCH_TIMEOUT_MS),
       new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Session check timed out.')), BOOTSTRAP_TIMEOUT_MS);
       }),

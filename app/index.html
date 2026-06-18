@@ -77,13 +77,11 @@
   <script src="assets/js/config.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
-  <script src="assets/js/page-init.js"></script>
   <script src="assets/js/shell.js"></script>
   <script src="assets/js/home.js"></script>
   <script>
-    WWC_PAGE.init({
-      onReady: () => window.WWC_HOME?.init?.(),
-    });
+    WWC_SHELL.mountShell();
+    void WWC_AUTH.bootstrap();
   </script>
 </body>
 </html>

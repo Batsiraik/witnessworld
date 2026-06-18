@@ -4,10 +4,11 @@
     const requireAuth = !!opts?.requireAuth;
 
     global.WWC_SHELL.mountShell();
-
     const bootstrapPromise = global.WWC_AUTH.bootstrap();
-    const contentPromise =
-      onReady && !requireAuth ? Promise.resolve().then(onReady) : null;
+
+    if (onReady && !requireAuth) {
+      void Promise.resolve().then(onReady);
+    }
 
     if (requireAuth) {
       await bootstrapPromise;
@@ -22,7 +23,7 @@
       return true;
     }
 
-    await Promise.all([bootstrapPromise, contentPromise || Promise.resolve()]);
+    void bootstrapPromise;
     return true;
   }
 

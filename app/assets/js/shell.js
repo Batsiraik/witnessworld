@@ -216,6 +216,8 @@
   }
 
   function mountShell() {
+    if (mountShell._mounted) return;
+    mountShell._mounted = true;
     const top = document.getElementById('wwc-shell-top');
     const bottom = document.getElementById('wwc-shell-bottom');
     if (top) top.innerHTML = renderTopNav();
@@ -238,7 +240,7 @@
       mobile.innerHTML = html;
       bindAuthActions(mobile);
     }
-    void refreshNotifBadge();
+    setTimeout(() => void refreshNotifBadge(), 1500);
   }
 
   function escapeHtml(s) {
