@@ -2,153 +2,250 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Witness World Connect - Coming Soon</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brandBlue: "#27A9E1",
-            brandBlueDark: "#1898cf",
-            brandCream: "#EAE5D4",
-            brandSoft: "#F8FCFE",
-          },
-          boxShadow: {
-            soft: "0 10px 30px rgba(39, 169, 225, 0.12)",
-          },
-        },
-      },
-    };
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Witness World Connect — a trusted marketplace for Jehovah's Witnesses to find services, buy and sell locally, list businesses, and connect as a community." />
+  <meta name="theme-color" content="#1FAAF2" />
+  <title>Witness World Connect — Trusted community marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/landing/landing.css" />
 </head>
-<body class="min-h-screen bg-gradient-to-b from-white via-brandSoft to-[#eef9fd] text-slate-800">
+<body>
+  <a class="wwc-skip" href="#main">Skip to content</a>
 
-  <section class="min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-    <div class="w-full max-w-6xl">
-      
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center">
-        
-        <!-- Left / Main Content -->
-        <div class="order-2 lg:order-1">
-          <div class="max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
-            
-            <div class="inline-flex items-center gap-2 rounded-full border border-brandBlue/20 bg-white/80 px-4 py-2 text-sm font-medium text-brandBlue shadow-sm">
-              <span class="inline-block h-2.5 w-2.5 rounded-full bg-brandBlue animate-pulse"></span>
-              Something powerful is on the way
-            </div>
-
-            <h1 class="mt-5 text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight text-slate-900">
-              Witness World Connect
-              <span class="block text-brandBlue mt-1">App Coming Soon</span>
-            </h1>
-
-            <p class="mt-5 text-base sm:text-lg leading-7 text-slate-600">
-              We’re preparing a beautiful mobile experience to help you stay connected, inspired,
-              and engaged wherever you are. Our app is launching soon on both
-              <span class="font-semibold text-brandBlue">Android</span> and
-              <span class="font-semibold text-brandBlue">iPhone</span>.
-            </p>
-
-            <p class="mt-4 text-sm sm:text-base leading-7 text-slate-500">
-              Get ready for a smoother, faster, and more convenient way to experience
-              Witness World Connect right from your phone.
-            </p>
-
-            <!-- CTA badges -->
-            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              
-              <!-- Google Play Badge Style -->
-              <a href="#"
-                 class="group flex items-center justify-center gap-3 rounded-2xl bg-slate-900 text-white px-5 py-4 shadow-soft transition hover:-translate-y-0.5 hover:bg-black min-w-[220px]">
-                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
-                  <svg viewBox="0 0 24 24" class="h-6 w-6 fill-white" aria-hidden="true">
-                    <path d="M3.609 2.082A1.5 1.5 0 0 0 3 3.25v17.5c0 .483.228.937.609 1.218l10.64-9.968L3.609 2.082Zm11.69 10.815 2.453-2.298-10.83-6.23 8.377 8.528Zm3.418-3.203 2.592-1.492c.92-.53.92-1.874 0-2.404l-2.915-1.678-2.177 2.11 2.5 2.464Zm-2.666 4.497-8.13 8.28 10.665-6.135-2.535-2.145Zm-.97-.922-8.224 7.985 10.104-5.812-1.88-2.173Z"/>
-                  </svg>
-                </div>
-                <div class="text-left">
-                  <div class="text-[11px] uppercase tracking-wide text-white/70">Download on</div>
-                  <div class="text-lg font-semibold leading-none">Google Play</div>
-                </div>
-              </a>
-
-              <!-- App Store Badge Style -->
-              <a href="#"
-                 class="group flex items-center justify-center gap-3 rounded-2xl bg-slate-900 text-white px-5 py-4 shadow-soft transition hover:-translate-y-0.5 hover:bg-black min-w-[220px]">
-                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
-                  <svg viewBox="0 0 24 24" class="h-6 w-6 fill-white" aria-hidden="true">
-                    <path d="M16.365 1.43c.056.68-.18 1.356-.59 1.905-.455.602-1.197 1.07-1.938 1.004-.09-.652.191-1.344.59-1.84.441-.544 1.212-.96 1.938-1.07ZM19.88 17.435c-.5 1.11-.736 1.604-1.38 2.575-.898 1.355-2.165 3.045-3.738 3.058-1.4.013-1.762-.901-3.663-.89-1.9.01-2.298.908-3.699.895-1.573-.014-2.773-1.542-3.67-2.896-2.506-3.787-2.77-8.235-1.223-10.61 1.1-1.69 2.838-2.68 4.472-2.68 1.665 0 2.714.914 4.09.914 1.334 0 2.148-.916 4.076-.916 1.455 0 2.995.79 4.094 2.154-3.6 1.975-3.015 7.134.64 8.396Z"/>
-                  </svg>
-                </div>
-                <div class="text-left">
-                  <div class="text-[11px] uppercase tracking-wide text-white/70">Download on the</div>
-                  <div class="text-lg font-semibold leading-none">App Store</div>
-                </div>
-              </a>
-            </div>
-
-            <!-- Extra note -->
-            <div class="mt-8 rounded-2xl border border-brandBlue/15 bg-white/80 backdrop-blur-sm p-4 sm:p-5 shadow-soft">
-              <p class="text-sm sm:text-base text-slate-600 leading-7">
-                <span class="font-semibold text-brandBlue">Launching soon.</span>
-                Stay tuned — something meaningful, modern, and easy to use is almost here.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right / Logo Card -->
-        <div class="order-1 lg:order-2">
-          <div class="relative max-w-md mx-auto">
-            
-            <!-- background glow -->
-            <div class="absolute inset-0 rounded-[2rem] bg-brandBlue/10 blur-3xl scale-95"></div>
-            
-            <div class="relative rounded-[2rem] border border-brandBlue/15 bg-white/90 p-6 sm:p-8 shadow-soft backdrop-blur-sm">
-              <div class="flex justify-center">
-                <img
-                  src="logo_ww.jpeg"
-                  alt="Witness World Connect Logo"
-                  class="w-52 sm:w-64 md:w-72 object-contain"
-                />
-              </div>
-
-              <div class="mt-6 text-center">
-                <h2 class="text-xl sm:text-2xl font-bold text-slate-900">
-                  A new mobile experience is on the way
-                </h2>
-                <p class="mt-3 text-sm sm:text-base text-slate-600 leading-7">
-                  Designed to bring our community closer with a smooth and simple experience on every device.
-                </p>
-              </div>
-
-              <div class="mt-6 flex items-center justify-center gap-3 flex-wrap">
-                <span class="rounded-full bg-brandBlue/10 text-brandBlue px-4 py-2 text-sm font-medium">
-                  Mobile Friendly
-                </span>
-                <span class="rounded-full bg-brandCream/60 text-slate-700 px-4 py-2 text-sm font-medium">
-                  Android & iPhone
-                </span>
-                <span class="rounded-full bg-brandBlue/10 text-brandBlue px-4 py-2 text-sm font-medium">
-                  Coming Soon
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
+  <header class="wwc-nav">
+    <div class="wwc-nav-inner">
+      <a href="index.html" class="wwc-brand">
+        <img src="app/assets/images/logo.jpg" alt="" width="40" height="40" />
+        <span>WWC</span>
+      </a>
+      <nav class="wwc-nav-links" aria-label="Explore">
+        <a href="app/services.html">Services</a>
+        <a href="app/classifieds.html">Marketplace</a>
+        <a href="app/directory.html">Businesses</a>
+        <a href="app/community.html">Community</a>
+      </nav>
+      <div class="wwc-nav-spacer"></div>
+      <div class="wwc-nav-auth">
+        <a href="app/login.html" class="wwc-btn wwc-btn-ghost">Sign in</a>
+        <a href="app/register.html" class="wwc-btn wwc-btn-primary">Join WWC</a>
       </div>
-
-      <!-- Footer -->
-      <div class="mt-10 text-center">
-        <p class="text-sm text-slate-500">
-          © 2026 Witness World Connect. All rights reserved.
-        </p>
-      </div>
-
+      <button type="button" class="wwc-menu-btn" id="menu-btn" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
+        </svg>
+      </button>
     </div>
-  </section>
+  </header>
 
+  <div class="wwc-mobile-drawer" id="mobile-drawer" aria-hidden="true">
+    <div class="wwc-mobile-sheet" role="dialog" aria-label="Menu">
+      <button type="button" id="drawer-close" style="font-weight:800;margin-bottom:8px">Close ✕</button>
+      <a href="app/index.html">Browse home</a>
+      <a href="app/services.html">Services</a>
+      <a href="app/classifieds.html">Marketplace</a>
+      <a href="app/directory.html">Business directory</a>
+      <a href="app/stores.html">Online stores</a>
+      <a href="app/community.html">Community</a>
+      <hr />
+      <a href="app/login.html">Sign in</a>
+      <a href="app/register.html" style="color:#1590d4">Join WWC</a>
+    </div>
+  </div>
+
+  <main id="main">
+    <section class="wwc-hero">
+      <!-- Optional: add assets/landing/hero.mp4 — autoplay video shows when present -->
+      <video
+        id="hero-video"
+        class="wwc-hero-media"
+        autoplay
+        muted
+        loop
+        playsinline
+        poster="assets/landing/hero-poster.jpg"
+      >
+        <source src="assets/landing/hero.mp4" type="video/mp4" />
+      </video>
+      <div class="wwc-hero-fallback" aria-hidden="true"></div>
+      <div class="wwc-hero-overlay" aria-hidden="true"></div>
+
+      <div class="wwc-hero-inner">
+        <div class="wwc-hero-badge"><span aria-hidden="true"></span> Now live — web &amp; mobile</div>
+        <h1>Find trusted services &amp; business in our community</h1>
+        <p class="wwc-hero-lead">
+          Witness World Connect is a platform for brothers and sisters to buy, sell, hire, and grow
+          businesses within a verified Jehovah's Witnesses community — locally and worldwide.
+        </p>
+
+        <form class="wwc-search" id="hero-search-form" role="search">
+          <input
+            type="search"
+            id="hero-search-input"
+            name="q"
+            placeholder="Search services, products, or businesses…"
+            autocomplete="off"
+            enterkeyhint="search"
+          />
+          <button type="submit" aria-label="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" stroke-linecap="round" />
+            </svg>
+          </button>
+        </form>
+
+        <div class="wwc-popular">
+          <span class="wwc-popular-label">Popular:</span>
+          <a href="#" class="wwc-chip" data-search-tag="Website development">Website development</a>
+          <a href="#" class="wwc-chip" data-search-tag="Graphic design">Graphic design</a>
+          <a href="#" class="wwc-chip" data-search-tag="Cleaning">Cleaning services</a>
+          <a href="#" class="wwc-chip" data-search-tag="Roommate">Roommate</a>
+        </div>
+
+        <div class="wwc-hero-actions">
+          <a href="app/index.html" class="wwc-btn wwc-btn-lg wwc-btn-primary">Explore marketplace</a>
+          <a href="app/register.html" class="wwc-btn wwc-btn-lg wwc-btn-outline">Create free account</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-categories" aria-label="Browse categories">
+      <div class="wwc-categories-inner">
+        <div class="wwc-categories-scroll">
+          <a href="app/services.html" class="wwc-cat-card">
+            <div class="wwc-cat-icon" style="background:#f3e8ff;color:#7c3aed">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div class="wwc-cat-label">Professional services</div>
+          </a>
+          <a href="app/classifieds.html" class="wwc-cat-card">
+            <div class="wwc-cat-icon" style="background:#e8f4fd;color:#1d4ed8">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            </div>
+            <div class="wwc-cat-label">Marketplace</div>
+          </a>
+          <a href="app/directory.html" class="wwc-cat-card">
+            <div class="wwc-cat-icon" style="background:#dcfce7;color:#15803d">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+            </div>
+            <div class="wwc-cat-label">Business directory</div>
+          </a>
+          <a href="app/stores.html" class="wwc-cat-card">
+            <div class="wwc-cat-icon" style="background:#ffedd5;color:#c2410c">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <div class="wwc-cat-label">Online stores</div>
+          </a>
+          <a href="app/community.html" class="wwc-cat-card">
+            <div class="wwc-cat-icon" style="background:#fef3c7;color:#b45309">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="wwc-cat-label">Community</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-section wwc-bg-soft">
+      <div class="wwc-section-inner">
+        <div class="wwc-section-head">
+          <h2>Built for a community you can trust</h2>
+          <p>
+            WWC helps publishers connect for honest business — whether you need a skilled brother or
+            sister for a project, want to sell an item locally, or are growing a small business among
+            friends in the truth.
+          </p>
+        </div>
+        <div class="wwc-trust-grid">
+          <article class="wwc-trust-card">
+            <div class="wwc-trust-icon" style="background:#e8f4fd;color:#1590d4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <h3>Verified members</h3>
+            <p>New accounts are reviewed so the marketplace stays aligned with our community standards.</p>
+          </article>
+          <article class="wwc-trust-card">
+            <div class="wwc-trust-icon" style="background:#f3e8ff;color:#7c3aed">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <h3>Message in-app</h3>
+            <p>Contact sellers and service providers directly — no need to share personal details publicly.</p>
+          </article>
+          <article class="wwc-trust-card">
+            <div class="wwc-trust-icon" style="background:#dcfce7;color:#15803d">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            </div>
+            <h3>Local &amp; global</h3>
+            <p>Filter by location for nearby deals, or offer digital services to brothers and sisters worldwide.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-section">
+      <div class="wwc-section-inner">
+        <div class="wwc-section-head">
+          <h2>How it works</h2>
+          <p>Getting started takes just a few minutes.</p>
+        </div>
+        <div class="wwc-steps">
+          <div class="wwc-step">
+            <div class="wwc-step-num">1</div>
+            <h3>Join WWC</h3>
+            <p>Create your account and complete verification.</p>
+          </div>
+          <div class="wwc-step">
+            <div class="wwc-step-num">2</div>
+            <h3>Browse or post</h3>
+            <p>Search listings or tap + to offer a service, item, or business.</p>
+          </div>
+          <div class="wwc-step">
+            <div class="wwc-step-num">3</div>
+            <h3>Connect safely</h3>
+            <p>Message through the app and agree on details privately.</p>
+          </div>
+          <div class="wwc-step">
+            <div class="wwc-step-num">4</div>
+            <h3>Grow together</h3>
+            <p>Build your reputation with reviews and repeat customers in the community.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wwc-section wwc-cta-band">
+      <div class="wwc-section-inner">
+        <h2>Ready to explore Witness World Connect?</h2>
+        <p>
+          Open the marketplace on the web today, or download the app for the full experience on
+          Android and iPhone.
+        </p>
+        <a href="app/index.html" class="wwc-btn wwc-btn-lg wwc-btn-primary">Go to marketplace</a>
+        <div class="wwc-store-row">
+          <a href="#" class="wwc-store-badge" aria-label="Google Play — coming soon">
+            <span style="font-size:28px">▶</span>
+            <span><small>Get it on</small><strong>Google Play</strong></span>
+          </a>
+          <a href="#" class="wwc-store-badge" aria-label="App Store — coming soon">
+            <span style="font-size:28px"></span>
+            <span><small>Download on the</small><strong>App Store</strong></span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wwc-footer">
+    <p>© 2026 Witness World Connect. All rights reserved.</p>
+    <div class="wwc-footer-links">
+      <a href="app/index.html">Marketplace</a>
+      <a href="app/login.html">Sign in</a>
+      <a href="privacy/index.html">Privacy policy</a>
+    </div>
+  </footer>
+
+  <script src="assets/landing/landing.js"></script>
 </body>
 </html>
