@@ -263,7 +263,7 @@ input {
   }
 }
 
-/* Hero */
+/* Hero — video (or poster) fills the background */
 .wwc-hero {
   position: relative;
   min-height: min(88vh, 760px);
@@ -271,6 +271,10 @@ input {
   align-items: center;
   overflow: hidden;
   color: var(--wwc-white);
+  background-color: #0b1220;
+  background-image: var(--hero-poster-img, none);
+  background-size: cover;
+  background-position: center;
 }
 
 .wwc-hero-media {
@@ -280,20 +284,11 @@ input {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.8s ease;
   pointer-events: none;
 }
 
-.wwc-hero-media.is-playing {
-  opacity: 1;
-}
-
-.wwc-hero.wwc-hero-no-video .wwc-hero-media {
-  display: none;
-}
-
 .wwc-hero-fallback {
+  display: none;
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -303,16 +298,25 @@ input {
     linear-gradient(145deg, #0b1220 0%, #0e7490 45%, #1590d4 100%);
 }
 
+.wwc-hero.wwc-hero-no-video .wwc-hero-media {
+  display: none;
+}
+
+.wwc-hero.wwc-hero-no-video .wwc-hero-fallback {
+  display: block;
+}
+
 .wwc-hero-overlay {
   position: absolute;
   inset: 0;
   z-index: 2;
   background: linear-gradient(
     180deg,
-    rgba(11, 18, 32, 0.55) 0%,
-    rgba(11, 18, 32, 0.72) 55%,
-    rgba(11, 18, 32, 0.85) 100%
+    rgba(11, 18, 32, 0.35) 0%,
+    rgba(11, 18, 32, 0.5) 55%,
+    rgba(11, 18, 32, 0.65) 100%
   );
+  pointer-events: none;
 }
 
 .wwc-hero-inner {

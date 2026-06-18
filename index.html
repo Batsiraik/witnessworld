@@ -55,7 +55,7 @@
   </div>
 
   <main id="main">
-    <section class="wwc-hero">
+    <section class="wwc-hero" data-hero-poster="assets/landing/hero-poster.png">
       <video
         id="hero-video"
         class="wwc-hero-media"
@@ -64,7 +64,6 @@
         muted
         loop
         playsinline
-        webkit-playsinline=""
         preload="auto"
         poster="assets/landing/hero-poster.png"
         aria-hidden="true"
@@ -86,6 +85,25 @@
         </div>
       </div>
     </section>
+
+    <script>
+      (function () {
+        var v = document.getElementById('hero-video');
+        if (!v) return;
+        v.muted = true;
+        v.defaultMuted = true;
+        v.volume = 0;
+        v.setAttribute('muted', '');
+        v.setAttribute('playsinline', '');
+        function playHero() {
+          v.muted = true;
+          v.play().catch(function () {});
+        }
+        v.addEventListener('loadeddata', playHero, { once: true });
+        if (v.readyState >= 2) playHero();
+        else playHero();
+      })();
+    </script>
 
     <section class="wwc-categories" aria-label="Browse categories">
       <div class="wwc-categories-inner">
