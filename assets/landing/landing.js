@@ -21,25 +21,51 @@
     if (e.target === drawer) closeDrawer();
   });
 
-  const heroVideo = document.getElementById('hero-video');
-  if (heroVideo) {
-    heroVideo.muted = true;
-    heroVideo.defaultMuted = true;
-    heroVideo.volume = 0;
+  function initHeroVideo() {
+    const video = document.getElementById('hero-video');
+    const hero = video?.closest('.wwc-hero');
+    if (!video || !hero) return;
 
-    const showVideo = () => {
-      heroVideo.style.opacity = '1';
+    video.muted = true;
+    video.defaultMuted = true;
+    video.volume = 0;
+    video.setAttribute('muted', '');
+
+    const reveal = () => {
+      video.classList.add('is-playing');
     };
-    heroVideo.addEventListener('loadeddata', showVideo);
-    heroVideo.addEventListener('canplay', showVideo);
-    heroVideo.addEventListener('error', () => {
-      heroVideo.remove();
-    });
-    if (heroVideo.readyState >= 2) {
-      showVideo();
+
+    const fail = () => {
+      hero.classList.add('wwc-hero-no-video');
+    };
+
+    video.addEventListener('playing', reveal);
+    video.addEventListener('canplay', reveal);
+    video.addEventListener('error', fail);
+
+    const tryPlay = () => {
+      video.muted = true;
+      const p = video.play();
+      if (p && typeof p.then === 'function') {
+        p.then(reveal).catch(() => {
+          if (video.readyState >= 2) reveal();
+        });
+      } else if (video.readyState >= 2) {
+        reveal();
+      }
+    };
+
+    if (video.readyState >= 2) {
+      reveal();
+      tryPlay();
+    } else {
+      video.addEventListener('loadeddata', tryPlay, { once: true });
     }
-    void heroVideo.play().catch(() => {
-      /* autoplay blocked — poster + gradient still show */
-    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroVideo);
+  } else {
+    initHeroVideo();
   }
 })();

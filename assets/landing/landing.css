@@ -281,7 +281,16 @@ input {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.wwc-hero-media.is-playing {
+  opacity: 1;
+}
+
+.wwc-hero.wwc-hero-no-video .wwc-hero-media {
+  display: none;
 }
 
 .wwc-hero-fallback {
