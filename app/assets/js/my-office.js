@@ -90,7 +90,10 @@
         <p style="margin:0;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--wwc-text-muted)">${escapeHtml(type)}</p>
         <p style="margin:4px 0 0;font-weight:800">${escapeHtml(l.title || 'Listing')}</p>
         <p style="margin:4px 0 0;font-size:12px;font-weight:700;color:${statusColor(l.moderation_status)}">${escapeHtml(statusLabel(l.moderation_status))}</p>
-        ${l.id ? `<a href="listing.html?id=${l.id}" style="font-size:13px;font-weight:800;color:var(--wwc-primary-dark);margin-top:8px;display:inline-block">View</a>` : ''}
+        ${l.id ? `<div style="display:flex;gap:14px;margin-top:8px;font-size:13px;font-weight:800">
+          <a href="listing.html?id=${l.id}" style="color:var(--wwc-primary-dark)">View</a>
+          <a href="create-listing.html?id=${l.id}" style="color:var(--wwc-primary-dark)">Edit</a>
+        </div>` : ''}
       </div>`;
   }
 

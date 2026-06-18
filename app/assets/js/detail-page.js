@@ -46,7 +46,30 @@
     return inner.replace('wwc-card-placeholder', 'wwc-card-placeholder" style="height:100%');
   }
 
-  function renderListing(L) {
+  function moderationLabel(status) {
+    const map = {
+      approved: 'Live',
+      pending_approval: 'Pending review',
+      rejected: 'Not approved',
+      removed: 'Removed',
+      suspended: 'Suspended',
+    };
+    return map[status] || status || 'Unknown';
+  }
+
+  function ownerBannerHtml(L) {
+    const mod = L.moderation_status || '';
+    const hint = mod === 'pending_approval'
+      ? '<span class="wwc-owner-banner__hint">Only you can see this until it is approved.</span>'
+      : '';
+    return `
+      <div class="wwc-owner-banner wwc-owner-banner--${escapeHtml(mod)}">
+        <strong>Your listing</strong> · ${escapeHtml(moderationLabel(mod))}
+        ${hint}
+      </div>`;
+  }
+
+  function renderListing(L, isOwner) {
     subjectType = 'listing';
     peerUserId = L.seller?.user_id || 0;
     const pt = L.pricing_type === 'hourly' ? '/hr' : '';
@@ -58,6 +81,7 @@
     }).join('');
     const video = L.video_url ? resolveMediaUrl(L.video_url) : null;
     root.innerHTML = `
+      ${isOwner ? ownerBannerHtml(L) : ''}
       <div class="wwc-detail-hero">${heroMedia(L.media_url, 'document-text-outline')}
         <div class="wwc-detail-hero-actions"><button type="button" class="wwc-icon-btn" id="fav-btn" aria-label="Favorite"><ion-icon name="heart${heartOn ? '' : '-outline'}"></ion-icon></button></div>
       </div>
@@ -73,7 +97,9 @@
         ${reviewsHtml(L.review_summary, L.reviews)}
       </div>
       <div class="wwc-detail-cta">
-        <button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message seller</button>
+        ${isOwner
+          ? `<a href="create-listing.html?id=${L.id}" class="wwc-btn wwc-btn-purple">Edit listing</a>`
+          : '<button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message seller</button>'}
       </div>`;
     document.title = `${L.title} · Witness World Connect`;
   }
@@ -193,12 +219,40 @@
     alert('Added to cart.');
   }
 
-  function bindActions(item) {
+  function bindActions(item, isOwner) {
     document.getElementById('fav-btn')?.addEventListener('click', toggleFavorite);
-    document.getElementById('contact-btn')?.addEventListener('click', openChat);
+    if (!isOwner) {
+      document.getElementById('contact-btn')?.addEventListener('click', openChat);
+    }
     document.getElementById('cart-btn')?.addEventListener('click', () => {
       addToCart(item.name, item.price_amount, item.currency, item.id, item.store_id);
     });
+  }
+
+  async function fetchListingItem() {
+    try {
+      const data = await apiGet(`listing-public-detail.php?id=${id}`, true);
+      return { item: data.listing, isOwner: false };
+    } catch (e) {
+      if (e.status !== 404 || !WWC_AUTH.isLoggedIn()) throw e;
+      const data = await apiGet(`listing-detail.php?id=${id}`);
+      const L = data.listing;
+      if (!L) throw new Error('Listing not found');
+      const user = WWC_AUTH.getUser();
+      const label = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+      return {
+        item: {
+          ...L,
+          seller: {
+            user_id: user.id,
+            username: user.username,
+            label: label || user.username,
+            avatar_url: user.avatar_url || null,
+          },
+        },
+        isOwner: true,
+      };
+    }
   }
 
   async function load() {
@@ -213,6 +267,14 @@
     }
     showLoading(root);
     try {
+      if (type === 'listing') {
+        const { item, isOwner } = await fetchListingItem();
+        if (!item) throw new Error('Not found');
+        renderListing(item, isOwner);
+        bindActions(item, isOwner);
+        await loadFavorite();
+        return;
+      }
       const data = await apiGet(`${cfg.api}?id=${id}${type === 'store' ? '&products_limit=60' : ''}`, true);
       const item = data[cfg.key];
       if (!item) throw new Error('Not found');
@@ -227,11 +289,10 @@
           item.reviews = data.reviews;
         }
       }
-      if (type === 'listing') renderListing(item);
-      else if (type === 'product') renderProduct(item);
+      if (type === 'product') renderProduct(item);
       else if (type === 'store') renderStore(item);
       else renderDirectory(item);
-      bindActions(item);
+      bindActions(item, false);
       await loadFavorite();
     } catch (e) {
       showError(root, e.message, load);

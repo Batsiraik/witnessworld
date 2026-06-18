@@ -1,16 +1,19 @@
 (function () {
-  const { apiPost } = WWC_API;
-  const { qs, escapeHtml } = WWC_UTIL;
+  const { apiGet, apiPost } = WWC_API;
+  const { qs, qsInt, escapeHtml } = WWC_UTIL;
   const C = WWC_CREATE;
   const root = document.getElementById('create-root');
 
-  const listingType = (() => {
+  const editId = qsInt('id') > 0 ? qsInt('id') : 0;
+  let editListing = null;
+
+  let listingType = (() => {
     const t = (qs('type') || 'classified').toLowerCase();
     return t === 'service' || t === 'community' ? t : 'classified';
   })();
 
-  const copy = C.LISTING_COPY[listingType];
-  const isClassified = listingType === 'classified';
+  const isClassified = () => listingType === 'classified';
+  const copy = () => C.LISTING_COPY[listingType];
 
   const state = {
     mainUrl: null,
@@ -29,39 +32,44 @@
       return;
     }
 
+    const c = copy();
+    const ed = editListing;
+    const pageTitle = editId ? 'Edit listing' : c.title;
+    const submitLabel = editId ? 'Save changes' : 'Submit for review';
+
     root.innerHTML = `
       <div class="wwc-create-form">
-        <span class="wwc-create-pill">${escapeHtml(copy.pill)}</span>
-        <h1 style="margin:0 0 8px;font-size:22px;font-weight:800">${escapeHtml(copy.title)}</h1>
-        <p class="wwc-create-lead">${escapeHtml(copy.lead)}</p>
+        <span class="wwc-create-pill">${escapeHtml(c.pill)}</span>
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:800">${escapeHtml(pageTitle)}</h1>
+        <p class="wwc-create-lead">${escapeHtml(c.lead)}</p>
 
         <form id="listing-form">
           <div class="wwc-create-section">
             <h2>Details</h2>
             <div class="wwc-create-field">
-              <label for="title">${copy.titleLabel}</label>
-              <input id="title" required maxlength="255" placeholder="${escapeAttr(copy.titlePh)}" />
+              <label for="title">${c.titleLabel}</label>
+              <input id="title" required maxlength="255" placeholder="${escapeAttr(c.titlePh)}" value="${ed ? escapeAttr(ed.title || '') : ''}" />
             </div>
             <div class="wwc-create-field">
-              <label for="description">${copy.descLabel}</label>
-              <textarea id="description" required placeholder="${escapeAttr(copy.descPh)}"></textarea>
+              <label for="description">${c.descLabel}</label>
+              <textarea id="description" required placeholder="${escapeAttr(c.descPh)}">${ed ? escapeHtml(ed.description || '') : ''}</textarea>
             </div>
             <div class="wwc-create-field">
               <label for="category">Category</label>
-              ${C.categorySelectHtml(state.categories, '', 'category')}
+              ${C.categorySelectHtml(state.categories, ed?.category_id || '', 'category')}
             </div>
-            ${isClassified ? `
+            ${isClassified() ? `
             <div class="wwc-create-field">
-              <label class="wwc-create-check"><input type="checkbox" id="is-free" /> FREE — giving it away</label>
+              <label class="wwc-create-check"><input type="checkbox" id="is-free"${ed?.is_free ? ' checked' : ''} /> FREE — giving it away</label>
             </div>
             <div class="wwc-create-field" id="price-wrap">
               <label for="price">Price</label>
-              <input id="price" type="number" min="0" step="0.01" placeholder="0.00" />
+              <input id="price" type="number" min="0" step="0.01" placeholder="0.00" value="${ed?.price_amount != null && ed.price_amount !== '' ? escapeAttr(String(ed.price_amount)) : ''}" />
               <p class="wwc-create-hint">Enter a price or check FREE above.</p>
             </div>` : ''}
             <div class="wwc-create-field">
-              <label for="skills">${copy.skillsLabel}</label>
-              <input id="skills" placeholder="${escapeAttr(copy.skillsPh)}" />
+              <label for="skills">${c.skillsLabel}</label>
+              <input id="skills" placeholder="${escapeAttr(c.skillsPh)}" value="${ed?.soft_skills?.length ? escapeAttr(ed.soft_skills.join(', ')) : ''}" />
               <p class="wwc-create-hint">Comma-separated tags.</p>
             </div>
           </div>
@@ -70,11 +78,11 @@
             <h2>Location</h2>
             <div class="wwc-create-field">
               <label for="country">Country *</label>
-              ${C.countrySelectHtml(state.countries, '', 'country')}
+              ${C.countrySelectHtml(state.countries, ed?.location_country_code || '', 'country')}
             </div>
-            <div class="wwc-create-field" id="state-wrap" hidden>
+            <div class="wwc-create-field" id="state-wrap"${ed?.location_country_code === state.usCode ? '' : ' hidden'}>
               <label for="us-state">U.S. state *</label>
-              ${C.stateSelectHtml(state.usStates, '', 'us-state', true)}
+              ${C.stateSelectHtml(state.usStates, ed?.location_us_state_code || '', 'us-state', true)}
             </div>
           </div>
 
@@ -83,7 +91,7 @@
             ${mediaField('main', 'Main image *', 'Required · JPG, PNG or WebP · max 5 MB')}
             ${mediaField('video', 'Video (optional)', 'MP4 or MOV · max 45 MB')}
             <div class="wwc-create-field">
-              <label>${copy.portfolioLabel}</label>
+              <label>${c.portfolioLabel}</label>
               <div class="wwc-media-zone" id="portfolio-zone" tabindex="0" role="button">
                 <p>Add extra photos</p>
                 <small>Up to 12 images · JPG, PNG or WebP</small>
@@ -94,14 +102,31 @@
           </div>
 
           <div class="wwc-create-actions">
-            <button type="submit" class="wwc-btn wwc-btn-primary" id="submit-btn">Submit for review</button>
-            <a href="post.html" class="wwc-btn wwc-btn-ghost">Cancel</a>
+            <button type="submit" class="wwc-btn wwc-btn-primary" id="submit-btn">${escapeHtml(submitLabel)}</button>
+            <a href="${editId ? 'my-office.html' : 'post.html'}" class="wwc-btn wwc-btn-ghost">Cancel</a>
           </div>
         </form>
       </div>`;
 
-    document.title = `${copy.title} · Witness World Connect`;
+    document.title = `${pageTitle} · Witness World Connect`;
     bindForm();
+    populateMediaFromEdit();
+  }
+
+  function populateMediaFromEdit() {
+    if (!editListing) return;
+    if (editListing.media_url) {
+      state.mainUrl = editListing.media_url;
+      setZonePreview('main', editListing.media_url);
+    }
+    if (editListing.video_url) {
+      state.videoUrl = editListing.video_url;
+      setZonePreview('video', editListing.video_url);
+    }
+    if (editListing.portfolio_urls?.length) {
+      state.portfolioUrls = [...editListing.portfolio_urls];
+      renderPortfolio();
+    }
   }
 
   function escapeAttr(s) {
@@ -129,7 +154,7 @@
     zone.innerHTML = `<img src="${escapeAttr(resolved)}" alt="" />`;
   }
 
-  function bindSingleUpload(zoneId, onDone, imagesOnly) {
+  function bindSingleUpload(zoneId, onDone) {
     const zone = document.getElementById(`${zoneId}-zone`);
     const input = document.getElementById(`${zoneId}-input`);
     const status = document.getElementById(`${zoneId}-status`);
@@ -184,15 +209,17 @@
 
     const freeEl = document.getElementById('is-free');
     const priceWrap = document.getElementById('price-wrap');
-    freeEl?.addEventListener('change', () => {
-      if (priceWrap) priceWrap.hidden = freeEl.checked;
-    });
+    const syncFree = () => {
+      if (priceWrap) priceWrap.hidden = !!freeEl?.checked;
+    };
+    freeEl?.addEventListener('change', syncFree);
+    syncFree();
 
     bindSingleUpload('main', async (file) => {
       const url = await C.uploadListingMedia(file);
       state.mainUrl = url;
       return url;
-    }, true);
+    });
 
     bindSingleUpload('video', async (file) => {
       const url = await C.uploadListingMedia(file);
@@ -263,35 +290,55 @@
     if (country === state.usCode && usState) body.location_us_state_code = usState;
     if (state.videoUrl) body.video_url = state.videoUrl;
     if (categoryId) body.category_id = Number(categoryId);
-    if (isClassified) {
+    if (isClassified()) {
       body.is_free = !!isFree;
       if (!isFree && price) body.price_amount = price;
     }
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
-    btn.textContent = 'Submitting…';
+    btn.textContent = editId ? 'Saving…' : 'Submitting…';
     try {
-      const data = await apiPost('listing-create.php', body);
-      const msg = data.message || 'Your listing was submitted for review.';
-      root.innerHTML = `
-        <div class="wwc-create-form">
-          <div class="wwc-create-success">${escapeHtml(msg)}</div>
-          <div class="wwc-create-actions">
-            <a href="post.html" class="wwc-btn wwc-btn-primary">Back to Create</a>
-            <a href="index.html" class="wwc-btn wwc-btn-ghost">Go to home</a>
-          </div>
-        </div>`;
+      if (editId) {
+        body.listing_id = editId;
+        const data = await apiPost('listing-update.php', body);
+        root.innerHTML = `
+          <div class="wwc-create-form">
+            <div class="wwc-create-success">${escapeHtml(data.message || 'Listing updated.')}</div>
+            <div class="wwc-create-actions">
+              <a href="listing.html?id=${editId}" class="wwc-btn wwc-btn-primary">View listing</a>
+              <a href="my-office.html" class="wwc-btn wwc-btn-ghost">My office</a>
+            </div>
+          </div>`;
+      } else {
+        const data = await apiPost('listing-create.php', body);
+        const msg = data.message || 'Your listing was submitted for review.';
+        root.innerHTML = `
+          <div class="wwc-create-form">
+            <div class="wwc-create-success">${escapeHtml(msg)}</div>
+            <div class="wwc-create-actions">
+              <a href="post.html" class="wwc-btn wwc-btn-primary">Back to Create</a>
+              <a href="my-office.html" class="wwc-btn wwc-btn-ghost">My office</a>
+            </div>
+          </div>`;
+      }
     } catch (ex) {
-      C.showFormError(root, ex.message || 'Could not submit listing.');
+      C.showFormError(root, ex.message || 'Could not save listing.');
       btn.disabled = false;
-      btn.textContent = 'Submit for review';
+      btn.textContent = editId ? 'Save changes' : 'Submit for review';
     }
   }
 
   async function init() {
     WWC_UTIL.showLoading(root);
     try {
+      if (editId) {
+        const data = await apiGet(`listing-detail.php?id=${editId}`);
+        editListing = data.listing;
+        if (!editListing) throw new Error('Listing not found');
+        const t = (editListing.listing_type || '').toLowerCase();
+        if (t === 'service' || t === 'community' || t === 'classified') listingType = t;
+      }
       const [loc, cats] = await Promise.all([C.loadLocations(), C.loadCategories(listingType)]);
       state.countries = loc.countries;
       state.usStates = loc.usStates;

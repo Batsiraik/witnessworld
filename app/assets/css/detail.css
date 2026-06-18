@@ -1,5 +1,33 @@
 /* Detail pages */
 
+.wwc-owner-banner {
+  background: var(--wwc-primary-soft);
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  border-radius: var(--wwc-radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.wwc-owner-banner--pending_approval {
+  background: #fff8e6;
+  border-color: #f0d78c;
+}
+
+.wwc-owner-banner--rejected,
+.wwc-owner-banner--removed {
+  background: #fdecea;
+  border-color: #f5c6cb;
+}
+
+.wwc-owner-banner__hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--wwc-muted);
+  font-size: 0.85rem;
+}
+
 .wwc-detail-hero {
   position: relative;
   border-radius: var(--wwc-radius-lg);
