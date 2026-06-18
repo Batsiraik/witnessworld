@@ -3,7 +3,6 @@
 .wwc-home-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 4px;
 }
 
@@ -26,12 +25,6 @@
   font-size: 26px;
   font-weight: 800;
   letter-spacing: 2px;
-}
-
-.wwc-home-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 @media (min-width: 768px) {
@@ -182,9 +175,15 @@
 @media (min-width: 768px) {
   .wwc-rail-scroll {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     overflow-x: visible;
     gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .wwc-rail-scroll {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -356,42 +355,4 @@
   line-height: 1.5;
   color: var(--wwc-text-muted);
   font-weight: 500;
-}
-
-/* Notifications list */
-.wwc-notif-item {
-  padding: 14px 0;
-  border-bottom: 1px solid var(--wwc-line);
-}
-
-.wwc-notif-item.is-unread {
-  background: rgba(31, 170, 242, 0.04);
-  margin: 0 -20px;
-  padding: 14px 20px;
-}
-
-.wwc-notif-title {
-  font-size: 15px;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-
-.wwc-notif-body {
-  font-size: 13px;
-  color: var(--wwc-text-muted);
-  line-height: 1.45;
-}
-
-.wwc-notif-time {
-  font-size: 11px;
-  color: var(--wwc-text-muted);
-  margin-top: 4px;
-  font-weight: 600;
-}
-
-.wwc-notif-empty {
-  text-align: center;
-  padding: 32px 0;
-  color: var(--wwc-text-muted);
-  font-weight: 600;
 }

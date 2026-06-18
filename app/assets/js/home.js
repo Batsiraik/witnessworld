@@ -1,9 +1,8 @@
 /**
- * Home page — feed, location filter, search, notifications badge.
+ * Home page — feed, location filter, search.
  */
 (function () {
-  const { apiGet, apiPost, resolveMediaUrl } = window.WWC_API;
-  const { requireAuth, isLoggedIn } = window.WWC_AUTH;
+  const { apiGet, resolveMediaUrl } = window.WWC_API;
 
   const TOP_CATEGORIES = [
     { label: 'Marketplace', href: 'classifieds.html', icon: 'bag-handle-outline', bg: '#E8F4FD', color: '#1D4ED8' },
@@ -12,6 +11,9 @@
     { label: 'Businesses', href: 'directory.html', icon: 'business-outline', bg: '#DCFCE7', color: '#15803D' },
     { label: 'Stores', href: 'stores.html', icon: 'storefront-outline', bg: '#FFEDD5', color: '#C2410C' },
   ];
+
+  /** Max cards per home feed section — use “See all” for the full browse page. */
+  const HOME_RAIL_LIMIT = 4;
 
   let countries = [];
   let usStates = [];
@@ -25,17 +27,11 @@
     search: document.getElementById('home-search'),
     cats: document.getElementById('home-cats'),
     feed: document.getElementById('home-feed'),
-    notifBtn: document.getElementById('home-notif-btn'),
-    notifBadge: document.getElementById('home-notif-badge'),
-    favBtn: document.getElementById('home-fav-btn'),
-    ordersBtn: document.getElementById('home-orders-btn'),
     locModal: document.getElementById('loc-modal'),
     locCountrySearch: document.getElementById('loc-country-search'),
     locCountryList: document.getElementById('loc-country-list'),
     locStateSection: document.getElementById('loc-state-section'),
     locStateList: document.getElementById('loc-state-list'),
-    notifModal: document.getElementById('notif-modal'),
-    notifList: document.getElementById('notif-list'),
   };
 
   function formatListingLoc(row) {
@@ -232,45 +228,83 @@
   function renderFeed() {
     if (!feed) return;
     const parts = [];
+    const cap = (arr) => (Array.isArray(arr) ? arr.slice(0, HOME_RAIL_LIMIT) : []);
 
     if (feed.featured.length) {
       parts.push(
-        rail('Featured', 'services.html', feed.featured.map((f) => featuredCard(f, true)).join(''))
+        rail(
+          'Featured',
+          'services.html',
+          cap(feed.featured).map((f) => featuredCard(f, true)).join('')
+        )
       );
     }
 
     if (feed.classifieds.length || feed.stores.length) {
-      const rec = [
-        ...feed.classifieds.slice(0, 6).map((r) => cardListing(r, 'listing.html')),
-        ...feed.stores.slice(0, 4).map((r) => cardStore(r)),
-      ].join('');
+      const recRows = [
+        ...feed.classifieds.map((r) => ({ kind: 'listing', row: r })),
+        ...feed.stores.map((r) => ({ kind: 'store', row: r })),
+      ].slice(0, HOME_RAIL_LIMIT);
+      const rec = recRows
+        .map((item) =>
+          item.kind === 'listing' ? cardListing(item.row, 'listing.html') : cardStore(item.row)
+        )
+        .join('');
       parts.push(rail('Recommended', 'classifieds.html', rec));
     }
 
     if (feed.services.length) {
       parts.push(
-        rail('Service marketplace', 'services.html', feed.services.map((r) => cardListing(r, 'listing.html')).join(''))
+        rail(
+          'Service marketplace',
+          'services.html',
+          cap(feed.services).map((r) => cardListing(r, 'listing.html')).join('')
+        )
       );
     }
     if (feed.community.length) {
       parts.push(
-        rail('Community', 'community.html', feed.community.map((r) => cardListing(r, 'listing.html')).join(''))
+        rail(
+          'Community',
+          'community.html',
+          cap(feed.community).map((r) => cardListing(r, 'listing.html')).join('')
+        )
       );
     }
     if (feed.products.length) {
-      parts.push(rail('Products', 'products.html', feed.products.map((r) => cardProduct(r)).join('')));
+      parts.push(
+        rail(
+          'Products',
+          'products.html',
+          cap(feed.products).map((r) => cardProduct(r)).join('')
+        )
+      );
     }
     if (feed.classifieds.length) {
       parts.push(
-        rail('Classifieds', 'classifieds.html', feed.classifieds.map((r) => cardListing(r, 'listing.html')).join(''))
+        rail(
+          'Classifieds',
+          'classifieds.html',
+          cap(feed.classifieds).map((r) => cardListing(r, 'listing.html')).join('')
+        )
       );
     }
     if (feed.stores.length) {
-      parts.push(rail('Online stores', 'stores.html', feed.stores.map((r) => cardStore(r)).join('')));
+      parts.push(
+        rail(
+          'Online stores',
+          'stores.html',
+          cap(feed.stores).map((r) => cardStore(r)).join('')
+        )
+      );
     }
     if (feed.directory.length) {
       parts.push(
-        rail('Business directory', 'directory.html', feed.directory.map((r) => cardDirectory(r)).join(''))
+        rail(
+          'Business directory',
+          'directory.html',
+          cap(feed.directory).map((r) => cardDirectory(r)).join('')
+        )
       );
     }
 
@@ -290,7 +324,7 @@
   async function loadFeed() {
     els.feed.innerHTML = '<div class="wwc-loading"><div class="wwc-spinner" role="status" aria-label="Loading"></div></div>';
     try {
-      const qs = new URLSearchParams({ section: 'all', limit: '12' });
+      const qs = new URLSearchParams({ section: 'all', limit: String(HOME_RAIL_LIMIT) });
       if (country?.code) qs.set('country', country.code);
       if (usState?.name) qs.set('us_state', usState.name);
       const data = await apiGet(`marketplace-home-feed.php?${qs}`, true);
@@ -303,20 +337,6 @@
           <button type="button" class="wwc-feed-retry" id="feed-retry">Try again</button>
         </div>`;
       document.getElementById('feed-retry')?.addEventListener('click', loadFeed);
-    }
-  }
-
-  async function loadNotifBadge() {
-    if (!isLoggedIn()) {
-      els.notifBadge.hidden = true;
-      return;
-    }
-    try {
-      const data = await apiGet('user-notifications.php');
-      const n = typeof data.unread_count === 'number' ? data.unread_count : 0;
-      els.notifBadge.hidden = n <= 0;
-    } catch {
-      els.notifBadge.hidden = true;
     }
   }
 
@@ -397,49 +417,6 @@
     });
   }
 
-  async function openNotifications() {
-    if (!requireAuth('Sign in to view notifications.')) return;
-    openModal(els.notifModal);
-    els.notifList.innerHTML = '<div class="wwc-loading"><div class="wwc-spinner"></div></div>';
-    try {
-      const data = await apiGet('user-notifications.php');
-      const items = Array.isArray(data.notifications) ? data.notifications : [];
-      if (!items.length) {
-        els.notifList.innerHTML = '<p class="wwc-notif-empty">No notifications yet.</p>';
-      } else {
-        els.notifList.innerHTML = items
-          .map((n) => {
-            const unread = !n.is_read;
-            return `
-            <div class="wwc-notif-item${unread ? ' is-unread' : ''}">
-              <div class="wwc-notif-title">${escapeHtml(n.title || 'Notification')}</div>
-              <div class="wwc-notif-body">${escapeHtml(n.body || '')}</div>
-              <div class="wwc-notif-time">${escapeHtml(formatTime(n.created_at))}</div>
-            </div>`;
-          })
-          .join('');
-      }
-      try {
-        await apiPost('user-notifications-read.php', {});
-      } catch {
-        /* ignore */
-      }
-      els.notifBadge.hidden = true;
-    } catch (e) {
-      els.notifList.innerHTML = `<p class="wwc-feed-error">${escapeHtml(e.message)}</p>`;
-    }
-  }
-
-  function formatTime(iso) {
-    if (!iso) return '';
-    try {
-      const d = new Date(iso);
-      return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-    } catch {
-      return String(iso);
-    }
-  }
-
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, '&amp;')
@@ -473,19 +450,6 @@
     });
     els.locModal.querySelector('[data-loc-done]')?.addEventListener('click', () => closeModal(els.locModal));
 
-    els.notifModal.addEventListener('click', (e) => {
-      if (e.target === els.notifModal) closeModal(els.notifModal);
-    });
-    els.notifModal.querySelector('[data-notif-close]')?.addEventListener('click', () => closeModal(els.notifModal));
-
-    els.notifBtn.addEventListener('click', openNotifications);
-    els.favBtn.addEventListener('click', () => {
-      if (requireAuth()) window.location.href = 'favorites.html';
-    });
-    els.ordersBtn.addEventListener('click', () => {
-      if (requireAuth()) window.location.href = 'orders.html';
-    });
-
     els.search.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const q = els.search.value.trim();
@@ -500,7 +464,6 @@
     bindEvents();
     await loadLocations();
     await loadFeed();
-    await loadNotifBadge();
   }
 
   if (document.readyState === 'loading') {
