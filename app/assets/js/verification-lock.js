@@ -139,16 +139,12 @@
       <button type="button" class="wwc-btn wwc-btn-primary wwc-verify-submit" id="wwc-verify-submit"${canSubmit ? '' : ' disabled'}>${state.submitBusy ? 'Saving…' : 'Continue'}</button>`;
   }
 
-  function renderWaiting(variant, supportEmail, supportAvailable) {
+  function renderWaiting(variant, supportEmail) {
     const declined = variant === 'declined';
     const title = declined ? 'Account not approved' : 'Your account is yet to be verified';
     const body = declined
       ? 'Your registration was not approved. For further details, contact:'
       : 'Verification will take up to 24 hours. If it takes longer, please contact admin at:';
-    const supportBtn =
-      supportAvailable && !declined
-        ? `<button type="button" class="wwc-btn wwc-btn-primary wwc-verify-support" id="wwc-verify-support">Message Customer Support</button>`
-        : '';
     const notice = declined
       ? ''
       : `<div class="wwc-verify-notice">Your account is being reviewed. You can stay on this page — approval will unlock the app automatically.</div>`;
@@ -161,7 +157,6 @@
       ${notice}
       <p class="wwc-verify-body">${body}</p>
       <a class="wwc-verify-email" href="mailto:${escapeHtml(supportEmail)}">${escapeHtml(supportEmail)}</a>
-      ${supportBtn}
       ${hint}`;
   }
 
@@ -201,7 +196,6 @@
     });
 
     root.querySelector('#wwc-verify-submit')?.addEventListener('click', () => void submitPoll());
-    root.querySelector('#wwc-verify-support')?.addEventListener('click', () => void openSupport());
   }
 
   async function submitPoll() {
@@ -232,16 +226,6 @@
     }
   }
 
-  async function openSupport() {
-    try {
-      const data = await apiPost('support-open-conversation.php', {});
-      const id = data.conversation_id;
-      if (id) window.location.href = `chat.html?conversation_id=${id}`;
-    } catch (e) {
-      alert(e.message || 'Could not open support chat.');
-    }
-  }
-
   function render() {
     ensureOverlay();
     const el = document.getElementById('wwc-verify-lock');
@@ -265,7 +249,7 @@
 
     content.innerHTML = showPoll
       ? renderPollForm()
-      : renderWaiting(variant, auth.getSupportEmail(), auth.isSupportAvailable());
+      : renderWaiting(variant, auth.getSupportEmail());
 
     el.hidden = false;
     document.body.classList.add('wwc-verification-locked');
