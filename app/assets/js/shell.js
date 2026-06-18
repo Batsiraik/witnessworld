@@ -38,6 +38,10 @@
   function loggedInActionsHtml() {
     return `
       <div class="wwc-shell-quick-actions" role="group" aria-label="Quick links">
+        <button type="button" class="wwc-icon-btn wwc-icon-btn-sm" data-shell-cart aria-label="Cart">
+          <ion-icon name="cart-outline" aria-hidden="true"></ion-icon>
+          <span class="wwc-shell-cart-badge" data-shell-cart-badge hidden></span>
+        </button>
         <button type="button" class="wwc-icon-btn wwc-icon-btn-sm" data-shell-fav aria-label="Favorites">
           <ion-icon name="heart-outline" aria-hidden="true"></ion-icon>
         </button>
@@ -203,6 +207,10 @@
 
   function bindAuthActions(root) {
     if (!root) return;
+    root.querySelector('[data-shell-cart]')?.addEventListener('click', () => {
+      if (!global.WWC_AUTH.requireAuth('Sign in to view your cart.')) return;
+      window.location.href = 'cart.html';
+    });
     root.querySelector('[data-shell-fav]')?.addEventListener('click', () => {
       if (!global.WWC_AUTH.requireAuth()) return;
       window.location.href = 'favorites.html';
@@ -242,6 +250,20 @@
     document.body.appendChild(s);
   }
 
+  function ensureCartModule() {
+    return new Promise((resolve) => {
+      if (global.WWC_CART) {
+        resolve();
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'assets/js/shopping-cart.js';
+      s.onload = () => resolve();
+      s.onerror = () => resolve();
+      document.head.appendChild(s);
+    });
+  }
+
   function mountShell() {
     if (mountShell._mounted) return;
     mountShell._mounted = true;
@@ -253,10 +275,14 @@
     updateAuthUI();
     bindPostLinks();
     ensureVerificationModule();
+    void ensureCartModule().then(() => {
+      global.WWC_CART?.bindShell?.();
+    });
     global.WWC_AUTH.subscribe(() => {
       updateAuthUI();
       bindPostLinks();
       global.WWC_VERIFY?.render?.();
+      global.WWC_CART?.bindShell?.();
     });
   }
 

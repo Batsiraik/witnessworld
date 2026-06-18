@@ -58,6 +58,14 @@
             <a href="create-directory.html" class="wwc-btn wwc-btn-sm wwc-btn-ghost" style="padding:8px 12px;font-size:12px">+ Business</a>
           </div>
           ${entries.length ? entries.map(dirCard).join('') : '<p style="color:var(--wwc-text-muted);font-weight:600;font-size:14px">No directory entries yet.</p>'}
+        </div>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--wwc-line)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <h2 style="margin:0;font-size:16px;font-weight:800">Sales & hire requests</h2>
+          </div>
+          <p style="margin:0 0 12px;font-size:14px;color:var(--wwc-text-muted);font-weight:600">Incoming product orders and hire requests from buyers.</p>
+          <a href="sales.html" class="wwc-btn wwc-btn-sm wwc-btn-primary">View sales dashboard</a>
         </div>`;
     } catch (e) {
       WWC_UTIL.showError(root, e.message, load);

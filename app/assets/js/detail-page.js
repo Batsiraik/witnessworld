@@ -96,10 +96,11 @@
         ${sellerHtml(L.seller)}
         ${reviewsHtml(L.review_summary, L.reviews)}
       </div>
-      <div class="wwc-detail-cta">
+      <div class="wwc-detail-cta wwc-detail-cta-row">
         ${isOwner
           ? `<a href="create-listing.html?id=${L.id}" class="wwc-btn wwc-btn-purple">Edit listing</a>`
-          : '<button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message seller</button>'}
+          : `<button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message seller</button>
+             ${L.listing_type === 'service' ? `<a href="request.html?subject_type=listing&subject_id=${L.id}" class="wwc-btn wwc-btn-primary">Hire</a>` : ''}`}
       </div>`;
     document.title = `${L.title} · Witness World Connect`;
   }
@@ -120,7 +121,7 @@
         ${sellerHtml(P.seller)}
         ${reviewsHtml(P.review_summary, P.reviews)}
       </div>
-      <div class="wwc-detail-cta">
+      <div class="wwc-detail-cta wwc-detail-cta-row">
         <button type="button" class="wwc-btn wwc-btn-outline" id="cart-btn">Add to cart</button>
         <button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message seller</button>
       </div>`;
@@ -130,7 +131,7 @@
   function renderStore(S) {
     subjectType = 'store';
     peerUserId = S.seller?.user_id || 0;
-    const products = (S.products || []).map((p) => WWC_CARDS.productCard(p)).join('');
+    const products = (S.products || []).map((p) => storeProductRow(p)).join('');
     root.innerHTML = `
       <div class="wwc-detail-hero">${heroMedia(S.banner_url || S.logo_url, 'storefront-outline')}
         <div class="wwc-detail-hero-actions"><button type="button" class="wwc-icon-btn" id="fav-btn"><ion-icon name="heart${heartOn ? '' : '-outline'}"></ion-icon></button></div>
@@ -143,8 +144,22 @@
         ${reviewsHtml(S.review_summary, S.reviews)}
         ${products ? `<div class="wwc-detail-section"><h3>Products</h3><div class="wwc-product-grid">${products}</div></div>` : ''}
       </div>
-      <div class="wwc-detail-cta"><button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message store</button></div>`;
+      <div class="wwc-detail-cta wwc-detail-cta-row"><button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message store</button></div>`;
     document.title = `${S.name} · Witness World Connect`;
+  }
+
+  function storeProductRow(p) {
+    const src = resolveMediaUrl(p.image_url);
+    const price = `${p.currency || 'USD'} ${p.price_amount || ''}`;
+    return `
+      <div class="wwc-store-product-row" data-product-id="${p.id}">
+        ${src ? `<img src="${WWC_UTIL.escapeAttr(src)}" alt="" />` : '<div style="width:56px;height:56px;border-radius:10px;background:var(--wwc-primary-soft)"></div>'}
+        <div class="wwc-store-product-row-info">
+          <a href="product.html?id=${p.id}">${escapeHtml(p.name || 'Product')}</a>
+          <p style="margin:4px 0 0;font-size:13px;font-weight:700;color:var(--wwc-primary-dark)">${escapeHtml(price)}</p>
+        </div>
+        <button type="button" class="wwc-btn wwc-btn-sm wwc-btn-outline" data-add-cart>Add to cart</button>
+      </div>`;
   }
 
   function renderDirectory(E) {
@@ -169,7 +184,10 @@
         ${links.length ? `<div class="wwc-detail-section"><h3>Contact</h3><div class="wwc-contact-links">${links.join('')}</div></div>` : ''}
         ${reviewsHtml(E.review_summary, E.reviews)}
       </div>
-      <div class="wwc-detail-cta"><button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message business</button></div>`;
+      <div class="wwc-detail-cta wwc-detail-cta-row">
+        <button type="button" class="wwc-btn wwc-btn-purple" id="contact-btn">Message business</button>
+        <a href="request.html?subject_type=directory_entry&subject_id=${E.id}" class="wwc-btn wwc-btn-primary">Hire</a>
+      </div>`;
     document.title = `${E.business_name} · Witness World Connect`;
   }
 
@@ -212,11 +230,22 @@
     }
   }
 
-  function addToCart(name, price, currency, productId, storeId) {
-    const cart = JSON.parse(localStorage.getItem('wwc_cart') || '[]');
-    cart.push({ product_id: productId, store_id: storeId, name, price, currency, qty: 1 });
-    localStorage.setItem('wwc_cart', JSON.stringify(cart));
-    alert('Added to cart.');
+  function addToCart(product) {
+    if (!window.WWC_CART) {
+      alert('Cart is loading — please try again.');
+      return;
+    }
+    const ok = WWC_CART.addProduct({
+      subject_id: product.id,
+      title: product.name || 'Product',
+      image_url: product.image_url || null,
+      unit_price: product.price_amount != null ? String(product.price_amount) : null,
+      currency: product.currency || 'USD',
+    });
+    if (ok) {
+      const go = confirm('Added to cart. View cart now?');
+      if (go) window.location.href = 'cart.html';
+    }
   }
 
   function bindActions(item, isOwner) {
@@ -224,8 +253,15 @@
     if (!isOwner) {
       document.getElementById('contact-btn')?.addEventListener('click', openChat);
     }
-    document.getElementById('cart-btn')?.addEventListener('click', () => {
-      addToCart(item.name, item.price_amount, item.currency, item.id, item.store_id);
+    document.getElementById('cart-btn')?.addEventListener('click', () => addToCart(item));
+    document.querySelectorAll('[data-add-cart]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const row = btn.closest('[data-product-id]');
+        const pid = Number(row?.getAttribute('data-product-id'));
+        const p = (item.products || []).find((x) => x.id === pid);
+        if (p) addToCart(p);
+      });
     });
   }
 

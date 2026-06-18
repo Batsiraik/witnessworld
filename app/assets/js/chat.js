@@ -1,11 +1,26 @@
 (function () {
   const cid = WWC_UTIL.qsInt('conversation_id');
+  const peerUserId = WWC_UTIL.qsInt('peer_user_id');
+  const peerUsername = WWC_UTIL.qs('username') || '';
+  const contextKey = WWC_UTIL.qs('context_key') || '';
   const { apiGet, apiPost } = WWC_API;
   const { escapeHtml, formatTime } = WWC_UTIL;
   const list = document.getElementById('chat-messages');
   const form = document.getElementById('chat-form');
   const input = document.getElementById('chat-input');
   const title = document.getElementById('chat-title');
+  const hireBtn = document.getElementById('chat-hire-btn');
+
+  const showHire = peerUserId > 0 && !/^product:/.test(contextKey) && !/^store:/.test(contextKey);
+
+  if (hireBtn) {
+    if (showHire) {
+      hireBtn.hidden = false;
+      hireBtn.href = `hire.html?peer_user_id=${peerUserId}&username=${encodeURIComponent(peerUsername)}`;
+    } else {
+      hireBtn.hidden = true;
+    }
+  }
 
   async function load() {
     if (!cid) {
@@ -17,6 +32,7 @@
       const msgs = Array.isArray(data.messages) ? data.messages : [];
       if (data.peer?.label) title.textContent = data.peer.label;
       else if (data.peer?.username) title.textContent = data.peer.username;
+      else if (peerUsername) title.textContent = peerUsername;
       list.innerHTML = msgs.length
         ? msgs.map((m) => `
             <div style="display:flex;${m.mine ? 'justify-content:flex-end' : 'justify-content:flex-start'};margin-bottom:10px">

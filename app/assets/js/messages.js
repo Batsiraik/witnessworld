@@ -20,7 +20,7 @@
     const unread = (r.unread_count || 0) > 0;
     const unreadCount = r.unread_count || 0;
     return `
-      <a href="chat.html?conversation_id=${r.id}" class="wwc-inbox-thread${unread ? ' is-unread' : ''}">
+      <a href="chat.html?conversation_id=${r.id}&peer_user_id=${peer.user_id || 0}&username=${encodeURIComponent(peer.username || '')}&context_key=${encodeURIComponent(r.context_key || '')}" class="wwc-inbox-thread${unread ? ' is-unread' : ''}">
         ${avatarHtml(peer)}
         <div class="wwc-inbox-body">
           <div class="wwc-inbox-top">
