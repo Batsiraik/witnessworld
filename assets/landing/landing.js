@@ -23,6 +23,10 @@
 
   const heroVideo = document.getElementById('hero-video');
   if (heroVideo) {
+    heroVideo.muted = true;
+    heroVideo.defaultMuted = true;
+    heroVideo.volume = 0;
+
     const showVideo = () => {
       heroVideo.style.opacity = '1';
     };
