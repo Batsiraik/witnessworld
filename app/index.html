@@ -80,6 +80,10 @@
   <script src="assets/js/page-init.js"></script>
   <script src="assets/js/shell.js"></script>
   <script src="assets/js/home.js"></script>
-  <script>WWC_PAGE.init({});</script>
+  <script>
+    WWC_PAGE.init({
+      onReady: () => window.WWC_HOME?.init?.(),
+    });
+  </script>
 </body>
 </html>

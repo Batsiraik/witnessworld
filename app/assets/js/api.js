@@ -41,6 +41,11 @@
     const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
     try {
       return await fetch(url, { ...init, signal: ctrl.signal });
+    } catch (e) {
+      if (e && typeof e === 'object' && e.name === 'AbortError') {
+        throw new Error('Request timed out. Check your connection and try again.');
+      }
+      throw e;
     } finally {
       clearTimeout(t);
     }
@@ -61,7 +66,7 @@
     }
   }
 
-  async function apiGet(path, authOptional) {
+  async function apiGet(path, authOptional, retried) {
     const headers = {
       Accept: 'application/json',
       'User-Agent': APP_USER_AGENT,
@@ -73,6 +78,10 @@
     const res = await fetchWithTimeout(`${API_BASE}/${path}`, { headers });
     const data = await parseJson(res);
     if (!res.ok) {
+      if (authOptional && !retried && res.status === 401 && token) {
+        setToken(null);
+        return apiGet(path, authOptional, true);
+      }
       const msg =
         typeof data.error === 'string'
           ? data.error
@@ -87,7 +96,7 @@
     return data;
   }
 
-  async function apiPost(path, body, authOptional) {
+  async function apiPost(path, body, authOptional, retried) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -104,6 +113,10 @@
     });
     const data = await parseJson(res);
     if (!res.ok) {
+      if (authOptional && !retried && res.status === 401 && token) {
+        setToken(null);
+        return apiPost(path, body, authOptional, true);
+      }
       const msg = typeof data.error === 'string' ? data.error : 'Request failed.';
       const err = new Error(msg);
       err.status = res.status;

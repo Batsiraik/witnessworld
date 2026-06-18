@@ -13,7 +13,7 @@ function witnessworld_pdo(): PDO
 
     $config = require __DIR__ . '/config.php';
     $dsn = sprintf(
-        'mysql:host=%s;dbname=%s;charset=%s',
+        'mysql:host=%s;dbname=%s;charset=%s;connect_timeout=5',
         $config['db_host'],
         $config['db_name'],
         $config['db_charset']

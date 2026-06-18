@@ -14,7 +14,8 @@ $tok = ww_bearer_token();
 $pdo = witnessworld_pdo();
 $user = $tok ? ww_user_from_token($pdo, $tok) : null;
 if ($tok && !$user) {
-    ww_json(['ok' => false, 'error' => 'Unauthorized'], 401);
+    // Stale token on a public feed — ignore and load as guest.
+    $user = null;
 }
 
 $viewerId = $user ? (int) $user['id'] : 0;

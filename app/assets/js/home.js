@@ -322,6 +322,7 @@
   }
 
   async function loadFeed() {
+    if (!els.feed) return;
     els.feed.innerHTML = '<div class="wwc-loading"><div class="wwc-spinner" role="status" aria-label="Loading"></div></div>';
     try {
       const qs = new URLSearchParams({ section: 'all', limit: String(HOME_RAIL_LIMIT) });
@@ -341,6 +342,7 @@
   }
 
   function renderCategories() {
+    if (!els.cats) return;
     els.cats.innerHTML = TOP_CATEGORIES.map(
       (c) => `
       <a href="${c.href}" class="wwc-cat">
@@ -353,7 +355,7 @@
   }
 
   function updateLocLabel() {
-    els.locLabel.textContent = locationLabel();
+    if (els.locLabel) els.locLabel.textContent = locationLabel();
   }
 
   function openModal(el) {
@@ -430,27 +432,27 @@
   }
 
   function bindEvents() {
-    els.locBtn.addEventListener('click', () => {
-      renderCountryList(els.locCountrySearch.value);
+    els.locBtn?.addEventListener('click', () => {
+      renderCountryList(els.locCountrySearch?.value || '');
       renderStateList();
       openModal(els.locModal);
     });
 
-    els.locCountrySearch.addEventListener('input', () => renderCountryList(els.locCountrySearch.value));
+    els.locCountrySearch?.addEventListener('input', () => renderCountryList(els.locCountrySearch.value));
 
-    els.locModal.addEventListener('click', (e) => {
+    els.locModal?.addEventListener('click', (e) => {
       if (e.target === els.locModal) closeModal(els.locModal);
     });
-    els.locModal.querySelector('[data-loc-all]')?.addEventListener('click', () => {
+    els.locModal?.querySelector('[data-loc-all]')?.addEventListener('click', () => {
       country = null;
       usState = null;
       updateLocLabel();
       closeModal(els.locModal);
-      loadFeed();
+      void loadFeed();
     });
-    els.locModal.querySelector('[data-loc-done]')?.addEventListener('click', () => closeModal(els.locModal));
+    els.locModal?.querySelector('[data-loc-done]')?.addEventListener('click', () => closeModal(els.locModal));
 
-    els.search.addEventListener('keydown', (e) => {
+    els.search?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const q = els.search.value.trim();
         if (q) window.location.href = `services.html?q=${encodeURIComponent(q)}`;
@@ -459,16 +461,22 @@
   }
 
   async function init() {
-    renderCategories();
-    updateLocLabel();
-    bindEvents();
-    await loadLocations();
-    await loadFeed();
+    if (!els.feed) return;
+    try {
+      renderCategories();
+      updateLocLabel();
+      bindEvents();
+      void loadLocations();
+      await loadFeed();
+    } catch (e) {
+      els.feed.innerHTML = `
+        <div>
+          <p class="wwc-feed-error">${escapeHtml(e.message || 'Could not load home page')}</p>
+          <button type="button" class="wwc-feed-retry" id="feed-retry">Try again</button>
+        </div>`;
+      document.getElementById('feed-retry')?.addEventListener('click', () => void init());
+    }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  window.WWC_HOME = { init };
 })();
