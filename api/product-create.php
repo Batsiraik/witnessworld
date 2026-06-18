@@ -142,6 +142,9 @@ try {
     throw $e;
 }
 
+require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+ww_admin_alert_pending_product($pdo, $id, $name, $userId);
+
 ww_json([
     'ok' => true,
     'product_id' => $id,

@@ -23,6 +23,7 @@ import { SubjectReviewCTA } from '../components/SubjectReviewCTA';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
+import { openOfficeEditListing } from '../navigation/openOfficeEditListing';
 import { colors } from '../theme/colors';
 import { resolvePublicMediaUrl } from '../utils/mediaUrl';
 
@@ -274,8 +275,9 @@ export function ListingDetailScreen({ navigation, route }: Props) {
   const videoUri = resolvePublicMediaUrl(listing.video_url?.trim() || '') ?? '';
   const hasVideo = videoUri.length > 0;
   const isOwn = listing.seller.user_id === myId;
-  const showFooter = !isOwn;
-  const footerPad = showFooter ? 140 + insets.bottom : 24 + insets.bottom;
+  const showContactFooter = !isOwn;
+  const showOwnerFooter = isOwn && !isGuest;
+  const footerPad = showContactFooter || showOwnerFooter ? 140 + insets.bottom : 24 + insets.bottom;
   const postedAgo = formatRelativeTime(listing.created_at);
   const typeLabel = humanizeListingType(listing.listing_type);
   const skillTag = softSkills[0];
@@ -441,12 +443,26 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           </Pressable>
 
           {isOwn ? (
-            <Text style={styles.ownNote}>This is your listing.</Text>
+            <Text style={styles.ownNote}>
+              This is your listing. Tap Edit below to change photos or details, or open My office from
+              Profile to manage all your ads.
+            </Text>
           ) : null}
         </View>
       </ScrollView>
 
-      {showFooter ? (
+      {showOwnerFooter ? (
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <Pressable
+            onPress={() => openOfficeEditListing(navigation, listing.id)}
+            style={({ pressed }) => [styles.ctaPrimary, pressed && styles.pressed]}
+            accessibilityLabel="Edit listing"
+          >
+            <Ionicons name="create-outline" size={22} color={colors.white} />
+            <Text style={styles.ctaPrimaryText}>Edit listing</Text>
+          </Pressable>
+        </View>
+      ) : showContactFooter ? (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <Pressable
             onPress={() => void contact()}

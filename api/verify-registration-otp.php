@@ -41,7 +41,11 @@ $up = $pdo->prepare(
 );
 $up->execute(['pending_verification', (int) $user['id']]);
 
-$token = ww_issue_user_token($pdo, (int) $user['id']);
+$userId = (int) $user['id'];
+require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+ww_admin_alert_pending_user_verification($pdo, $userId);
+
+$token = ww_issue_user_token($pdo, $userId);
 $st2 = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
 $st2->execute([(int) $user['id']]);
 $fresh = $st2->fetch(PDO::FETCH_ASSOC);

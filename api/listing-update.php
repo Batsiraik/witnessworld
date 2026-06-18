@@ -227,4 +227,9 @@ $msg = $demote
     ? 'Your changes were saved and the listing was sent for review again.'
     : 'Your listing was updated.';
 
+if ($demote) {
+    require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+    ww_admin_alert_pending_listing($pdo, $listingId, $title, $listingType, $userId, true);
+}
+
 ww_json(['ok' => true, 'message' => $msg, 'moderation_status' => $newStatus]);

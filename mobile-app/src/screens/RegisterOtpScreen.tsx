@@ -82,7 +82,7 @@ export function RegisterOtpScreen({ navigation, route }: Props) {
               <PrimaryButton label="Continue" onPress={submit} loading={loading} />
             </AuthFormCard>
             <Text style={authFormStyles.footerNote}>
-              Did not get the email? Check spam, or go back and confirm your address is correct.
+              Didn&apos;t receive the code? Check your spam or junk folder — it is sometimes filtered there. You can also go back and confirm your email address is correct.
             </Text>
           </ScrollView>
         </KeyboardAvoidingView>

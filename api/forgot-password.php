@@ -22,7 +22,7 @@ $st->execute([$email]);
 $user = $st->fetch(PDO::FETCH_ASSOC);
 
 // Always same response to avoid email enumeration
-$generic = ['ok' => true, 'message' => 'If an account exists for that email, we sent a reset code.'];
+$generic = ['ok' => true, 'message' => 'If an account exists for that email, we sent a reset code. If it doesn\'t arrive within a few minutes, check your spam or junk folder.'];
 
 if (!$user) {
     ww_json($generic);

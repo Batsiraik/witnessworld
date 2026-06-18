@@ -35,6 +35,7 @@ $hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollAccountManager
     <div class="sm:col-span-2">
       <dt class="text-slate-500">1. Individual or Business</dt>
       <dd class="font-medium text-slate-900"><?= htmlspecialchars(ww_poll_account_type_label($pollAcct), ENT_QUOTES, 'UTF-8') ?></dd>
+      <dd class="mt-1 text-xs text-slate-500">Primary focus at signup — members can use personal and business features on one account.</dd>
     </div>
     <div class="sm:col-span-2">
       <dt class="text-slate-500">2. Account manager support</dt>

@@ -35,7 +35,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $otp = ww_admin_issue_login_otp($pdo, $pendingId);
         $sent = ww_admin_send_login_otp_email($pdo, $adminRow, $otp);
         $info = $sent
-            ? 'A new code was sent to your email.'
+            ? 'A new code was sent to your email. If it doesn\'t arrive within a few minutes, check your spam or junk folder.'
             : 'Could not send email — check SMTP settings. Contact your super admin.';
     } else {
         $code = preg_replace('/\D/', '', (string) ($_POST['otp'] ?? ''));
@@ -76,6 +76,7 @@ $pageTitle = 'Verify sign-in';
   <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
     <h1 class="text-xl font-bold text-slate-900">Check your email</h1>
     <p class="mt-1 text-sm text-slate-500">We sent a 6-digit code to <span class="font-semibold text-slate-700"><?= htmlspecialchars($maskedEmail, ENT_QUOTES, 'UTF-8') ?></span>.</p>
+    <p class="mt-2 text-xs text-slate-500 leading-relaxed">If you don&apos;t see the email within a few minutes, please check your <strong class="font-semibold text-slate-600">spam or junk</strong> folder — your code may have been filtered there.</p>
     <?php if ($error !== ''): ?>
       <p class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>

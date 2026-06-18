@@ -173,4 +173,9 @@ $msg = $demote
     ? 'Changes saved. Your store was sent for review again.'
     : 'Store updated.';
 
+if ($demote) {
+    require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+    ww_admin_alert_pending_store($pdo, $storeId, $name, $userId, true);
+}
+
 ww_json(['ok' => true, 'message' => $msg, 'moderation_status' => $newStatus]);

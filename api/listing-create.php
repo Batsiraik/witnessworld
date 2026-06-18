@@ -196,6 +196,9 @@ try {
 
 $newId = (int) $pdo->lastInsertId();
 
+require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+ww_admin_alert_pending_listing($pdo, $newId, $title, $listingType, $userId);
+
 ww_json([
     'ok' => true,
     'listing_id' => $newId,

@@ -94,7 +94,7 @@ require __DIR__ . '/partials/shell_open.php';
         placeholder="support@witnessworldconnect.com"
         required
       />
-      <p class="mt-1 text-xs text-slate-500">Stored as <code class="rounded bg-slate-100 px-1">settings.support_email</code> — change anytime; the app picks it up on next refresh.</p>
+      <p class="mt-1 text-xs text-slate-500">Stored as <code class="rounded bg-slate-100 px-1">settings.support_email</code> — shown in the app and receives admin alerts (new listings, signups, reports).</p>
     </div>
     <div>
       <label class="text-xs font-semibold text-slate-600">Support user ID (app account)</label>

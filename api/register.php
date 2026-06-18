@@ -162,7 +162,7 @@ $sent = $mailer->send($email, $first . ' ' . $last, $subject, $tpl['html'], $tpl
 
 $out = [
     'ok' => true,
-    'message' => 'We sent a verification code to your email.',
+    'message' => 'We sent a verification code to your email. If it doesn\'t arrive within a few minutes, check your spam or junk folder.',
     'email' => $email,
     'email_sent' => $sent,
 ];

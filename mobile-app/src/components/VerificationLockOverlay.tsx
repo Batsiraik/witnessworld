@@ -1,5 +1,5 @@
 import { BlurView } from 'expo-blur';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
   Modal,
@@ -51,12 +51,12 @@ const ACCOUNT_OPTIONS: RadioOption<RegistrationAccountType>[] = [
   {
     value: 'individual',
     label: 'Individual',
-    hint: 'Browse listings, shop the marketplace, find housing/services, and connect',
+    hint: 'Browse, shop, connect, and use personal features — you can still add listings or a business later',
   },
   {
     value: 'business',
     label: 'Business',
-    hint: 'Promote your business, create a storefront, list professional services, and network',
+    hint: 'Promote a business, storefront, or services — you can still browse and shop personally too',
   },
 ];
 
@@ -98,6 +98,16 @@ const REFERRAL_OPTIONS: { value: RegistrationReferralSource; label: string }[] =
   { value: 'wwc_team_member', label: 'WWC Team Member' },
   { value: 'other', label: 'Other' },
 ];
+
+function pollFieldsFromUser(user: PollUser | null | undefined) {
+  return {
+    accountType: user?.registration_account_type ?? null,
+    primaryPurpose: user?.registration_primary_purpose ?? null,
+    wantsAccountManager: user?.registration_wants_account_manager ?? null,
+    referralSource: user?.registration_referral_source ?? null,
+    referralOther: user?.registration_referral_other ?? '',
+  };
+}
 
 function PollRadioGroup<V extends string>({
   options,
@@ -154,9 +164,19 @@ export function VerificationLockOverlay({
   const [referralOther, setReferralOther] = useState('');
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const lastHydratedPollKeyRef = useRef<string | null>(null);
 
   const pollDone = isRegistrationPollComplete(user ?? null);
   const showPoll = variant === 'pending' && !pollDone && onSubmitPoll;
+
+  /** Stable key so background me.php refreshes do not wipe in-progress poll answers. */
+  const serverPollKey = useMemo(() => JSON.stringify(pollFieldsFromUser(user)), [
+    user?.registration_account_type,
+    user?.registration_primary_purpose,
+    user?.registration_wants_account_manager,
+    user?.registration_referral_source,
+    user?.registration_referral_other,
+  ]);
 
   useEffect(() => {
     if (!visible) return undefined;
@@ -169,12 +189,17 @@ export function VerificationLockOverlay({
       setSubmitError('');
       return;
     }
-    setAccountType(user?.registration_account_type ?? null);
-    setPrimaryPurpose(user?.registration_primary_purpose ?? null);
-    setWantsAccountManager(user?.registration_wants_account_manager ?? null);
-    setReferralSource(user?.registration_referral_source ?? null);
-    setReferralOther(user?.registration_referral_other ?? '');
-  }, [visible, user]);
+    if (lastHydratedPollKeyRef.current === serverPollKey) {
+      return;
+    }
+    lastHydratedPollKeyRef.current = serverPollKey;
+    const fields = pollFieldsFromUser(user);
+    setAccountType(fields.accountType);
+    setPrimaryPurpose(fields.primaryPurpose);
+    setWantsAccountManager(fields.wantsAccountManager);
+    setReferralSource(fields.referralSource);
+    setReferralOther(fields.referralOther);
+  }, [visible, serverPollKey, user]);
 
   const title = variant === 'declined' ? 'Account not approved' : 'Waiting for verification';
   const body =
@@ -236,6 +261,16 @@ export function VerificationLockOverlay({
             >
               <Text style={styles.title}>{title}</Text>
 
+              {variant === 'pending' ? (
+                <View style={styles.statusNotice}>
+                  <Text style={styles.statusNoticeText}>
+                    Your account is being reviewed. This screen will stay open until you're
+                    approved, then it will close on its own — you don't need to restart or
+                    force-quit the app.
+                  </Text>
+                </View>
+              ) : null}
+
               {showPoll ? (
                 <>
                   <Text style={styles.pollIntro}>
@@ -244,9 +279,18 @@ export function VerificationLockOverlay({
 
                   <Text style={styles.pollSection}>1. Account type</Text>
                   <Text style={styles.pollQuestion}>
-                    Are you registering as an Individual or a Business?{' '}
+                    Are you registering mainly as an Individual or a Business?{' '}
                     <Text style={styles.required}>*</Text>
                   </Text>
+                  <View style={styles.pollInfoBox}>
+                    <Text style={styles.pollInfoText}>
+                      <Text style={styles.pollInfoBold}>You can do both on one account.</Text> This
+                      question helps us understand your main focus for review — it does not lock you
+                      in. You can browse and shop as an individual and also list services, open a
+                      store, or add a business directory entry on the same account. If your needs
+                      change later, you can update this with our team after your account is approved.
+                    </Text>
+                  </View>
                   <PollRadioGroup
                     options={ACCOUNT_OPTIONS}
                     selected={accountType}
@@ -335,9 +379,11 @@ export function VerificationLockOverlay({
                       <Text style={styles.supportChatBtnText}>Message Customer Support</Text>
                     </Pressable>
                   ) : null}
-                  <Text style={styles.hint}>
-                    This message will clear once an admin has verified your account.
-                  </Text>
+                  {variant === 'pending' ? (
+                    <Text style={styles.hint}>
+                      We'll notify you here as soon as your account is approved.
+                    </Text>
+                  ) : null}
                 </>
               )}
             </ScrollView>
@@ -376,6 +422,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
   },
+  statusNotice: {
+    marginBottom: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(31, 170, 242, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(31, 170, 242, 0.28)',
+  },
+  statusNoticeText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.text,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
   pollIntro: {
     fontSize: 13,
     lineHeight: 19,
@@ -398,6 +460,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
+  },
+  pollInfoBox: {
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(31, 170, 242, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(31, 170, 242, 0.22)',
+  },
+  pollInfoText: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  pollInfoBold: {
+    fontWeight: '800',
+    color: colors.text,
   },
   required: { color: colors.danger },
   optionRow: {

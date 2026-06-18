@@ -86,8 +86,12 @@ try {
         'INSERT INTO content_reports (reporter_user_id, subject_type, subject_id, reason) VALUES (?,?,?,?)'
     );
     $ins->execute([$userId, $subjectType, $subjectId, $reason]);
+    $reportId = (int) $pdo->lastInsertId();
 } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Could not submit report. See database/README.md (content_reports).'], 500);
 }
+
+require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+ww_admin_alert_content_report($pdo, $reportId, $subjectType, $subjectId, $reason);
 
 ww_json(['ok' => true]);

@@ -286,7 +286,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
           return;
         }
         const lt = String(L.listing_type || 'classified');
-        setListingType(lt === 'service' ? 'service' : 'classified');
+        setListingType(lt === 'service' ? 'service' : lt === 'community' ? 'community' : 'classified');
         setTitle(String(L.title || ''));
         setDescription(String(L.description || ''));
         const catId = typeof L.category_id === 'number' ? L.category_id : null;
@@ -361,8 +361,8 @@ export function CreateListingScreen({ navigation, route }: Props) {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: forMain && Platform.OS === 'ios',
-        aspect: forMain && Platform.OS === 'ios' ? [4, 3] : undefined,
+        allowsEditing: forMain,
+        aspect: forMain ? [4, 3] : undefined,
         quality: 0.85,
         allowsMultipleSelection: !forMain && Platform.OS !== 'web',
         selectionLimit: forMain ? 1 : 12 - portfolioUrls.length,
@@ -635,6 +635,15 @@ export function CreateListingScreen({ navigation, route }: Props) {
             ) : null}
 
             <Text style={styles.label}>Main image *</Text>
+            <View style={styles.photoGuideBox}>
+              <Text style={styles.photoGuideTitle}>Photo tips</Text>
+              <Text style={styles.photoGuideText}>
+                Use a clear, well-lit photo in landscape 4:3 (for example 1200×900 px). Max 5 MB per
+                image · JPEG, PNG, or WebP. Very tall or wide photos may look cropped in the feed —
+                you can adjust the crop when you pick your main photo.
+                {editId ? ' Tap the image below to replace it.' : ''}
+              </Text>
+            </View>
             <MediaUploadZone
               variant="hero"
               onPress={() => void pickAndUploadImage(true)}
@@ -947,6 +956,29 @@ const styles = StyleSheet.create({
   },
   freeLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
   micro: { marginTop: 6, fontSize: 12, color: colors.textMuted, fontWeight: '500' },
+  photoGuideBox: {
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(31, 170, 242, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(31, 170, 242, 0.22)',
+  },
+  photoGuideTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  photoGuideText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
   uploadPctText: {
     marginTop: 8,
     fontSize: 14,

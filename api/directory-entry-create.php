@@ -188,6 +188,9 @@ try {
     throw $e;
 }
 
+require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+ww_admin_alert_pending_directory($pdo, $id, $businessName, $userId);
+
 ww_json([
     'ok' => true,
     'entry_id' => $id,

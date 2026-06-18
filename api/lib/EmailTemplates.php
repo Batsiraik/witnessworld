@@ -16,6 +16,10 @@ final class EmailTemplates
     private const MUTED = '#5C6B7A';
     private const BG = '#EEF6FC';
 
+    /** Shown on every OTP email (registration, password reset, admin sign-in). */
+    private const OTP_SPAM_HINT =
+        'If you don\'t see this email in your inbox within a few minutes, please check your spam or junk folder — your code may have been filtered there.';
+
     /**
      * @return array{html: string, text: string}
      */
@@ -76,7 +80,7 @@ final class EmailTemplates
             footerLine: 'This code expires in 15 minutes. If you did not try to sign in, you can ignore this email.',
             logoUrl: $logoUrl
         );
-        $text = "Hi {$name},\n\nYour admin sign-in code is: {$otp}\n\nThis code expires in 15 minutes.\n\n— Witness World Connect Admin\n";
+        $text = "Hi {$name},\n\nYour admin sign-in code is: {$otp}\n\nThis code expires in 15 minutes.\n\n" . self::OTP_SPAM_HINT . "\n\n— Witness World Connect Admin\n";
         return ['html' => $html, 'text' => $text];
     }
 
@@ -148,7 +152,8 @@ final class EmailTemplates
                     <span style="font-family:\'SF Mono\',Consolas,Monaco,monospace;font-size:36px;font-weight:800;letter-spacing:0.35em;color:' . $navy . ';">' . $otp . '</span>
                   </td>
                 </tr>
-              </table>';
+              </table>
+              <p style="margin:20px 0 0;font-size:13px;line-height:1.55;color:' . $muted . ';">' . self::e(self::OTP_SPAM_HINT) . '</p>';
         return self::shell($preheader, $heading, $intro, $otpBlock, $footerLine, $logoUrl);
     }
 
@@ -231,11 +236,50 @@ final class EmailTemplates
 
     private static function plainRegistration(string $firstName, string $otp): string
     {
-        return "Hi {$firstName},\n\nYour Witness World Connect verification code is: {$otp}\n\nThis code expires in 30 minutes.\n\nIf you didn’t sign up, you can ignore this email.\n\n— Witness World Connect\n";
+        return "Hi {$firstName},\n\nYour Witness World Connect verification code is: {$otp}\n\nThis code expires in 30 minutes.\n\n" . self::OTP_SPAM_HINT . "\n\nIf you didn’t sign up, you can ignore this email.\n\n— Witness World Connect\n";
     }
 
     private static function plainPasswordReset(string $firstName, string $otp): string
     {
-        return "Hi {$firstName},\n\nYour Witness World Connect password reset code is: {$otp}\n\nThis code expires in 30 minutes.\n\nIf you didn’t request this, you can ignore this email.\n\n— Witness World Connect\n";
+        return "Hi {$firstName},\n\nYour Witness World Connect password reset code is: {$otp}\n\nThis code expires in 30 minutes.\n\n" . self::OTP_SPAM_HINT . "\n\nIf you didn’t request this, you can ignore this email.\n\n— Witness World Connect\n";
+    }
+
+    /**
+     * Admin moderation / review alert (new submission, signup, report, etc.).
+     *
+     * @return array{html: string, text: string}
+     */
+    public static function adminActionRequired(
+        string $heading,
+        string $intro,
+        string $detailHtml,
+        string $ctaLabel,
+        string $ctaUrl,
+        ?string $logoUrl = null
+    ): array {
+        $brand = self::BRAND;
+        $brandDark = self::BRAND_DARK;
+        $navy = self::NAVY;
+        $muted = self::MUTED;
+        $safeUrl = self::e($ctaUrl);
+        $main = '
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f9ff;border-radius:16px;border:1px solid rgba(31,170,242,0.28);">
+                <tr><td style="padding:16px 20px;font-size:14px;line-height:1.55;color:' . $navy . ';">' . $detailHtml . '</td></tr>
+              </table>
+              <p style="margin:24px 0 0;text-align:center;">
+                <a href="' . $safeUrl . '" style="display:inline-block;background:' . $brand . ';color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">' . self::e($ctaLabel) . '</a>
+              </p>
+              <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:' . $muted . ';text-align:center;word-break:break-all;">' . $safeUrl . '</p>';
+
+        $html = self::shell(
+            preheader: strip_tags($heading . ' — ' . $intro),
+            heading: $heading,
+            intro: $intro,
+            mainHtml: $main,
+            footerLine: 'You are receiving this because you are an administrator for Witness World Connect.',
+            logoUrl: $logoUrl
+        );
+        $text = strip_tags($heading) . "\n\n" . strip_tags($intro) . "\n\n" . strip_tags($detailHtml) . "\n\nOpen: {$ctaUrl}\n\n— Witness World Connect Admin\n";
+        return ['html' => $html, 'text' => $text];
     }
 }

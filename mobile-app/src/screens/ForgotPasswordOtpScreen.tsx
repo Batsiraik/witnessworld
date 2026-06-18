@@ -68,6 +68,9 @@ export function ForgotPasswordOtpScreen({ navigation, route }: Props) {
                 />
                 <PrimaryButton label="Continue" onPress={submit} loading={loading} />
               </GlassCard>
+              <Text style={styles.spamNote}>
+                Didn&apos;t receive the code? Check your spam or junk folder — it is sometimes filtered there.
+              </Text>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -94,4 +97,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   email: { color: colors.text, fontWeight: '700' },
+  spamNote: {
+    marginTop: 16,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
 });

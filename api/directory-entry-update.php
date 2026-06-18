@@ -221,4 +221,9 @@ try {
 
 $msg = $demote ? 'Saved and sent for review again.' : 'Listing updated.';
 
+if ($demote) {
+    require_once __DIR__ . '/../admin/includes/admin_notifications.php';
+    ww_admin_alert_pending_directory($pdo, $entryId, $businessName, $userId, true);
+}
+
 ww_json(['ok' => true, 'message' => $msg, 'moderation_status' => $newStatus]);

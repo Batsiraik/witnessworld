@@ -79,6 +79,8 @@ function statusColor(s: string): string {
   }
 }
 
+const POST_TAB_HINT = 'Tap the + button on the bottom navigation';
+
 export function MyOfficeScreen({ navigation }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
   const [stores, setStores] = useState<StoreRow[]>([]);
@@ -189,7 +191,9 @@ export function MyOfficeScreen({ navigation }: Props) {
     <View style={styles.storeBlock}>
       <Text style={styles.sectionLabel}>Business directory</Text>
       {dirEntries.length === 0 ? (
-        <Text style={styles.storeEmpty}>Add a listing from Home → Become a service provider.</Text>
+        <Text style={styles.storeEmpty}>
+          No business directory listing yet. {POST_TAB_HINT}, then choose Business directory.
+        </Text>
       ) : (
         dirEntries.map((d) => {
           const canDelete = d.moderation_status === 'pending_approval' || d.moderation_status === 'rejected';
@@ -250,7 +254,9 @@ export function MyOfficeScreen({ navigation }: Props) {
     <View style={styles.storeBlock}>
       <Text style={[styles.sectionLabel, styles.sectionSpacer]}>Your stores</Text>
       {stores.length === 0 ? (
-        <Text style={styles.storeEmpty}>Open a store from Home → Become a service provider.</Text>
+        <Text style={styles.storeEmpty}>
+          No store yet. {POST_TAB_HINT}, then choose Online store.
+        </Text>
       ) : (
         stores.map((s) => {
           const approved = s.moderation_status === 'approved';
@@ -342,8 +348,8 @@ export function MyOfficeScreen({ navigation }: Props) {
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <View style={styles.topPad}>
           <Text style={styles.lead}>
-            Manage directory listings, stores, products, and classified ads. Edits to approved directory entries or
-            stores send them back for admin review.
+            Manage directory listings, stores, and classified ads here. Tap Edit on any listing to
+            update photos, text, or pricing — changes to approved items go back for admin review.
           </Text>
         </View>
         {loading && !refreshing ? (
@@ -365,7 +371,9 @@ export function MyOfficeScreen({ navigation }: Props) {
             }
             ListHeaderComponent={listHeader}
             ListEmptyComponent={
-              <Text style={styles.empty}>No listings yet. Post one from Home → Become a service provider.</Text>
+              <Text style={styles.empty}>
+                No listings yet. {POST_TAB_HINT} to post a marketplace, service, or community ad.
+              </Text>
             }
             renderItem={({ item }) => {
               const thumbUrl = item.display_image_url || item.media_url;
