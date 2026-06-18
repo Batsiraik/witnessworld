@@ -186,7 +186,7 @@
       return;
     }
     try {
-      const data = await apiGet('user-notifications.php');
+      const data = await apiGet('user-notifications.php', true);
       const n = typeof data.unread_count === 'number' ? data.unread_count : 0;
       badges.forEach((el) => {
         el.hidden = n <= 0;

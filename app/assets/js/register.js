@@ -3,7 +3,43 @@
   const form = document.getElementById('reg-form');
   const otpBox = document.getElementById('otp-box');
   const errEl = document.getElementById('reg-error');
+  const memberType = document.getElementById('member_type');
+  const baptismInput = document.getElementById('baptism_date');
+  const baptismLabel = document.getElementById('baptism_label');
+  const dobInput = document.getElementById('dob');
   let regEmail = '';
+
+  const SIGNUP_MIN_AGE = 16;
+
+  function isoDate(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  function setupDateLimits() {
+    const today = new Date();
+    const maxDob = new Date(today);
+    maxDob.setFullYear(maxDob.getFullYear() - SIGNUP_MIN_AGE);
+    if (dobInput) {
+      dobInput.max = isoDate(maxDob);
+      dobInput.min = '1920-01-01';
+    }
+    if (baptismInput) baptismInput.max = isoDate(today);
+  }
+
+  function isUnbaptized(role) {
+    return role.trim().toLowerCase() === 'unbaptized publisher';
+  }
+
+  function updateBaptismField() {
+    const unbaptized = isUnbaptized(memberType?.value || '');
+    if (baptismLabel) {
+      baptismLabel.textContent = unbaptized ? 'Baptism date (optional)' : 'Baptism date';
+    }
+    if (baptismInput) {
+      baptismInput.required = !unbaptized;
+      if (unbaptized) baptismInput.removeAttribute('required');
+    }
+  }
 
   async function loadCountries() {
     try {
@@ -19,12 +55,20 @@
     errEl.hidden = false;
   }
 
+  memberType?.addEventListener('change', updateBaptismField);
+
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     errEl.hidden = true;
     const btn = document.getElementById('reg-btn');
     btn.disabled = true;
     try {
+      const role = memberType.value;
+      const baptismVal = baptismInput?.value.trim() || '';
+      if (!isUnbaptized(role) && !baptismVal) {
+        showErr('Baptism date is required for your member type.');
+        return;
+      }
       const data = await apiPost('register.php', {
         email: document.getElementById('email').value.trim(),
         password: document.getElementById('password').value,
@@ -32,9 +76,9 @@
         last_name: document.getElementById('last_name').value.trim(),
         username: document.getElementById('username').value.trim(),
         phone: document.getElementById('phone').value.trim(),
-        date_of_birth: document.getElementById('dob').value.trim(),
-        member_type: document.getElementById('member_type').value,
-        baptism_date: document.getElementById('baptism_date').value.trim() || null,
+        date_of_birth: dobInput.value,
+        member_type: role,
+        baptism_date: baptismVal || null,
         congregation: document.getElementById('congregation').value.trim(),
         registration_country_code: document.getElementById('country').value,
         membership_plan: 'free',
@@ -69,5 +113,11 @@
     }
   });
 
-  WWC_PAGE.init({ onReady: loadCountries });
+  WWC_PAGE.init({
+    onReady: async () => {
+      setupDateLimits();
+      updateBaptismField();
+      await loadCountries();
+    },
+  });
 })();

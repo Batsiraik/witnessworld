@@ -4,6 +4,8 @@
 (function (global) {
   const { apiGet, getToken, setToken } = global.WWC_API;
 
+  const BOOTSTRAP_TIMEOUT_MS = 12_000;
+
   let currentUser = null;
   let subscription = null;
   const listeners = new Set();
@@ -23,6 +25,15 @@
     });
   }
 
+  function bootstrapWithTimeout() {
+    return Promise.race([
+      apiGet('me.php'),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Session check timed out.')), BOOTSTRAP_TIMEOUT_MS);
+      }),
+    ]);
+  }
+
   async function bootstrap() {
     const token = getToken();
     if (!token) {
@@ -32,7 +43,7 @@
       return null;
     }
     try {
-      const data = await apiGet('me.php');
+      const data = await bootstrapWithTimeout();
       if (data.ok && data.user) {
         currentUser = data.user;
         subscription = data.subscription ?? null;
@@ -40,7 +51,7 @@
         return currentUser;
       }
     } catch (e) {
-      if (e.status === 401) setToken(null);
+      if (e && typeof e === 'object' && e.status === 401) setToken(null);
     }
     currentUser = null;
     subscription = null;
