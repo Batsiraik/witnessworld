@@ -113,12 +113,63 @@
     }
   });
 
+  const resendBtn = document.getElementById('otp-resend-btn');
+  let resendCooldown = 0;
+  let resendTimer = null;
+
+  function updateResendBtn() {
+    if (!resendBtn) return;
+    if (resendCooldown > 0) {
+      resendBtn.disabled = true;
+      resendBtn.textContent = `Resend code in ${resendCooldown}s`;
+    } else {
+      resendBtn.disabled = false;
+      resendBtn.textContent = 'Resend code';
+    }
+  }
+
+  resendBtn?.addEventListener('click', async () => {
+    if (!regEmail || resendCooldown > 0) return;
+    errEl.hidden = true;
+    resendBtn.disabled = true;
+    resendBtn.textContent = 'Sending…';
+    try {
+      await apiPost('resend-registration-otp.php', { email: regEmail }, true);
+      resendCooldown = 45;
+      updateResendBtn();
+      resendTimer = setInterval(() => {
+        resendCooldown -= 1;
+        updateResendBtn();
+        if (resendCooldown <= 0 && resendTimer) {
+          clearInterval(resendTimer);
+          resendTimer = null;
+        }
+      }, 1000);
+    } catch (ex) {
+      const wait = ex.data?.retry_after;
+      if (typeof wait === 'number' && wait > 0) {
+        resendCooldown = wait;
+        updateResendBtn();
+      }
+      showErr(ex.message || 'Could not resend code.');
+    }
+  });
+
   WWC_PAGE.init({
     authPage: true,
     onReady: async () => {
       setupDateLimits();
       updateBaptismField();
       await loadCountries();
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('step') === 'otp') {
+        regEmail = sessionStorage.getItem('wwc_pending_otp_email') || '';
+        if (regEmail && form && otpBox) {
+          form.hidden = true;
+          otpBox.hidden = false;
+          document.getElementById('otp-email').textContent = regEmail;
+        }
+      }
     },
   });
 })();

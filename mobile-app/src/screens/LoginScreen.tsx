@@ -18,7 +18,7 @@ import { AuthFormIntro } from '../components/AuthFormIntro';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { apiPost, setStoredToken } from '../api/client';
+import { apiPost, ApiError, setStoredToken } from '../api/client';
 import type { RootStackParamList } from '../navigation/types';
 import { authFormStyles } from '../theme/authForm';
 import { colors } from '../theme/colors';
@@ -50,6 +50,11 @@ export function LoginScreen({ navigation }: Props) {
       await setStoredToken(token);
       navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
     } catch (e) {
+      if (e instanceof ApiError && e.code === 'pending_otp') {
+        navigation.navigate('RegisterOtp', { email: email.trim().toLowerCase() });
+        Alert.alert('Verify your email', e.message);
+        return;
+      }
       Alert.alert('Log in', e instanceof Error ? e.message : 'Login failed');
     } finally {
       setLoading(false);

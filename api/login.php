@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
+require_once __DIR__ . '/lib/registration_otp.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -30,10 +31,16 @@ if (strtolower(trim((string) ($user['email'] ?? ''))) !== $email) {
 }
 
 if (($user['status'] ?? '') === 'pending_otp') {
+    $send = ww_send_registration_otp($pdo, $user, true);
+    $message = $send['ok']
+        ? 'We sent a verification code to your email. Enter it below to finish signing up.'
+        : ($send['error'] ?? 'Please verify your email first using the code we sent you.');
     ww_json([
         'ok' => false,
-        'error' => 'Please verify your email first using the code we sent you.',
+        'error' => $message,
         'code' => 'pending_otp',
+        'otp_sent' => $send['ok'] === true,
+        'retry_after' => $send['retry_after'] ?? null,
     ], 403);
 }
 

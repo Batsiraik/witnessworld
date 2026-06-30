@@ -23,25 +23,6 @@
           "other_platform_oauth_client": []
         }
       }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:883798523298:android:f116904e9e84c6097b86fb",
-        "android_client_info": {
-          "package_name": "com.witnessworldconnect.wwc"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBeDub-l7gQgTwL1G97mXCUPDpwwGjD9io"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
     }
   ],
   "configuration_version": "1"

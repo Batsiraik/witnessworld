@@ -96,6 +96,11 @@
           const ret = new URLSearchParams(window.location.search).get('return');
           window.location.replace(ret || 'index.html');
         } catch (ex) {
+          if (ex.data?.code === 'pending_otp') {
+            sessionStorage.setItem('wwc_pending_otp_email', document.getElementById('email').value.trim().toLowerCase());
+            window.location.href = 'register.html?step=otp';
+            return;
+          }
           errEl.textContent = ex.message || 'Sign in failed.';
           errEl.hidden = false;
         } finally {

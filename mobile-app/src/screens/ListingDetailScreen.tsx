@@ -1,7 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFavoriteStatus, apiGet, apiOpenConversation, apiSubmitReport, apiToggleFavorite } from '../api/client';
+import { FullScreenImageViewer } from '../components/FullScreenImageViewer';
 import { GradientBackground } from '../components/GradientBackground';
 import { ListingVideoBlock } from '../components/ListingVideoBlock';
 import { RemoteImage } from '../components/RemoteImage';
@@ -92,6 +93,8 @@ export function ListingDetailScreen({ navigation, route }: Props) {
   const [contactBusy, setContactBusy] = useState(false);
   const [heartOn, setHeartOn] = useState(false);
   const [heartBusy, setHeartBusy] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   const loadedIdRef = useRef<number | null>(null);
 
@@ -164,6 +167,27 @@ export function ListingDetailScreen({ navigation, route }: Props) {
       cancelled = true;
     };
   }, [id, isGuest]);
+
+  const galleryUrls = useMemo(() => {
+    if (!listing) return [];
+    const urls: string[] = [];
+    if (listing.media_url?.trim()) urls.push(listing.media_url.trim());
+    const portfolio = Array.isArray(listing.portfolio_urls) ? listing.portfolio_urls : [];
+    for (const u of portfolio) {
+      const trimmed = u?.trim();
+      if (trimmed && !urls.includes(trimmed)) urls.push(trimmed);
+    }
+    return urls;
+  }, [listing]);
+
+  const openGallery = useCallback(
+    (url: string) => {
+      const i = galleryUrls.indexOf(url.trim());
+      setGalleryIndex(i >= 0 ? i : 0);
+      setGalleryOpen(true);
+    },
+    [galleryUrls]
+  );
 
   const refreshListing = useCallback(async () => {
     try {
@@ -290,7 +314,13 @@ export function ListingDetailScreen({ navigation, route }: Props) {
       >
         <View style={styles.heroWrap}>
           {listing.media_url ? (
-            <RemoteImage url={listing.media_url} style={styles.hero} contentFit="cover" />
+            <Pressable
+              onPress={() => openGallery(listing.media_url)}
+              accessibilityRole="imagebutton"
+              accessibilityLabel="View listing photo full screen"
+            >
+              <RemoteImage url={listing.media_url} style={styles.hero} contentFit="cover" />
+            </Pressable>
           ) : (
             <View style={[styles.hero, styles.heroPh]}>
               <Ionicons name="image-outline" size={48} color={colors.textMuted} />
@@ -415,7 +445,14 @@ export function ListingDetailScreen({ navigation, route }: Props) {
               <Text style={styles.subHeading}>Portfolio</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.portRow}>
                 {portfolioUrls.map((u) => (
-                  <RemoteImage key={u} url={u} style={styles.portImg} contentFit="cover" />
+                  <Pressable
+                    key={u}
+                    onPress={() => openGallery(u)}
+                    accessibilityRole="imagebutton"
+                    accessibilityLabel="View portfolio photo full screen"
+                  >
+                    <RemoteImage url={u} style={styles.portImg} contentFit="cover" />
+                  </Pressable>
                 ))}
               </ScrollView>
             </>
@@ -515,6 +552,13 @@ export function ListingDetailScreen({ navigation, route }: Props) {
           </View>
         </View>
       ) : null}
+
+      <FullScreenImageViewer
+        visible={galleryOpen}
+        urls={galleryUrls}
+        initialIndex={galleryIndex}
+        onClose={() => setGalleryOpen(false)}
+      />
 
       <ReportSheet
         visible={reportOpen}

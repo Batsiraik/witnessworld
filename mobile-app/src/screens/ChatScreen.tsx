@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -62,20 +62,20 @@ export function ChatScreen({ route, navigation }: Props) {
   const hireDisplay = peerUsername?.trim() || peerName?.trim() || 'member';
   const hireLabel = `Hire (${hireDisplay})`;
 
-  const openPeerProfile = () => {
+  const openPeerProfile = useCallback(() => {
     if (peerUserId == null || peerUserId <= 0) return;
     navigation.navigate('MemberPublicProfile', {
       userId: peerUserId,
       listingViaHomeTab: true,
     });
-  };
+  }, [navigation, peerUserId]);
 
-  const openHire = () => {
+  const openHire = useCallback(() => {
     stackNavigation.navigate('HireComingSoon', {
       username: peerUsername?.trim() || peerName?.trim(),
       peerUserId,
     });
-  };
+  }, [stackNavigation, peerUsername, peerName, peerUserId]);
   const headerHeight = useHeaderHeight();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,21 +199,70 @@ export function ChatScreen({ route, navigation }: Props) {
 
   const canSend = text.trim().length > 0 || pendingFile != null;
 
-  const hideConversation = async (action: 'archive' | 'delete') => {
+  const hideConversation = useCallback(async (action: 'archive' | 'delete') => {
     try {
       await apiConversationAction(conversationId, action);
       navigation.goBack();
     } catch (e) {
       Alert.alert('Conversation', e instanceof Error ? e.message : 'Could not update conversation');
     }
-  };
+  }, [conversationId, navigation]);
 
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     Alert.alert('Delete conversation?', 'This hides the thread for you. New messages can make it appear again.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => void hideConversation('delete') },
     ]);
-  };
+  }, [hideConversation]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={headerActionStyles.row}>
+          {peerUserId != null && peerUserId > 0 ? (
+            <Pressable
+              onPress={openPeerProfile}
+              style={headerActionStyles.btn}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="View profile"
+            >
+              <Ionicons name="person-outline" size={22} color={colors.text} />
+            </Pressable>
+          ) : null}
+          {showHire ? (
+            <Pressable
+              onPress={openHire}
+              style={headerActionStyles.btn}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={hireLabel}
+            >
+              <Ionicons name="briefcase-outline" size={22} color={colors.text} />
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={() => void hideConversation('archive')}
+            style={headerActionStyles.btn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Archive conversation"
+          >
+            <Ionicons name="archive-outline" size={22} color={colors.text} />
+          </Pressable>
+          <Pressable
+            onPress={confirmDelete}
+            style={headerActionStyles.btn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Delete conversation"
+          >
+            <Ionicons name="trash-outline" size={22} color={colors.danger} />
+          </Pressable>
+        </View>
+      ),
+    });
+  }, [navigation, peerUserId, showHire, hireLabel, openPeerProfile, openHire, hideConversation, confirmDelete]);
 
   const keyboardVerticalOffset = headerHeight;
 
@@ -306,36 +355,6 @@ export function ChatScreen({ route, navigation }: Props) {
               )}
             />
           )}
-          <View style={styles.peerBar}>
-            {peerUserId != null && peerUserId > 0 ? (
-              <PrimaryButton
-                label="View profile"
-                variant="outline"
-                onPress={openPeerProfile}
-                style={styles.peerBarBtn}
-              />
-            ) : null}
-            {showHire ? (
-              <PrimaryButton
-                label={hireLabel}
-                variant="outline"
-                onPress={openHire}
-                style={styles.peerBarBtn}
-              />
-            ) : null}
-            <PrimaryButton
-              label="Archive"
-              variant="outline"
-              onPress={() => void hideConversation('archive')}
-              style={styles.peerBarBtn}
-            />
-            <PrimaryButton
-              label="Delete"
-              variant="outline"
-              onPress={confirmDelete}
-              style={styles.peerBarBtn}
-            />
-          </View>
           <View style={styles.composer}>
             {pendingFile ? (
               <View style={styles.pendingRow}>
@@ -383,22 +402,15 @@ export function ChatScreen({ route, navigation }: Props) {
   );
 }
 
+const headerActionStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 2, marginRight: 4 },
+  btn: { padding: 6, justifyContent: 'center', alignItems: 'center' },
+});
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16, paddingBottom: 8 },
-  peerBar: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 4,
-    backgroundColor: colors.white,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(11,18,32,0.08)',
-  },
-  peerBarBtn: { flexGrow: 1, flexBasis: '45%', minWidth: 120 },
   bubble: {
     maxWidth: '88%',
     padding: 12,

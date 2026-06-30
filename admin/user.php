@@ -33,6 +33,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 ww_admin_notify_account_review($pdo, $id, 'decline');
             }
         }
+    } elseif ($action === 'resend_otp') {
+        require_once __DIR__ . '/../api/lib/registration_otp.php';
+        $st = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+        $st->execute([$id]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row && ($row['status'] ?? '') === 'pending_otp') {
+            ww_send_registration_otp($pdo, $row, false);
+        }
+    } elseif ($action === 'verify_email') {
+        require_once __DIR__ . '/../api/lib/registration_otp.php';
+        ww_bypass_registration_otp($pdo, $id);
     } elseif ($action === 'suspend') {
         ww_admin_suspend_user($pdo, $id);
     } elseif ($action === 'delete') {

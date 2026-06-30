@@ -53,7 +53,7 @@ export function NotificationsModal({ visible, onClose, onUnreadChange }: Props) 
     setLoading(true);
     setErr(null);
     try {
-      const res = await apiGet('user-notifications.php');
+      const res = await apiGet('user-notifications.php', true);
       if (!res.ok) {
         throw new Error(typeof res.error === 'string' ? res.error : 'Could not load notifications');
       }
@@ -72,9 +72,13 @@ export function NotificationsModal({ visible, onClose, onUnreadChange }: Props) 
   useEffect(() => {
     if (!visible) return;
     void load();
-    void apiPost('user-notifications-read.php', {}).then(() => {
-      onUnreadChange?.(0);
-    });
+    void apiPost('user-notifications-read.php', {}, true)
+      .then(() => {
+        onUnreadChange?.(0);
+      })
+      .catch(() => {
+        /* non-fatal — badge may stay until next successful fetch */
+      });
   }, [visible, load, onUnreadChange]);
 
   return (

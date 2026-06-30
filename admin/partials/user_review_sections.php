@@ -53,6 +53,20 @@ $hasPollAnswers = $pollAcct !== '' || $pollPurpose !== '' || $pollAccountManager
 </div>
 <?php endif; ?>
 
+<?php if (($user['status'] ?? '') === 'pending_otp'): ?>
+  <div class="rounded-2xl border border-sky-200 bg-sky-50/80 p-5 shadow-panel">
+    <p class="text-sm font-semibold text-sky-900">This user has not verified their email yet.</p>
+    <p class="mt-1 text-xs text-sky-800">They are stuck on the registration OTP step. You can resend the code or bypass email verification so they enter the normal approval queue.</p>
+    <form method="post" action="user.php?id=<?= (int) $id ?>" class="mt-4 flex flex-wrap gap-3">
+      <?php if ($formReturn !== ''): ?>
+        <input type="hidden" name="return" value="<?= htmlspecialchars($formReturn, ENT_QUOTES, 'UTF-8') ?>" />
+      <?php endif; ?>
+      <button type="submit" name="action" value="resend_otp" class="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90">Resend OTP email</button>
+      <button type="submit" name="action" value="verify_email" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700" onclick="return confirm('Bypass email OTP for this user? They will move to Pending verification and still need your approve/decline decision.');">Bypass email OTP</button>
+    </form>
+  </div>
+<?php endif; ?>
+
 <?php if (($user['status'] ?? '') === 'pending_verification'): ?>
   <div class="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-panel">
     <p class="text-sm font-semibold text-amber-900">This user is waiting for your decision.</p>

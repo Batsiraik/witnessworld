@@ -31,6 +31,18 @@ export async function setStoredToken(token: string | null): Promise<void> {
 
 type Json = Record<string, unknown>;
 
+export class ApiError extends Error {
+  readonly code?: string;
+  readonly retryAfter?: number;
+
+  constructor(message: string, opts?: { code?: string; retryAfter?: number }) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = opts?.code;
+    this.retryAfter = opts?.retryAfter;
+  }
+}
+
 export type UploadProgressHandler = (percent: number) => void;
 
 /** True when the body looks like HTML (404 pages, PHP fatals, etc.) rather than JSON. */
@@ -129,7 +141,10 @@ export async function apiPost(path: string, body: Json, withAuth = false): Promi
   const data = await parseJson(res);
   if (!res.ok) {
     const err = (data.error as string) || `Request failed (${res.status})`;
-    throw new Error(err);
+    throw new ApiError(err, {
+      code: typeof data.code === 'string' ? data.code : undefined,
+      retryAfter: typeof data.retry_after === 'number' ? data.retry_after : undefined,
+    });
   }
   return data;
 }
@@ -144,7 +159,10 @@ export async function apiGet(path: string, withAuth = true): Promise<Json> {
   const data = await parseJson(res);
   if (!res.ok) {
     const err = (data.error as string) || `Request failed (${res.status})`;
-    throw new Error(err);
+    throw new ApiError(err, {
+      code: typeof data.code === 'string' ? data.code : undefined,
+      retryAfter: typeof data.retry_after === 'number' ? data.retry_after : undefined,
+    });
   }
   return data;
 }

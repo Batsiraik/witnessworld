@@ -46,7 +46,7 @@
     }
     return `
       <a href="app/login.html" class="wwc-btn wwc-btn-ghost">Sign in</a>
-      <a href="app/register.html" class="wwc-btn wwc-btn-primary">Join WWC</a>`;
+      <a href="app/register.html" class="wwc-btn wwc-btn-primary">Join</a>`;
   }
 
   function mobileAuthHtml(loggedIn) {
@@ -55,7 +55,7 @@
     }
     return `
       <a href="app/login.html">Sign in</a>
-      <a href="app/register.html" style="color:#1590d4">Join WWC</a>`;
+      <a href="app/register.html" style="color:#1590d4">Join</a>`;
   }
 
   function updateAuthUI() {

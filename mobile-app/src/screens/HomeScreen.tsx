@@ -578,16 +578,26 @@ export function HomeScreen({ navigation }: Props) {
           }
         >
           <View style={styles.topRow} accessibilityRole="header">
-            <View style={styles.brandBlock}>
+            <View style={styles.topRowEnd}>
+              <Pressable
+                accessibilityLabel="Profile"
+                onPress={() => navigation.getParent()?.navigate('ProfileTab')}
+                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="person-outline" size={22} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <View style={styles.topRowLogoSlot} pointerEvents="none">
               <Image
                 source={HOME_LOGO}
-                style={styles.brandLogo}
-                resizeMode="contain"
+                style={styles.headerLogo}
+                resizeMode="cover"
                 accessibilityLabel="WWC logo"
               />
-              <Text style={styles.brandTitle}>WWC</Text>
             </View>
-            <View style={styles.headerActions}>
+
+            <View style={[styles.topRowEnd, styles.topRowEndRight]}>
               <Pressable
                 accessibilityLabel="Favorites"
                 onPress={() => {
@@ -597,9 +607,9 @@ export function HomeScreen({ navigation }: Props) {
                   }
                   navigation.navigate('Favorites');
                 }}
-                style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
               >
-                <Ionicons name="heart-outline" size={22} color={colors.text} />
+                <Ionicons name="heart" size={22} color={colors.danger} />
               </Pressable>
               <Pressable
                 accessibilityLabel="My orders"
@@ -610,7 +620,7 @@ export function HomeScreen({ navigation }: Props) {
                   }
                   navigation.navigate('Orders');
                 }}
-                style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
               >
                 <Ionicons name="receipt-outline" size={22} color={colors.text} />
               </Pressable>
@@ -623,7 +633,7 @@ export function HomeScreen({ navigation }: Props) {
                   }
                   setNotifModal(true);
                 }}
-                style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
               >
                 <Ionicons name="notifications-outline" size={22} color={colors.text} />
                 {notifUnread > 0 ? <View style={styles.bellBadge} /> : null}
@@ -632,7 +642,7 @@ export function HomeScreen({ navigation }: Props) {
           </View>
 
           <Pressable onPress={() => setLocModal(true)} style={({ pressed }) => [styles.locLine, pressed && styles.pressed]}>
-            <Ionicons name="location-outline" size={16} color={colors.primaryDark} />
+            <Ionicons name="location" size={16} color={colors.primaryDark} />
             <Text style={styles.locLineText}>{locationLabel}</Text>
           </Pressable>
 
@@ -812,30 +822,33 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 4,
+    minHeight: 48,
+    position: 'relative',
   },
-  brandBlock: {
+  topRowEnd: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingRight: 12,
-    minHeight: 44,
+    gap: 6,
+    zIndex: 1,
   },
-  brandLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  topRowEndRight: { justifyContent: 'flex-end' },
+  topRowLogoSlot: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 0,
+  },
+  headerLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: 'rgba(11, 18, 32, 0.08)',
   },
-  brandTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: 2,
-  },
-  bellBtn: {
+  headerIconBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -856,7 +869,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.white,
   },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   locLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   locLineText: { fontSize: 14, fontWeight: '600', color: colors.textMuted, flex: 1 },
   searchPill: {
