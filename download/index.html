@@ -3,62 +3,213 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow" />
-    <link rel="icon" href="../favicon.png" type="image/png" sizes="any" />
+  <title>Download Witness World Connect</title>
+  <meta name="description" content="Download Witness World Connect for Android or iPhone. Find trusted services and businesses in our community." />
+  <link rel="canonical" href="https://witnessworldconnect.com/download/" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" href="../favicon.png" type="image/png" sizes="any" />
   <link rel="apple-touch-icon" href="../favicon.png" />
-  <title>Download · Witness World Connect (Beta)</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --blue: #1faaf2;
+      --dark-blue: #0b1220;
+      --accent: #1590d4;
+      --light: #f8fcff;
+      --text: #0b1220;
+      --muted: #5c6b7a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--light);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e5eaf3;
+      padding: 18px 0;
+    }
+    .container { width: min(720px, 92%); margin: auto; }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--dark-blue);
+      letter-spacing: -0.3px;
+      text-decoration: none;
+    }
+    .logo img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(11, 18, 32, 0.1);
+    }
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 0;
+    }
+    .card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(11, 18, 32, 0.08);
+      border: 1px solid #e5eaf3;
+      width: 100%;
+    }
+    h1 {
+      font-size: clamp(28px, 5vw, 38px);
+      color: var(--dark-blue);
+      margin-bottom: 12px;
+      line-height: 1.15;
+    }
+    p {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #dbe7ff;
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .stores {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .store-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .store-label {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--dark-blue);
+      letter-spacing: 0.01em;
+    }
+    .store-btn {
+      display: inline-block;
+      background: var(--blue);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px 22px;
+      border-radius: 14px;
+      transition: background 0.2s;
+    }
+    .store-btn:hover { background: var(--accent); }
+    .store-btn.secondary {
+      background: var(--dark-blue);
+    }
+    .store-btn.secondary:hover { background: #1a2438; }
+    #fallback { display: none; }
+    noscript .spinner-wrap { display: none; }
+    noscript #fallback { display: block; }
+    .back {
+      display: inline-block;
+      margin-top: 28px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .back:hover { text-decoration: underline; }
+  </style>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: '#1FAAF2',
-            brandDark: '#1590d4',
-            brandSoft: '#F8FCFF',
-          },
-          fontFamily: {
-            sans: ['Montserrat', 'system-ui', 'sans-serif'],
-          },
-        },
-      },
-    };
+    (function () {
+      var PLAY = "https://play.google.com/store/apps/details?id=com.witnessworldconnect.app&pcampaignid=web_share";
+      var APPLE = "https://apps.apple.com/zw/app/witness-world-connect/id6761303647";
+      var ua = navigator.userAgent || navigator.vendor || window.opera || "";
+
+      if (/android/i.test(ua)) {
+        window.location.replace(PLAY);
+        return;
+      }
+      if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+        window.location.replace(APPLE);
+        return;
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("redirecting").style.display = "none";
+        document.getElementById("fallback").style.display = "block";
+      });
+    })();
   </script>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-white via-brandSoft to-[#eef9fd] font-sans text-slate-800 antialiased">
-
-  <main class="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12 sm:px-6">
-    <div class="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-lg shadow-brand/5">
-      <p class="text-xs font-bold uppercase tracking-wide text-brand">Beta testers</p>
-      <h1 class="mt-2 text-2xl font-extrabold text-slate-900">Witness World Connect</h1>
-      <p class="mt-3 text-sm leading-6 text-slate-600">
-        Install the Android beta build on your phone. This is for testing only — not the public Play Store release.
-      </p>
-
-      <a
-        href="witness-world-connect.apk"
-        download="witness-world-connect.apk"
-        class="mt-8 flex w-full items-center justify-center gap-3 rounded-xl bg-brand px-5 py-4 text-center text-base font-bold text-white shadow-md transition hover:bg-brandDark"
-      >
-        Download Android app (.apk)
+<body>
+  <header>
+    <div class="container">
+      <a href="/" class="logo">
+        <img src="../app/assets/images/logo.jpg" alt="" width="40" height="40" />
+        Witness World Connect
       </a>
-
-      <p class="mt-6 text-xs leading-5 text-slate-500">
-        <strong class="text-slate-700">After download:</strong> open the file, allow install from this source if Android asks,
-        then open the app and sign in or register.
-      </p>
-      <p class="mt-3 text-xs leading-5 text-slate-500">
-        Need help? Email
-        <a href="mailto:support@witnessworldconnect.com" class="font-semibold text-brand hover:underline">support@witnessworldconnect.com</a>
-      </p>
     </div>
+  </header>
 
-    <p class="mt-6 text-center text-xs text-slate-500">
-      <a href="/" class="font-semibold text-brand hover:underline">← Back to website</a>
-    </p>
+  <main>
+    <div class="container">
+      <div class="card">
+        <div id="redirecting">
+          <div class="spinner"></div>
+          <h1>Taking you to the app store…</h1>
+          <p>Redirecting you to download Witness World Connect on your device.</p>
+        </div>
+
+        <div id="fallback">
+          <h1>Download Witness World Connect</h1>
+          <p>Tap the button that matches your phone.</p>
+          <div class="stores">
+            <div class="store-option">
+              <span class="store-label">For Android</span>
+              <a class="store-btn" href="https://play.google.com/store/apps/details?id=com.witnessworldconnect.app&pcampaignid=web_share">Get it on Google Play</a>
+            </div>
+            <div class="store-option">
+              <span class="store-label">For iPhones</span>
+              <a class="store-btn secondary" href="https://apps.apple.com/zw/app/witness-world-connect/id6761303647">Download on App Store</a>
+            </div>
+          </div>
+          <a class="back" href="/">← Back to website</a>
+        </div>
+
+        <noscript>
+          <h1>Download Witness World Connect</h1>
+          <p>Tap the button that matches your phone.</p>
+          <div class="stores">
+            <div class="store-option">
+              <span class="store-label">For Android</span>
+              <a class="store-btn" href="https://play.google.com/store/apps/details?id=com.witnessworldconnect.app&pcampaignid=web_share">Get it on Google Play</a>
+            </div>
+            <div class="store-option">
+              <span class="store-label">For iPhones</span>
+              <a class="store-btn secondary" href="https://apps.apple.com/zw/app/witness-world-connect/id6761303647">Download on App Store</a>
+            </div>
+          </div>
+          <a class="back" href="/">← Back to website</a>
+        </noscript>
+      </div>
+    </div>
   </main>
 </body>
 </html>
