@@ -87,6 +87,26 @@ final class EmailTemplates
     /**
      * @return array{html: string, text: string}
      */
+    public static function adminPasswordResetOtp(string $name, string $otp, ?string $logoUrl = null): array
+    {
+        $safeName = self::e($name);
+        $safeOtp = self::e($otp);
+        $html = self::layout(
+            preheader: "Your admin password reset code is {$safeOtp}. Expires in 15 minutes.",
+            heading: 'Reset admin password',
+            intro: "Hi {$safeName}, we received a request to reset your Witness World Connect admin password. Use this code to continue:",
+            otp: $safeOtp,
+            otpLabel: 'Your reset code',
+            footerLine: 'This code expires in 15 minutes. If you did not request a password reset, you can safely ignore this email.',
+            logoUrl: $logoUrl
+        );
+        $text = "Hi {$name},\n\nYour admin password reset code is: {$otp}\n\nThis code expires in 15 minutes.\n\n" . self::OTP_SPAM_HINT . "\n\n— Witness World Connect Admin\n";
+        return ['html' => $html, 'text' => $text];
+    }
+
+    /**
+     * @return array{html: string, text: string}
+     */
     public static function adminWelcomeCredentials(
         string $name,
         string $username,

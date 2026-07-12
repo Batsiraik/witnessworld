@@ -347,11 +347,24 @@ function ww_admin_create_product(PDO $pdo, int $storeId, int $adminId, array $da
 
     $name = trim((string) ($data['name'] ?? ''));
     $imageUrl = trim((string) ($data['image_url'] ?? ''));
-    if ($name === '' || $imageUrl === '') {
-        return ['ok' => false, 'error' => 'Product name and photo are required'];
+    $galleryRaw = $data['gallery_urls'] ?? ($data['gallery_urls_json'] ?? null);
+    $galleryIn = null;
+    if (is_array($galleryRaw)) {
+        $galleryIn = $galleryRaw;
+    } elseif (is_string($galleryRaw) && trim($galleryRaw) !== '') {
+        $decoded = json_decode($galleryRaw, true);
+        if (is_array($decoded)) {
+            $galleryIn = $decoded;
+        }
     }
-    if (!ww_store_product_image_url_belongs_to_store($imageUrl, $storeId)) {
-        return ['ok' => false, 'error' => 'Upload the product photo using the form'];
+
+    if ($name === '') {
+        return ['ok' => false, 'error' => 'Product name is required'];
+    }
+
+    $norm = ww_normalize_product_images($galleryIn, $imageUrl, $storeId);
+    if (!$norm['ok']) {
+        return ['ok' => false, 'error' => $norm['error'] ?? 'Product photo is required'];
     }
 
     if (!is_numeric($data['price_amount'] ?? '')) {
@@ -364,26 +377,97 @@ function ww_admin_create_product(PDO $pdo, int $storeId, int $adminId, array $da
     }
 
     $now = date('Y-m-d H:i:s');
-    $pdo->prepare(
-        'INSERT INTO store_products (
-            store_id, name, description, specifications, price_amount, currency, image_url,
-            moderation_status, reviewed_at, reviewed_by_admin_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    )->execute([
-        $storeId,
-        $name,
-        trim((string) ($data['description'] ?? '')) ?: null,
-        trim((string) ($data['specifications'] ?? '')) ?: null,
-        $priceStr,
-        $currency,
-        $imageUrl,
-        'approved',
-        $now,
-        $adminId > 0 ? $adminId : null,
-    ]);
+    try {
+        $pdo->prepare(
+            'INSERT INTO store_products (
+                store_id, name, description, specifications, price_amount, currency, image_url, gallery_urls_json,
+                moderation_status, reviewed_at, reviewed_by_admin_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([
+            $storeId,
+            $name,
+            trim((string) ($data['description'] ?? '')) ?: null,
+            trim((string) ($data['specifications'] ?? '')) ?: null,
+            $priceStr,
+            $currency,
+            (string) $norm['image_url'],
+            $norm['gallery_json'] ?? null,
+            'approved',
+            $now,
+            $adminId > 0 ? $adminId : null,
+        ]);
+    } catch (Throwable $e) {
+        if (!str_contains($e->getMessage(), 'Unknown column')) {
+            throw $e;
+        }
+        $pdo->prepare(
+            'INSERT INTO store_products (
+                store_id, name, description, specifications, price_amount, currency, image_url,
+                moderation_status, reviewed_at, reviewed_by_admin_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([
+            $storeId,
+            $name,
+            trim((string) ($data['description'] ?? '')) ?: null,
+            trim((string) ($data['specifications'] ?? '')) ?: null,
+            $priceStr,
+            $currency,
+            (string) $norm['image_url'],
+            'approved',
+            $now,
+            $adminId > 0 ? $adminId : null,
+        ]);
+    }
 
     $id = (int) $pdo->lastInsertId();
     return ['ok' => true, 'id' => $id, 'edit_url' => 'store_product.php?id=' . $id];
+}
+
+/**
+ * Admin updates product gallery (and optionally keeps product approved).
+ *
+ * @return array{ok:bool, error?:string}
+ */
+function ww_admin_update_product_gallery(PDO $pdo, int $productId, array $data): array
+{
+    $st = $pdo->prepare(
+        'SELECT p.*, s.id AS store_id FROM store_products p INNER JOIN stores s ON s.id = p.store_id WHERE p.id = ? LIMIT 1'
+    );
+    $st->execute([$productId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return ['ok' => false, 'error' => 'Product not found'];
+    }
+    $storeId = (int) $row['store_id'];
+    $imageUrl = trim((string) ($data['image_url'] ?? ($row['image_url'] ?? '')));
+    $galleryRaw = $data['gallery_urls'] ?? ($data['gallery_urls_json'] ?? null);
+    $galleryIn = null;
+    if (is_array($galleryRaw)) {
+        $galleryIn = $galleryRaw;
+    } elseif (is_string($galleryRaw) && trim($galleryRaw) !== '') {
+        $decoded = json_decode($galleryRaw, true);
+        if (is_array($decoded)) {
+            $galleryIn = $decoded;
+        }
+    }
+    $norm = ww_normalize_product_images($galleryIn, $imageUrl, $storeId);
+    if (!$norm['ok']) {
+        return ['ok' => false, 'error' => $norm['error'] ?? 'Invalid images'];
+    }
+    try {
+        $pdo->prepare(
+            'UPDATE store_products SET image_url = ?, gallery_urls_json = ? WHERE id = ?'
+        )->execute([(string) $norm['image_url'], $norm['gallery_json'] ?? null, $productId]);
+    } catch (Throwable $e) {
+        if (str_contains($e->getMessage(), 'Unknown column')) {
+            $pdo->prepare('UPDATE store_products SET image_url = ? WHERE id = ?')
+                ->execute([(string) $norm['image_url'], $productId]);
+        } else {
+            throw $e;
+        }
+    }
+
+    return ['ok' => true];
 }
 
 /**

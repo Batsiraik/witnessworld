@@ -55,6 +55,8 @@ CREATE TABLE admins (
   email VARCHAR(255) NOT NULL,
   login_otp VARCHAR(6) NULL,
   login_otp_expires_at DATETIME NULL,
+  password_reset_otp VARCHAR(6) NULL,
+  password_reset_expires_at DATETIME NULL,
   is_super_admin TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -386,6 +388,7 @@ CREATE TABLE store_products (
   price_amount DECIMAL(12,2) NOT NULL,
   currency CHAR(3) NOT NULL DEFAULT 'USD',
   image_url VARCHAR(500) NULL,
+  gallery_urls_json TEXT NULL,
   moderation_status ENUM('pending_approval','approved','rejected','removed') NOT NULL DEFAULT 'pending_approval',
   admin_note TEXT NULL,
   reviewed_at DATETIME NULL,

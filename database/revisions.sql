@@ -402,3 +402,16 @@ CREATE TABLE IF NOT EXISTS admin_trusted_devices (
 -- 2026-06-03: Monetization toggle — see revisions_monetization_toggle.sql
 -- 2026-06-03: Verification poll account manager — see revisions_registration_account_manager.sql
 -- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- 2026-07-12: Product gallery (multiple images; image_url stays primary/hero)
+-- ---------------------------------------------------------------------------
+ALTER TABLE store_products
+  ADD COLUMN gallery_urls_json TEXT NULL AFTER image_url;
+
+-- ---------------------------------------------------------------------------
+-- 2026-07-12: Admin forgot-password OTP
+-- ---------------------------------------------------------------------------
+ALTER TABLE admins
+  ADD COLUMN password_reset_otp VARCHAR(6) NULL AFTER login_otp_expires_at,
+  ADD COLUMN password_reset_expires_at DATETIME NULL AFTER password_reset_otp;

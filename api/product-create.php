@@ -113,16 +113,18 @@ if (!preg_match('/^[A-Z]{3}$/', $currency)) {
 }
 
 $imageUrl = trim((string) ($body['image_url'] ?? ''));
-if ($imageUrl === '' || !ww_store_product_image_url_belongs_to_store($imageUrl, $storeId)) {
-    ww_json(['ok' => false, 'error' => 'Product photo is required — upload in the app'], 422);
+$norm = ww_normalize_product_images($body['gallery_urls'] ?? null, $imageUrl, $storeId);
+if (!$norm['ok']) {
+    ww_json(['ok' => false, 'error' => $norm['error'] ?? 'Product photo is required'], 422);
 }
-$imageDb = $imageUrl;
+$imageDb = (string) $norm['image_url'];
+$galleryJson = $norm['gallery_json'] ?? null;
 
 try {
     $ins = $pdo->prepare(
         'INSERT INTO store_products (
-            store_id, name, description, specifications, price_amount, currency, image_url, moderation_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            store_id, name, description, specifications, price_amount, currency, image_url, gallery_urls_json, moderation_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $ins->execute([
         $storeId,
@@ -132,14 +134,40 @@ try {
         $priceStr,
         $currency,
         $imageDb,
+        $galleryJson,
         'pending_approval',
     ]);
     $id = (int) $pdo->lastInsertId();
 } catch (Throwable $e) {
-    if (str_contains($e->getMessage(), 'Unknown column') || str_contains($e->getMessage(), "doesn't exist")) {
+    if (str_contains($e->getMessage(), 'Unknown column') && str_contains($e->getMessage(), 'gallery_urls_json')) {
+        try {
+            $ins = $pdo->prepare(
+                'INSERT INTO store_products (
+                    store_id, name, description, specifications, price_amount, currency, image_url, moderation_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $ins->execute([
+                $storeId,
+                $name,
+                $descDb,
+                $specsDb,
+                $priceStr,
+                $currency,
+                $imageDb,
+                'pending_approval',
+            ]);
+            $id = (int) $pdo->lastInsertId();
+        } catch (Throwable $e2) {
+            if (str_contains($e2->getMessage(), 'Unknown column') || str_contains($e2->getMessage(), "doesn't exist")) {
+                ww_json(['ok' => false, 'error' => 'Database is missing store/product tables. See database/README.md.'], 500);
+            }
+            throw $e2;
+        }
+    } elseif (str_contains($e->getMessage(), 'Unknown column') || str_contains($e->getMessage(), "doesn't exist")) {
         ww_json(['ok' => false, 'error' => 'Database is missing store/product tables. See database/README.md.'], 500);
+    } else {
+        throw $e;
     }
-    throw $e;
 }
 
 require_once __DIR__ . '/../admin/includes/admin_notifications.php';

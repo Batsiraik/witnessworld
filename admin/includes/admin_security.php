@@ -266,7 +266,11 @@ function ww_admin_establish_session(array $row): void
     $_SESSION['admin_name'] = (string) $row['name'];
     $_SESSION['admin_email'] = (string) $row['email'];
     $_SESSION['admin_super'] = (bool) $row['is_super_admin'];
-    unset($_SESSION['admin_otp_pending_id']);
+    unset(
+        $_SESSION['admin_otp_pending_id'],
+        $_SESSION['admin_reset_pending_id'],
+        $_SESSION['admin_reset_allowed_id']
+    );
 }
 
 function ww_admin_begin_otp_pending(int $adminId): void
@@ -323,4 +327,122 @@ function ww_admin_complete_otp_login(PDO $pdo, array $row): void
     } else {
         ww_admin_touch_trusted_device($pdo, (int) $row['id']);
     }
+}
+
+function ww_admin_reset_pending_id(): int
+{
+    return (int) ($_SESSION['admin_reset_pending_id'] ?? 0);
+}
+
+function ww_admin_reset_allowed_id(): int
+{
+    return (int) ($_SESSION['admin_reset_allowed_id'] ?? 0);
+}
+
+function ww_admin_begin_password_reset(int $adminId): void
+{
+    unset(
+        $_SESSION['admin_id'],
+        $_SESSION['admin_username'],
+        $_SESSION['admin_name'],
+        $_SESSION['admin_email'],
+        $_SESSION['admin_super'],
+        $_SESSION['admin_otp_pending_id'],
+        $_SESSION['admin_reset_allowed_id']
+    );
+    $_SESSION['admin_reset_pending_id'] = $adminId;
+}
+
+function ww_admin_clear_password_reset_session(): void
+{
+    unset($_SESSION['admin_reset_pending_id'], $_SESSION['admin_reset_allowed_id']);
+}
+
+function ww_admin_issue_password_reset_otp(PDO $pdo, int $adminId): string
+{
+    $otp = (string) random_int(100000, 999999);
+    $exp = (new DateTimeImmutable())->modify('+' . WW_ADMIN_OTP_MINUTES . ' minutes')->format('Y-m-d H:i:s');
+    $pdo->prepare('UPDATE admins SET password_reset_otp = ?, password_reset_expires_at = ? WHERE id = ?')
+        ->execute([$otp, $exp, $adminId]);
+
+    return $otp;
+}
+
+function ww_admin_clear_password_reset_otp(PDO $pdo, int $adminId): void
+{
+    try {
+        $pdo->prepare('UPDATE admins SET password_reset_otp = NULL, password_reset_expires_at = NULL WHERE id = ?')
+            ->execute([$adminId]);
+    } catch (Throwable) {
+        /* columns may not exist until migration */
+    }
+}
+
+function ww_admin_send_password_reset_otp_email(PDO $pdo, array $admin, string $otp): bool
+{
+    ww_admin_bootstrap_mailer();
+    $mailer = new Mailer($pdo);
+    $name = trim((string) ($admin['name'] ?? 'Admin'));
+    $tpl = EmailTemplates::adminPasswordResetOtp($name, $otp, ww_admin_email_logo_url());
+
+    return $mailer->send(
+        (string) $admin['email'],
+        $name,
+        'Your Witness World Connect admin password reset code',
+        $tpl['html'],
+        $tpl['text']
+    );
+}
+
+function ww_admin_verify_password_reset_otp(PDO $pdo, int $adminId, string $code): bool
+{
+    $st = $pdo->prepare('SELECT password_reset_otp, password_reset_expires_at FROM admins WHERE id = ? LIMIT 1');
+    $st->execute([$adminId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row || ($row['password_reset_otp'] ?? '') === '') {
+        return false;
+    }
+    $exp = strtotime((string) ($row['password_reset_expires_at'] ?? ''));
+    if ($exp === false || $exp < time()) {
+        return false;
+    }
+
+    return hash_equals((string) $row['password_reset_otp'], preg_replace('/\D/', '', $code) ?? '');
+}
+
+function ww_admin_revoke_trusted_devices(PDO $pdo, int $adminId): void
+{
+    if (!ww_admin_trusted_devices_ready($pdo)) {
+        return;
+    }
+    $pdo->prepare('DELETE FROM admin_trusted_devices WHERE admin_id = ?')->execute([$adminId]);
+}
+
+/**
+ * Look up admin by email or username for reset. Always return generic outcome to caller.
+ *
+ * @return array{ok:bool, sent?:bool, admin?:array<string,mixed>}
+ */
+function ww_admin_start_password_reset(PDO $pdo, string $identifier): array
+{
+    $identifier = trim($identifier);
+    if ($identifier === '') {
+        return ['ok' => true, 'sent' => false];
+    }
+
+    $st = $pdo->prepare(
+        'SELECT * FROM admins WHERE LOWER(email) = ? OR username = ? LIMIT 1'
+    );
+    $st->execute([strtolower($identifier), $identifier]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return ['ok' => true, 'sent' => false];
+    }
+
+    $adminId = (int) $row['id'];
+    $otp = ww_admin_issue_password_reset_otp($pdo, $adminId);
+    $sent = ww_admin_send_password_reset_otp_email($pdo, $row, $otp);
+    ww_admin_begin_password_reset($adminId);
+
+    return ['ok' => true, 'sent' => $sent, 'admin' => $row];
 }

@@ -13,8 +13,19 @@ if (ww_admin_otp_pending_id() > 0) {
     header('Location: verify-otp.php');
     exit;
 }
+if (ww_admin_reset_allowed_id() > 0) {
+    header('Location: reset-password.php');
+    exit;
+}
+if (ww_admin_reset_pending_id() > 0) {
+    header('Location: reset-verify-otp.php');
+    exit;
+}
 
 $error = '';
+$info = isset($_GET['reset']) && $_GET['reset'] === '1'
+    ? 'Password updated. Sign in with your new password.'
+    : '';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $user = trim((string) ($_POST['username'] ?? ''));
@@ -71,6 +82,9 @@ $pageTitle = 'Admin sign in';
     <?php if ($error !== ''): ?>
       <p class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
+    <?php if ($info !== ''): ?>
+      <p class="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800"><?= htmlspecialchars($info, ENT_QUOTES, 'UTF-8') ?></p>
+    <?php endif; ?>
     <form method="post" class="mt-6 space-y-4">
       <div>
         <label class="block text-xs font-semibold text-slate-600">Username</label>
@@ -82,6 +96,9 @@ $pageTitle = 'Admin sign in';
       </div>
       <button type="submit" class="w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">Sign in</button>
     </form>
+    <p class="mt-3 text-center">
+      <a href="forgot-password.php" class="text-sm font-semibold text-brand hover:underline">Forgot password?</a>
+    </p>
     <p class="mt-4 text-xs text-slate-500 leading-relaxed">New browser or after 7 days without a visit, we email you a one-time code to finish signing in.</p>
   </div>
 </body>

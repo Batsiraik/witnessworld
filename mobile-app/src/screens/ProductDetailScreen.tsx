@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiFavoriteStatus, apiGet, apiOpenConversation, apiSubmitReport, apiToggleFavorite } from '../api/client';
+import { FullScreenImageViewer } from '../components/FullScreenImageViewer';
 import { GradientBackground } from '../components/GradientBackground';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RemoteImage } from '../components/RemoteImage';
@@ -35,6 +36,7 @@ type Payload = {
     price_amount: string;
     currency: string;
     image_url: string | null;
+    gallery_urls?: string[];
     moderation_status?: string;
   };
   store: {
@@ -64,6 +66,8 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const [busy, setBusy] = useState(false);
   const [favoriteOn, setFavoriteOn] = useState(false);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     if (!Number.isFinite(id) || id <= 0) {
@@ -270,6 +274,13 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const pendingApproval = product.moderation_status === 'pending_approval';
   const ownerPreview = pendingApproval && seller.user_id === myId;
   const canAddToCart = !isGuest && seller.user_id !== myId && !pendingApproval;
+  const galleryUrls = (() => {
+    const fromApi = Array.isArray(product.gallery_urls)
+      ? product.gallery_urls.filter((u) => typeof u === 'string' && u.trim() !== '')
+      : [];
+    if (fromApi.length) return fromApi;
+    return product.image_url ? [product.image_url] : [];
+  })();
 
   return (
     <GradientBackground>
@@ -282,13 +293,38 @@ export function ProductDetailScreen({ navigation, route }: Props) {
               </Text>
             </View>
           ) : null}
-          {product.image_url ? (
-            <RemoteImage url={product.image_url} style={styles.hero} contentFit="cover" />
+          {galleryUrls.length ? (
+            <Pressable
+              onPress={() => {
+                setGalleryIndex(0);
+                setGalleryOpen(true);
+              }}
+              accessibilityRole="imagebutton"
+              accessibilityLabel="View product photo full screen"
+            >
+              <RemoteImage url={galleryUrls[0]} style={styles.hero} contentFit="cover" />
+            </Pressable>
           ) : (
             <View style={[styles.hero, styles.heroPh]}>
               <Ionicons name="cube-outline" size={48} color={colors.textMuted} />
             </View>
           )}
+          {galleryUrls.length > 1 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbRow}>
+              {galleryUrls.map((url, i) => (
+                <Pressable
+                  key={`${url}-${i}`}
+                  onPress={() => {
+                    setGalleryIndex(i);
+                    setGalleryOpen(true);
+                  }}
+                  style={styles.thumbHit}
+                >
+                  <RemoteImage url={url} style={styles.thumb} contentFit="cover" />
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : null}
           <Text style={styles.title}>{product.name}</Text>
           <Text style={styles.price}>
             {product.currency} {product.price_amount}
@@ -363,6 +399,12 @@ export function ProductDetailScreen({ navigation, route }: Props) {
             Alert.alert('Thanks', 'Your report was sent to moderation.');
           }}
         />
+        <FullScreenImageViewer
+          visible={galleryOpen}
+          urls={galleryUrls}
+          initialIndex={galleryIndex}
+          onClose={() => setGalleryOpen(false)}
+        />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -381,6 +423,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   heroPh: { alignItems: 'center', justifyContent: 'center' },
+  thumbRow: { gap: 10, paddingBottom: 8, marginBottom: 8 },
+  thumbHit: { borderRadius: 12, overflow: 'hidden' },
+  thumb: { width: 72, height: 72, borderRadius: 12, backgroundColor: colors.primarySoft },
   title: { fontSize: 22, fontWeight: '800', color: colors.text },
   price: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, marginTop: 8 },
   storeCard: {

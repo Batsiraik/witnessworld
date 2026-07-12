@@ -101,16 +101,29 @@ if (!preg_match('/^[A-Z]{3}$/', $currency)) {
 
 $imageUrl = trim((string) ($body['image_url'] ?? ''));
 $existingImg = trim((string) ($existing['image_url'] ?? ''));
-if ($imageUrl !== '') {
-    if (!ww_store_product_image_url_belongs_to_store($imageUrl, $storeId)) {
-        ww_json(['ok' => false, 'error' => 'Invalid product image URL'], 422);
+$galleryIn = $body['gallery_urls'] ?? null;
+if (!is_array($galleryIn) || $galleryIn === []) {
+    // Keep existing gallery when client only sends a single image_url (older apps).
+    if ($imageUrl === '' && $existingImg !== '') {
+        $imageUrl = $existingImg;
     }
-    $imageDb = $imageUrl;
-} elseif ($existingImg !== '' && ww_store_product_image_url_belongs_to_store($existingImg, $storeId)) {
-    $imageDb = $existingImg;
-} else {
-    ww_json(['ok' => false, 'error' => 'Product photo is required — upload in the app'], 422);
+    if (!array_key_exists('gallery_urls', $body)) {
+        $galleryIn = ww_product_gallery_urls_from_row($existing);
+        if ($imageUrl !== '' && !in_array($imageUrl, $galleryIn, true)) {
+            array_unshift($galleryIn, $imageUrl);
+        } elseif ($imageUrl !== '') {
+            // Put new primary first, keep other existing gallery shots.
+            $rest = array_values(array_filter($galleryIn, static fn ($u) => $u !== $imageUrl));
+            $galleryIn = array_merge([$imageUrl], $rest);
+        }
+    }
 }
+$norm = ww_normalize_product_images($galleryIn, $imageUrl, $storeId);
+if (!$norm['ok']) {
+    ww_json(['ok' => false, 'error' => $norm['error'] ?? 'Product photo is required'], 422);
+}
+$imageDb = (string) $norm['image_url'];
+$galleryJson = $norm['gallery_json'] ?? null;
 
 $demote = in_array($pMod, ['approved', 'rejected'], true);
 $newStatus = $demote ? 'pending_approval' : $pMod;
@@ -121,7 +134,7 @@ $reviewedBy = $demote ? null : ($existing['reviewed_by_admin_id'] ?? null);
 try {
     $upd = $pdo->prepare(
         'UPDATE store_products SET
-            name = ?, description = ?, specifications = ?, price_amount = ?, currency = ?, image_url = ?,
+            name = ?, description = ?, specifications = ?, price_amount = ?, currency = ?, image_url = ?, gallery_urls_json = ?,
             moderation_status = ?, admin_note = ?, reviewed_at = ?, reviewed_by_admin_id = ?
          WHERE id = ?'
     );
@@ -132,6 +145,7 @@ try {
         $priceStr,
         $currency,
         $imageDb,
+        $galleryJson,
         $newStatus,
         $adminNote,
         $reviewedAt,
@@ -139,10 +153,38 @@ try {
         $productId,
     ]);
 } catch (Throwable $e) {
-    if (str_contains($e->getMessage(), 'Unknown column')) {
+    if (str_contains($e->getMessage(), 'Unknown column') && str_contains($e->getMessage(), 'gallery_urls_json')) {
+        try {
+            $upd = $pdo->prepare(
+                'UPDATE store_products SET
+                    name = ?, description = ?, specifications = ?, price_amount = ?, currency = ?, image_url = ?,
+                    moderation_status = ?, admin_note = ?, reviewed_at = ?, reviewed_by_admin_id = ?
+                 WHERE id = ?'
+            );
+            $upd->execute([
+                $name,
+                $descDb,
+                $specsDb,
+                $priceStr,
+                $currency,
+                $imageDb,
+                $newStatus,
+                $adminNote,
+                $reviewedAt,
+                $reviewedBy,
+                $productId,
+            ]);
+        } catch (Throwable $e2) {
+            if (str_contains($e2->getMessage(), 'Unknown column')) {
+                ww_json(['ok' => false, 'error' => 'Store product tables missing or out of date. See database/README.md.'], 500);
+            }
+            throw $e2;
+        }
+    } elseif (str_contains($e->getMessage(), 'Unknown column')) {
         ww_json(['ok' => false, 'error' => 'Store product tables missing or out of date. See database/README.md.'], 500);
+    } else {
+        throw $e;
     }
-    throw $e;
 }
 
 $msg = $demote

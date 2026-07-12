@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
 require_once __DIR__ . '/lib/review_helpers.php';
+require_once __DIR__ . '/lib/store_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -77,6 +78,7 @@ ww_json([
         'price_amount' => (string) $row['price_amount'],
         'currency' => (string) $row['currency'],
         'image_url' => $row['image_url'] ? (string) $row['image_url'] : null,
+        'gallery_urls' => ww_product_gallery_urls_from_row($row),
         'moderation_status' => (string) ($row['moderation_status'] ?? ''),
         'created_at' => (string) $row['created_at'],
     ],

@@ -64,6 +64,16 @@ require __DIR__ . '/partials/shell_open.php';
     </div>
 
     <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
+      <h2 class="text-base font-semibold text-slate-900">Export data</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-600">
+        Download member signups for a day, week, or month — including verification poll answers and active listing counts — as an Excel file.
+      </p>
+      <div class="mt-4">
+        <a href="export_data.php" class="admin-btn admin-btn--primary">Export data</a>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
       <h2 class="text-base font-semibold text-slate-900">Create content for members</h2>
       <p class="mt-2 text-sm leading-relaxed text-slate-600">
         Post listings, stores, and directory profiles on behalf of users who send you their details. Content is published as approved immediately.

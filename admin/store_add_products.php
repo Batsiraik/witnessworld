@@ -83,10 +83,12 @@ require __DIR__ . '/partials/shell_open.php';
       </div>
     </div>
     <div>
-      <label class="text-xs font-semibold text-slate-600">Product photo *</label>
-      <input type="file" accept="image/*" id="sp-photo-file" class="mt-1 text-sm" />
+      <label class="text-xs font-semibold text-slate-600">Product photos * <span class="font-normal text-slate-400">(up to 8 — first is the cover)</span></label>
+      <input type="file" accept="image/*" id="sp-photo-file" multiple class="mt-1 text-sm" />
       <input type="hidden" name="image_url" id="sp-image-url" required />
-      <p class="mt-1 text-xs text-slate-500" id="sp-image-label"></p>
+      <input type="hidden" name="gallery_urls_json" id="sp-gallery-json" value="[]" />
+      <div id="sp-gallery-preview" class="mt-3 flex flex-wrap gap-2"></div>
+      <p class="mt-1 text-xs text-slate-500" id="sp-image-label">Upload one or more photos. You can remove extras before saving.</p>
     </div>
     <div class="flex flex-wrap gap-2 pt-2">
       <button type="submit" name="add_another" value="1" class="admin-btn admin-btn--warning">Save &amp; add another</button>

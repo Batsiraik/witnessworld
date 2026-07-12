@@ -216,15 +216,28 @@ function ww_commerce_subject_preview(PDO $pdo, string $subjectType, int $subject
         }
 
         if ($subjectType === 'product') {
-            $st = $pdo->prepare(
-                'SELECT p.name, p.description, p.specifications, p.image_url, p.price_amount, p.currency, s.name AS store_name
-                 FROM store_products p
-                 INNER JOIN stores s ON s.id = p.store_id
-                 WHERE p.id = ? AND p.moderation_status = ? AND s.moderation_status = ?
-                 LIMIT 1'
-            );
-            $st->execute([$subjectId, 'approved', 'approved']);
-            $r = $st->fetch(PDO::FETCH_ASSOC);
+            $r = null;
+            try {
+                $st = $pdo->prepare(
+                    'SELECT p.name, p.description, p.specifications, p.image_url, p.gallery_urls_json, p.price_amount, p.currency, s.name AS store_name
+                     FROM store_products p
+                     INNER JOIN stores s ON s.id = p.store_id
+                     WHERE p.id = ? AND p.moderation_status = ? AND s.moderation_status = ?
+                     LIMIT 1'
+                );
+                $st->execute([$subjectId, 'approved', 'approved']);
+                $r = $st->fetch(PDO::FETCH_ASSOC) ?: null;
+            } catch (Throwable) {
+                $st = $pdo->prepare(
+                    'SELECT p.name, p.description, p.specifications, p.image_url, p.price_amount, p.currency, s.name AS store_name
+                     FROM store_products p
+                     INNER JOIN stores s ON s.id = p.store_id
+                     WHERE p.id = ? AND p.moderation_status = ? AND s.moderation_status = ?
+                     LIMIT 1'
+                );
+                $st->execute([$subjectId, 'approved', 'approved']);
+                $r = $st->fetch(PDO::FETCH_ASSOC) ?: null;
+            }
             if (!$r) {
                 return null;
             }
@@ -233,8 +246,11 @@ function ww_commerce_subject_preview(PDO $pdo, string $subjectType, int $subject
             $base['description'] = $r['description'] ? (string) $r['description'] : null;
             $base['specifications'] = $r['specifications'] ? (string) $r['specifications'] : null;
             $base['store_name'] = (string) ($r['store_name'] ?? '');
-            if ($base['hero_image_url']) {
-                $base['gallery_urls'] = [$base['hero_image_url']];
+            require_once __DIR__ . '/store_helpers.php';
+            $gallery = ww_product_gallery_urls_from_row($r);
+            $base['gallery_urls'] = $gallery;
+            if (!$base['hero_image_url'] && $gallery !== []) {
+                $base['hero_image_url'] = $gallery[0];
             }
             $cur = (string) ($r['currency'] ?: 'USD');
             if ($r['price_amount'] !== null) {

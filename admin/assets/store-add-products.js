@@ -4,6 +4,8 @@
   var uploadApi = cfg.uploadApi || 'admin_media_upload.php';
   var storeId = cfg.storeId || 0;
   var storeUserId = cfg.storeUserId || 0;
+  var gallery = [];
+  var MAX = 8;
 
   function $(id) {
     return document.getElementById(id);
@@ -13,6 +15,42 @@
     var d = document.createElement('div');
     d.textContent = String(s);
     return d.innerHTML;
+  }
+
+  function syncHidden() {
+    $('sp-image-url').value = gallery[0] || '';
+    $('sp-gallery-json').value = JSON.stringify(gallery);
+    renderGallery();
+  }
+
+  function renderGallery() {
+    var el = $('sp-gallery-preview');
+    if (!el) return;
+    if (!gallery.length) {
+      el.innerHTML = '';
+      $('sp-image-label').textContent = 'Upload one or more photos. You can remove extras before saving.';
+      return;
+    }
+    el.innerHTML = gallery
+      .map(function (url, i) {
+        return (
+          '<div class="relative" data-idx="' +
+          i +
+          '">' +
+          '<img src="' +
+          esc(url) +
+          '" alt="" class="h-20 w-20 rounded-xl object-cover ring-1 ring-slate-200" />' +
+          (i === 0
+            ? '<span class="absolute left-1 top-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">Cover</span>'
+            : '') +
+          '<button type="button" class="sp-remove-img absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white" data-idx="' +
+          i +
+          '" title="Remove">×</button>' +
+          '</div>'
+        );
+      })
+      .join('');
+    $('sp-image-label').textContent = gallery.length + ' photo' + (gallery.length === 1 ? '' : 's') + ' ready (max ' + MAX + '). First image is the cover.';
   }
 
   function loadStores(q) {
@@ -55,6 +93,8 @@
   function pickStore(id, userId, name) {
     storeId = id;
     storeUserId = userId;
+    gallery = [];
+    syncHidden();
     $('sp-store-id').value = String(id);
     $('sp-store-selected').innerHTML =
       '<strong>' +
@@ -72,6 +112,17 @@
   function openStoreModal() {
     $('sp-store-modal').classList.remove('hidden');
     loadStores('');
+  }
+
+  function uploadFile(file) {
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('user_id', String(storeUserId || 1));
+    fd.append('store_id', String(storeId));
+    fd.append('kind', 'product');
+    return fetch(uploadApi, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) {
+      return r.json();
+    });
   }
 
   $('sp-open-store').addEventListener('click', openStoreModal);
@@ -98,38 +149,50 @@
     pickStore(parseInt(btn.getAttribute('data-id'), 10), parseInt(btn.getAttribute('data-user'), 10), btn.getAttribute('data-name'));
   });
 
-  $('sp-photo-file').addEventListener('change', function () {
-    if (!this.files || !this.files[0] || !storeId) {
+  $('sp-gallery-preview').addEventListener('click', function (e) {
+    var btn = e.target.closest('.sp-remove-img');
+    if (!btn) return;
+    var idx = parseInt(btn.getAttribute('data-idx'), 10);
+    if (Number.isNaN(idx)) return;
+    gallery.splice(idx, 1);
+    syncHidden();
+  });
+
+  $('sp-photo-file').addEventListener('change', async function () {
+    if (!this.files || !this.files.length || !storeId) {
       alert('Select a store first');
       return;
     }
-    var fd = new FormData();
-    fd.append('file', this.files[0]);
-    fd.append('user_id', String(storeUserId || 1));
-    fd.append('store_id', String(storeId));
-    fd.append('kind', 'product');
+    var files = Array.prototype.slice.call(this.files);
     this.disabled = true;
-    fetch(uploadApi, { method: 'POST', body: fd, credentials: 'same-origin' })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(
-        function (data) {
-          this.disabled = false;
-          if (data.ok) {
-            $('sp-image-url').value = data.url;
-            $('sp-image-label').textContent = 'Uploaded: ' + data.url;
-          } else {
-            alert(data.error || 'Upload failed');
-          }
-        }.bind(this)
-      );
+    $('sp-image-label').textContent = 'Uploading…';
+    try {
+      for (var i = 0; i < files.length; i++) {
+        if (gallery.length >= MAX) break;
+        var data = await uploadFile(files[i]);
+        if (data.ok && data.url) {
+          gallery.push(data.url);
+        } else {
+          alert(data.error || 'Upload failed');
+          break;
+        }
+      }
+      syncHidden();
+    } catch (err) {
+      alert('Upload failed');
+    } finally {
+      this.disabled = false;
+      this.value = '';
+    }
   });
 
   $('sp-product-form').addEventListener('submit', function (e) {
+    syncHidden();
     if (!$('sp-image-url').value) {
       e.preventDefault();
-      alert('Upload a product photo first.');
+      alert('Upload at least one product photo first.');
     }
   });
+
+  syncHidden();
 })();

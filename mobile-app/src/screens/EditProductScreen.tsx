@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -18,10 +19,13 @@ import { apiGet, apiPost, apiUploadProductMedia } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { MediaUploadZone } from '../components/MediaUploadZone';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RemoteImage } from '../components/RemoteImage';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<OfficeStackParamList, 'EditProduct'>;
+
+const MAX_PHOTOS = 8;
 
 export function EditProductScreen({ navigation, route }: Props) {
   const { storeId, productId } = route.params;
@@ -32,7 +36,7 @@ export function EditProductScreen({ navigation, route }: Props) {
   const [specifications, setSpecifications] = useState('');
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('USD');
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageUploadPct, setImageUploadPct] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -52,7 +56,16 @@ export function EditProductScreen({ navigation, route }: Props) {
       setSpecifications(P.specifications ? String(P.specifications) : '');
       setPrice(String(P.price_amount || ''));
       setCurrency(String(P.currency || 'USD').toUpperCase());
-      setImageUrl(P.image_url ? String(P.image_url) : null);
+      const gallery = Array.isArray(P.gallery_urls)
+        ? (P.gallery_urls as unknown[]).filter((u): u is string => typeof u === 'string' && u.trim() !== '')
+        : [];
+      if (gallery.length) {
+        setImageUrls(gallery.slice(0, MAX_PHOTOS));
+      } else if (P.image_url) {
+        setImageUrls([String(P.image_url)]);
+      } else {
+        setImageUrls([]);
+      }
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Load failed', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -66,7 +79,11 @@ export function EditProductScreen({ navigation, route }: Props) {
     void load();
   }, [load]);
 
-  const pickImage = async () => {
+  const pickImages = async () => {
+    if (imageUrls.length >= MAX_PHOTOS) {
+      Alert.alert('Photo limit', `You can add up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert('Photos', 'Allow library access.');
@@ -78,12 +95,18 @@ export function EditProductScreen({ navigation, route }: Props) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.88,
+        allowsMultipleSelection: true,
+        selectionLimit: Math.max(1, MAX_PHOTOS - imageUrls.length),
       });
-      if (result.canceled || !result.assets[0]) return;
-      const a = result.assets[0];
-      const mime = a.mimeType ?? 'image/jpeg';
-      const { url } = await apiUploadProductMedia(a.uri, mime, storeId, (p) => setImageUploadPct(p));
-      setImageUrl(url);
+      if (result.canceled || !result.assets?.length) return;
+      const next = [...imageUrls];
+      for (const a of result.assets) {
+        if (next.length >= MAX_PHOTOS) break;
+        const mime = a.mimeType ?? 'image/jpeg';
+        const { url } = await apiUploadProductMedia(a.uri, mime, storeId, (p) => setImageUploadPct(p));
+        if (!next.includes(url)) next.push(url);
+      }
+      setImageUrls(next);
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.');
     } finally {
@@ -92,9 +115,22 @@ export function EditProductScreen({ navigation, route }: Props) {
     }
   };
 
+  const removeAt = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const makeCover = (index: number) => {
+    setImageUrls((prev) => {
+      if (index <= 0 || index >= prev.length) return prev;
+      const copy = [...prev];
+      const [picked] = copy.splice(index, 1);
+      return [picked, ...copy];
+    });
+  };
+
   const submit = async () => {
-    if (!imageUrl?.trim()) {
-      Alert.alert('Photo required', 'Add a product photo before saving.');
+    if (!imageUrls.length) {
+      Alert.alert('Photo required', 'Add at least one product photo before saving.');
       return;
     }
     if (!name.trim()) {
@@ -112,34 +148,19 @@ export function EditProductScreen({ navigation, route }: Props) {
 
     setSubmitting(true);
     try {
+      const payload = {
+        name: name.trim(),
+        description: description.trim(),
+        specifications: specifications.trim(),
+        price_amount: price.replace(',', ''),
+        currency: currency.trim().toUpperCase(),
+        image_url: imageUrls[0],
+        gallery_urls: imageUrls,
+      };
       if (productId) {
-        await apiPost(
-          'product-update.php',
-          {
-            product_id: productId,
-            name: name.trim(),
-            description: description.trim(),
-            specifications: specifications.trim(),
-            price_amount: price.replace(',', ''),
-            currency: currency.trim().toUpperCase(),
-            image_url: imageUrl ?? '',
-          },
-          true
-        );
+        await apiPost('product-update.php', { product_id: productId, ...payload }, true);
       } else {
-        await apiPost(
-          'product-create.php',
-          {
-            store_id: storeId,
-            name: name.trim(),
-            description: description.trim(),
-            specifications: specifications.trim(),
-            price_amount: price.replace(',', ''),
-            currency: currency.trim().toUpperCase(),
-            image_url: imageUrl ?? '',
-          },
-          true
-        );
+        await apiPost('product-create.php', { store_id: storeId, ...payload }, true);
       }
       Alert.alert('Saved', 'Your product was saved. It may need admin approval.', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -214,17 +235,45 @@ export function EditProductScreen({ navigation, route }: Props) {
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.label}>Product photo *</Text>
-            <MediaUploadZone
-              variant="hero"
-              onPress={() => void pickImage()}
-              loading={imageBusy}
-              disabled={imageBusy}
-              imageUrl={imageUrl}
-              title={imageUrl ? 'Replace product photo' : 'Tap to upload product photo'}
-              subtitle="Required — clear, well-lit image sells better"
-              mediaType="image"
-            />
+            <Text style={styles.label}>Product photos * ({imageUrls.length}/{MAX_PHOTOS})</Text>
+            <Text style={styles.photoHint}>First photo is the cover. Tap a photo to make it cover, or remove extras.</Text>
+
+            {imageUrls.length > 0 ? (
+              <View style={styles.gallery}>
+                {imageUrls.map((url, index) => (
+                  <View key={`${url}-${index}`} style={styles.thumbWrap}>
+                    <Pressable onPress={() => makeCover(index)} style={styles.thumbPress}>
+                      <RemoteImage url={url} style={styles.thumb} contentFit="cover" />
+                      {index === 0 ? (
+                        <View style={styles.coverBadge}>
+                          <Text style={styles.coverBadgeText}>Cover</Text>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                    <Pressable
+                      onPress={() => removeAt(index)}
+                      style={styles.removeBtn}
+                      accessibilityLabel="Remove photo"
+                    >
+                      <Ionicons name="close" size={14} color={colors.white} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {imageUrls.length < MAX_PHOTOS ? (
+              <MediaUploadZone
+                variant="hero"
+                onPress={() => void pickImages()}
+                loading={imageBusy}
+                disabled={imageBusy}
+                imageUrl={null}
+                title={imageUrls.length ? 'Add more photos' : 'Tap to upload product photos'}
+                subtitle={`Up to ${MAX_PHOTOS} images · JPG, PNG or WebP`}
+                mediaType="image"
+              />
+            ) : null}
             {imageBusy ? (
               <Text style={styles.uploadPct}>
                 {imageUploadPct != null ? `Uploading ${imageUploadPct}%` : 'Starting…'}
@@ -251,6 +300,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 },
   hint: { fontSize: 13, color: colors.textMuted, marginBottom: 12, lineHeight: 19 },
+  photoHint: { fontSize: 12, color: colors.textMuted, marginBottom: 10, lineHeight: 17 },
   label: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 6, marginTop: 12 },
   input: {
     borderWidth: 1,
@@ -266,4 +316,29 @@ const styles = StyleSheet.create({
   priceInput: { flex: 1 },
   curInput: { width: 88, textAlign: 'center', fontWeight: '800' },
   multiline: { minHeight: 100, textAlignVertical: 'top' },
+  gallery: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  thumbWrap: { position: 'relative' },
+  thumbPress: { borderRadius: 12, overflow: 'hidden' },
+  thumb: { width: 88, height: 88, backgroundColor: colors.primarySoft },
+  coverBadge: {
+    position: 'absolute',
+    left: 6,
+    top: 6,
+    backgroundColor: '#059669',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  coverBadgeText: { color: colors.white, fontSize: 10, fontWeight: '800' },
+  removeBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
