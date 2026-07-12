@@ -23,21 +23,23 @@ if (ww_admin_reset_pending_id() > 0) {
 }
 
 $error = '';
-$info = isset($_GET['reset']) && $_GET['reset'] === '1'
-    ? 'Password updated. Sign in with your new password.'
-    : '';
+$info = '';
+if (isset($_GET['reset']) && $_GET['reset'] === '1') {
+    $uHint = trim((string) ($_GET['u'] ?? ''));
+    $info = $uHint !== ''
+        ? 'Password updated. Sign in as @' . $uHint . ' (or your admin email) with your new password.'
+        : 'Password updated. Sign in with your username or email and new password.';
+}
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $user = trim((string) ($_POST['username'] ?? ''));
     $pass = (string) ($_POST['password'] ?? '');
     if ($user === '' || $pass === '') {
-        $error = 'Enter username and password.';
+        $error = 'Enter username (or email) and password.';
     } else {
         try {
             $pdo = witnessworld_pdo();
-            $st = $pdo->prepare('SELECT * FROM admins WHERE username = ? LIMIT 1');
-            $st->execute([$user]);
-            $row = $st->fetch(PDO::FETCH_ASSOC);
+            $row = ww_admin_find_by_login($pdo, $user);
             if ($row && password_verify($pass, (string) $row['password_hash'])) {
                 $result = ww_admin_complete_password_login($pdo, $row);
                 if ($result === 'session') {
@@ -47,7 +49,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 header('Location: verify-otp.php');
                 exit;
             }
-            $error = 'Invalid username or password.';
+            $error = 'Invalid username/email or password.';
         } catch (Throwable) {
             $error = 'Database error. Ensure admin OTP tables exist (run database/revisions.sql). Check config.local.php.';
         }
@@ -87,7 +89,7 @@ $pageTitle = 'Admin sign in';
     <?php endif; ?>
     <form method="post" class="mt-6 space-y-4">
       <div>
-        <label class="block text-xs font-semibold text-slate-600">Username</label>
+        <label class="block text-xs font-semibold text-slate-600">Username or email</label>
         <input name="username" autocomplete="username" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" required />
       </div>
       <div>

@@ -42,11 +42,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     } else {
         try {
             $hash = password_hash($pass, PASSWORD_DEFAULT);
-            $pdo->prepare('UPDATE admins SET password_hash = ? WHERE id = ?')->execute([$hash, $allowedId]);
+            if ($hash === false) {
+                throw new RuntimeException('password_hash failed');
+            }
+            $upd = $pdo->prepare('UPDATE admins SET password_hash = ? WHERE id = ?');
+            $upd->execute([$hash, $allowedId]);
+            if ($upd->rowCount() < 1) {
+                // Hash may be unchanged if identical; still verify row exists.
+                $check = $pdo->prepare('SELECT id FROM admins WHERE id = ? LIMIT 1');
+                $check->execute([$allowedId]);
+                if (!$check->fetch()) {
+                    throw new RuntimeException('Admin not found');
+                }
+            }
             ww_admin_clear_password_reset_otp($pdo, $allowedId);
-            ww_admin_revoke_trusted_devices($pdo, $allowedId);
+            try {
+                ww_admin_revoke_trusted_devices($pdo, $allowedId);
+            } catch (Throwable) {
+                // Password already saved — don't fail the reset for device cleanup.
+            }
             ww_admin_clear_password_reset_session();
-            header('Location: login.php?reset=1');
+            header('Location: login.php?reset=1&u=' . rawurlencode((string) $adminRow['username']));
             exit;
         } catch (Throwable) {
             $error = 'Could not update password. Try again.';

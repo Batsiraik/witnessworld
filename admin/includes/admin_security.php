@@ -419,6 +419,27 @@ function ww_admin_revoke_trusted_devices(PDO $pdo, int $adminId): void
 }
 
 /**
+ * Find admin by username or email (case-insensitive email).
+ *
+ * @return array<string, mixed>|null
+ */
+function ww_admin_find_by_login(PDO $pdo, string $identifier): ?array
+{
+    $identifier = trim($identifier);
+    if ($identifier === '') {
+        return null;
+    }
+
+    $st = $pdo->prepare(
+        'SELECT * FROM admins WHERE username = ? OR LOWER(email) = ? LIMIT 1'
+    );
+    $st->execute([$identifier, strtolower($identifier)]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+/**
  * Look up admin by email or username for reset. Always return generic outcome to caller.
  *
  * @return array{ok:bool, sent?:bool, admin?:array<string,mixed>}
@@ -430,11 +451,7 @@ function ww_admin_start_password_reset(PDO $pdo, string $identifier): array
         return ['ok' => true, 'sent' => false];
     }
 
-    $st = $pdo->prepare(
-        'SELECT * FROM admins WHERE LOWER(email) = ? OR username = ? LIMIT 1'
-    );
-    $st->execute([strtolower($identifier), $identifier]);
-    $row = $st->fetch(PDO::FETCH_ASSOC);
+    $row = ww_admin_find_by_login($pdo, $identifier);
     if (!$row) {
         return ['ok' => true, 'sent' => false];
     }
