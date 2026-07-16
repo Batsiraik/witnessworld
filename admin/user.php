@@ -19,6 +19,7 @@ $userPhp = ($base === '' || $base === '.') ? 'user.php' : $base . '/user.php';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
     $returnTo = (string) ($_POST['return'] ?? '');
+    $flashQs = '';
 
     if ($action === 'approve' || $action === 'decline') {
         $st = $pdo->prepare('SELECT status FROM users WHERE id = ? LIMIT 1');
@@ -39,11 +40,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $st->execute([$id]);
         $row = $st->fetch(PDO::FETCH_ASSOC);
         if ($row && ($row['status'] ?? '') === 'pending_otp') {
-            ww_send_registration_otp($pdo, $row, false);
+            try {
+                $result = ww_send_registration_otp($pdo, $row, false);
+                if (!empty($result['ok'])) {
+                    $flashQs = !empty($result['email_sent']) ? 'otp_resent=1' : 'otp_mail_failed=1';
+                } else {
+                    $flashQs = 'otp_error=' . rawurlencode((string) ($result['error'] ?? 'Could not resend OTP'));
+                }
+            } catch (Throwable $e) {
+                $flashQs = 'otp_error=' . rawurlencode('Could not resend OTP. Check SMTP settings and try again.');
+            }
+        } else {
+            $flashQs = 'otp_error=' . rawurlencode('This user is not waiting for email verification.');
         }
     } elseif ($action === 'verify_email') {
         require_once __DIR__ . '/../api/lib/registration_otp.php';
-        ww_bypass_registration_otp($pdo, $id);
+        if (ww_bypass_registration_otp($pdo, $id)) {
+            $flashQs = 'otp_bypassed=1';
+        } else {
+            $flashQs = 'otp_error=' . rawurlencode('Could not bypass email verification.');
+        }
     } elseif ($action === 'suspend') {
         ww_admin_suspend_user($pdo, $id);
     } elseif ($action === 'delete') {
@@ -58,11 +74,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
 
     if ($returnTo === 'users') {
-        header('Location: users.php' . ($action === 'suspend' ? '?suspended=1' : ''));
+        $dest = 'users.php';
+        if ($action === 'suspend') {
+            $dest .= '?suspended=1';
+        } elseif ($flashQs !== '') {
+            $dest .= '?' . $flashQs;
+        }
+        header('Location: ' . $dest);
     } elseif ($returnTo === 'businesses') {
-        header('Location: businesses.php' . ($action === 'suspend' ? '?suspended=1' : ''));
+        $dest = 'businesses.php';
+        if ($action === 'suspend') {
+            $dest .= '?suspended=1';
+        } elseif ($flashQs !== '') {
+            $dest .= '?' . $flashQs;
+        }
+        header('Location: ' . $dest);
     } else {
-        header('Location: user.php?id=' . $id);
+        $dest = 'user.php?id=' . $id;
+        if ($flashQs !== '') {
+            $dest .= '&' . $flashQs;
+        }
+        header('Location: ' . $dest);
     }
     exit;
 }
@@ -88,6 +120,7 @@ require __DIR__ . '/partials/shell_open.php';
 ?>
 
 <div class="space-y-6">
+  <?php require __DIR__ . '/partials/user_otp_flash.php'; ?>
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <p class="text-sm text-slate-500"><a href="users.php" class="font-semibold text-brand hover:underline">← Users</a></p>

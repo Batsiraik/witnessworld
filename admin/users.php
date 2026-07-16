@@ -61,6 +61,7 @@ require __DIR__ . '/partials/shell_open.php';
 <?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
   <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">User account deleted permanently.</div>
 <?php endif; ?>
+<?php require __DIR__ . '/partials/user_otp_flash.php'; ?>
 
 <div class="rounded-2xl border border-slate-100 bg-white shadow-panel overflow-hidden">
   <div class="border-b border-slate-100 px-6 py-4 space-y-4">

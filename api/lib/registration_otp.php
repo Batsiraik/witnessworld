@@ -8,6 +8,30 @@ require_once __DIR__ . '/EmailTemplates.php';
 const WW_REGISTRATION_OTP_TTL_MINUTES = 30;
 const WW_REGISTRATION_OTP_MIN_RESEND_SECONDS = 45;
 
+function ww_registration_otp_bootstrap(): void
+{
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+
+    $root = dirname(__DIR__, 2);
+    $autoload = $root . '/vendor/autoload.php';
+    if (!is_file($autoload)) {
+        throw new RuntimeException('Missing vendor/autoload.php — run composer install on the server.');
+    }
+    require_once $autoload;
+
+    if (!defined('WW_EMAIL_LOGO_URL')) {
+        $cfg = $root . '/api/config.php';
+        if (is_file($cfg)) {
+            require_once $cfg;
+        }
+    }
+
+    $ready = true;
+}
+
 function ww_registration_otp_seconds_since_issue(?string $expiresAt): ?int
 {
     if ($expiresAt === null || $expiresAt === '') {
@@ -57,6 +81,8 @@ function ww_send_registration_otp(PDO $pdo, array $user, bool $enforceCooldown =
             ];
         }
     }
+
+    ww_registration_otp_bootstrap();
 
     $otp = (string) random_int(100000, 999999);
     $otpExpires = (new DateTimeImmutable())
