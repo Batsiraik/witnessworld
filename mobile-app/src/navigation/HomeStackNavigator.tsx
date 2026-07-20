@@ -14,6 +14,7 @@ import { MembershipPlansScreen } from '../screens/MembershipPlansScreen';
 import { StorefrontAddonScreen } from '../screens/StorefrontAddonScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { ProfileSettingsScreen } from '../screens/ProfileSettingsScreen';
+import { EditAccountScreen } from '../screens/EditAccountScreen';
 import { CreateDirectoryEntryScreen } from '../screens/CreateDirectoryEntryScreen';
 import { CreateStoreScreen } from '../screens/CreateStoreScreen';
 import { StoreDetailPublicScreen } from '../screens/StoreDetailPublicScreen';
@@ -83,6 +84,7 @@ export function HomeStackNavigator() {
       <Stack.Screen name="MembershipPlans" component={MembershipPlansScreen} options={{ title: 'Membership plans' }} />
       <Stack.Screen name="StorefrontAddon" component={StorefrontAddonScreen} options={{ title: 'Storefront add-on' }} />
       <Stack.Screen name="Profile" component={ProfileSettingsScreen} options={{ title: 'Profile & settings' }} />
+      <Stack.Screen name="EditAccount" component={EditAccountScreen} options={{ title: 'Edit account details' }} />
       <Stack.Screen
         name="ProviderHub"
         component={ProviderHubScreen}

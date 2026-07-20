@@ -40,9 +40,25 @@ function ww_poll_referral_label(string $source, ?string $other = null): string
         'other' => 'Other',
         default => '—',
     };
-    if ($source === 'other' && $other !== null && trim($other) !== '') {
+    if (
+        in_array($source, ['friend_family', 'whatsapp_group', 'wwc_team_member', 'other'], true)
+        && $other !== null
+        && trim($other) !== ''
+    ) {
         return $base . ': ' . trim($other);
     }
 
     return $base;
+}
+
+/** Placeholder / hint for the follow-up detail field. */
+function ww_poll_referral_detail_prompt(string $source): string
+{
+    return match ($source) {
+        'whatsapp_group' => 'WhatsApp group name',
+        'friend_family' => 'Name of the person who referred you',
+        'wwc_team_member' => 'Name of the WWC team member',
+        'other' => 'Please specify',
+        default => '',
+    };
 }

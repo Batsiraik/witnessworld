@@ -61,12 +61,36 @@
     };
   }
 
+  function referralSourceNeedsDetail(source) {
+    return (
+      source === 'friend_family' ||
+      source === 'whatsapp_group' ||
+      source === 'wwc_team_member' ||
+      source === 'other'
+    );
+  }
+
+  function referralDetailPlaceholder(source) {
+    switch (source) {
+      case 'whatsapp_group':
+        return 'WhatsApp group name';
+      case 'friend_family':
+        return 'Name of the person who referred you';
+      case 'wwc_team_member':
+        return 'Name of the WWC team member';
+      case 'other':
+        return 'Please specify';
+      default:
+        return '';
+    }
+  }
+
   function isPollComplete(user) {
     if (!user) return false;
     if (!user.registration_account_type || !user.registration_primary_purpose || !user.registration_wants_account_manager || !user.registration_referral_source) {
       return false;
     }
-    if (user.registration_referral_source === 'other') {
+    if (referralSourceNeedsDetail(user.registration_referral_source)) {
       return Boolean(String(user.registration_referral_other || '').trim());
     }
     return true;
@@ -111,7 +135,7 @@
       state.primaryPurpose &&
       state.wantsAccountManager &&
       state.referralSource &&
-      (state.referralSource !== 'other' || state.referralOther.trim().length >= 2);
+      (!referralSourceNeedsDetail(state.referralSource) || state.referralOther.trim().length >= 2);
 
     return `
       <h2 class="wwc-verify-title" id="wwc-verify-title">Your account is yet to be verified</h2>
@@ -134,7 +158,11 @@
       <p class="wwc-verify-section">4. Referral</p>
       <p class="wwc-verify-q">How did you hear about Witness World Connect? <span class="wwc-req">*</span></p>
       <div class="wwc-verify-opts" data-poll="referralSource">${radioGroup('referralSource', REFERRAL_OPTIONS, state.referralSource, false)}</div>
-      ${state.referralSource === 'other' ? `<input type="text" class="wwc-verify-other" id="wwc-verify-other" placeholder="Please specify" maxlength="200" value="${escapeHtml(state.referralOther)}" />` : ''}
+      ${
+        referralSourceNeedsDetail(state.referralSource)
+          ? `<input type="text" class="wwc-verify-other" id="wwc-verify-other" placeholder="${escapeHtml(referralDetailPlaceholder(state.referralSource))}" maxlength="200" value="${escapeHtml(state.referralOther)}" />`
+          : ''
+      }
       ${err}
       <button type="button" class="wwc-btn wwc-btn-primary wwc-verify-submit" id="wwc-verify-submit"${canSubmit ? '' : ' disabled'}>${state.submitBusy ? 'Saving…' : 'Continue'}</button>`;
   }
@@ -209,7 +237,9 @@
         primary_purpose: state.primaryPurpose,
         wants_account_manager: state.wantsAccountManager,
         referral_source: state.referralSource,
-        referral_other: state.referralSource === 'other' ? state.referralOther.trim() : undefined,
+        referral_other: referralSourceNeedsDetail(state.referralSource)
+          ? state.referralOther.trim()
+          : undefined,
       });
       global.WWC_AUTH.patchUser({
         registration_account_type: data.registration_account_type,

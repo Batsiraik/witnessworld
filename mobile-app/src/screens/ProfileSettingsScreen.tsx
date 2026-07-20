@@ -106,7 +106,7 @@ function formatCardBrand(brand: string | null | undefined): string {
   return map[b] ?? brand.charAt(0).toUpperCase() + brand.slice(1).toLowerCase();
 }
 
-export function ProfileSettingsScreen(_props: Props) {
+export function ProfileSettingsScreen({ navigation }: Props) {
   const { user, subscription, refreshProfile, stackNavigation, supportAvailable, supportEmail } =
     useDashboardContext();
   const monetizationOn = subscription?.monetization_enabled === true;
@@ -135,21 +135,8 @@ export function ProfileSettingsScreen(_props: Props) {
     (user?.membership_plan && user.membership_plan !== 'free' ? user.membership_plan : '') ||
     'Member';
 
-  const showAccountEditBlocked = () => {
-    const body =
-      `To change your name, email, or phone on the WWC App, please contact the administrator${
-        supportEmail ? ` at ${supportEmail}` : ''
-      }. Or send a message to Support in App Chat. These details cannot be updated from the app.`;
-    const buttons: { text: string; style?: 'cancel' | 'destructive'; onPress?: () => void }[] = [
-      { text: 'OK', style: 'cancel' },
-    ];
-    if (supportAvailable) {
-      buttons.unshift({
-        text: 'Message support',
-        onPress: () => stackNavigation.navigate('SupportChat', {}),
-      });
-    }
-    Alert.alert('Profile details', body, buttons);
+  const showAccountEdit = () => {
+    navigation.navigate('EditAccount');
   };
 
   useFocusEffect(
@@ -354,19 +341,19 @@ export function ProfileSettingsScreen(_props: Props) {
                 icon="person-outline"
                 label="Full name"
                 subtitle={displayName}
-                onPress={showAccountEditBlocked}
+                onPress={showAccountEdit}
               />
               <MenuRow
                 icon="mail-outline"
                 label="Email"
                 subtitle={accountEmail}
-                onPress={showAccountEditBlocked}
+                onPress={showAccountEdit}
               />
               <MenuRow
                 icon="call-outline"
                 label="Phone"
                 subtitle={accountPhone}
-                onPress={showAccountEditBlocked}
+                onPress={showAccountEdit}
                 last
               />
             </GlassCard>

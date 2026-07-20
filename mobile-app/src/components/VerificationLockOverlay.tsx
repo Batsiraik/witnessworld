@@ -13,7 +13,11 @@ import {
   type TextStyle,
 } from 'react-native';
 import type { RegistrationPollPayload } from '../api/client';
-import { isRegistrationPollComplete } from '../utils/registrationPoll';
+import {
+  isRegistrationPollComplete,
+  referralDetailPlaceholder,
+  referralSourceNeedsDetail,
+} from '../utils/registrationPoll';
 import { PrimaryButton } from './PrimaryButton';
 import { colors } from '../theme/colors';
 
@@ -215,7 +219,7 @@ export function VerificationLockOverlay({
     primaryPurpose &&
     wantsAccountManager &&
     referralSource &&
-    (referralSource !== 'other' || referralOther.trim().length >= 2);
+    (!referralSourceNeedsDetail(referralSource) || referralOther.trim().length >= 2);
 
   const submitPoll = async () => {
     if (!canSubmit || !onSubmitPoll || submitBusy) return;
@@ -227,7 +231,9 @@ export function VerificationLockOverlay({
         primary_purpose: primaryPurpose,
         wants_account_manager: wantsAccountManager,
         referral_source: referralSource,
-        referral_other: referralSource === 'other' ? referralOther.trim() : undefined,
+        referral_other: referralSourceNeedsDetail(referralSource)
+          ? referralOther.trim()
+          : undefined,
       });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Could not save. Please try again.');
@@ -345,15 +351,15 @@ export function VerificationLockOverlay({
                       </Pressable>
                     );
                   })}
-                  {referralSource === 'other' ? (
+                  {referralSourceNeedsDetail(referralSource) ? (
                     <TextInput
                       value={referralOther}
                       onChangeText={setReferralOther}
-                      placeholder="Please specify"
+                      placeholder={referralDetailPlaceholder(referralSource)}
                       placeholderTextColor={colors.textMuted}
                       style={styles.otherInput}
                       maxLength={200}
-                      accessibilityLabel="Other referral source"
+                      accessibilityLabel={referralDetailPlaceholder(referralSource)}
                     />
                   ) : null}
 

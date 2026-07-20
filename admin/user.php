@@ -60,6 +60,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         } else {
             $flashQs = 'otp_error=' . rawurlencode('Could not bypass email verification.');
         }
+    } elseif ($action === 'update_profile') {
+        require_once __DIR__ . '/includes/profile_edit.php';
+        $validated = ww_profile_validate_fields($_POST, true);
+        if (!$validated['ok']) {
+            $flashQs = 'profile_error=' . rawurlencode((string) ($validated['error'] ?? 'Invalid profile details'));
+        } else {
+            $st = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+            $st->execute([$id]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                $flashQs = 'profile_error=' . rawurlencode('User not found.');
+            } else {
+                $result = ww_profile_apply_update($pdo, $id, $row, $validated['data'], false);
+                if (!$result['ok']) {
+                    $flashQs = 'profile_error=' . rawurlencode((string) ($result['error'] ?? 'Could not update profile'));
+                } else {
+                    $flashQs = 'profile_updated=1';
+                }
+            }
+        }
     } elseif ($action === 'suspend') {
         ww_admin_suspend_user($pdo, $id);
     } elseif ($action === 'delete') {

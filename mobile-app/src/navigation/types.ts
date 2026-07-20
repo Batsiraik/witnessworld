@@ -27,6 +27,7 @@ export type HomeStackParamList = {
   MembershipPlans: undefined;
   StorefrontAddon: undefined;
   Profile: undefined;
+  EditAccount: undefined;
   ProviderHub: undefined;
   CreateListing: { listingType?: 'classified' | 'service' | 'community'; seed?: number };
   CreateStore: { seed?: number };
@@ -64,6 +65,7 @@ export type DiscoverStackParamList = {
 /** Profile tab — settings only (detail flows use Home stack). */
 export type ProfileStackParamList = {
   Profile: undefined;
+  EditAccount: undefined;
 };
 
 export type PostTabStackParamList = {

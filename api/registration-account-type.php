@@ -48,9 +48,16 @@ if (!in_array($referral, ['friend_family', 'social_media', 'whatsapp_group', 'ww
 }
 
 $referralOther = trim((string) ($in['referral_other'] ?? $in['registration_referral_other'] ?? ''));
-if ($referral === 'other') {
+$needsReferralDetail = in_array($referral, ['friend_family', 'whatsapp_group', 'wwc_team_member', 'other'], true);
+if ($needsReferralDetail) {
     if ($referralOther === '' || mb_strlen($referralOther) < 2) {
-        ww_json(['ok' => false, 'error' => 'Please specify how you heard about us'], 422);
+        $msg = match ($referral) {
+            'whatsapp_group' => 'Please enter the WhatsApp group name',
+            'friend_family' => 'Please enter the name of the person who referred you',
+            'wwc_team_member' => 'Please enter the name of the WWC team member',
+            default => 'Please specify how you heard about us',
+        };
+        ww_json(['ok' => false, 'error' => $msg], 422);
     }
     if (mb_strlen($referralOther) > 200) {
         ww_json(['ok' => false, 'error' => 'Referral note is too long'], 422);
