@@ -22,7 +22,9 @@ if (!in_array($filter, $allowed, true)) {
 }
 
 $search = trim((string) ($_GET['q'] ?? ''));
-$sql = 'SELECT id, email, username, first_name, last_name, phone, status, created_at FROM users';
+$perPage = 50;
+$page = max(1, (int) ($_GET['page'] ?? 1));
+
 $where = [];
 $params = [];
 if ($filter !== 'all') {
@@ -34,16 +36,47 @@ if ($search !== '') {
     $term = '%' . $search . '%';
     array_push($params, $term, $term, $term, $term, $term, $term);
 }
-if ($where !== []) {
-    $sql .= ' WHERE ' . implode(' AND ', $where);
+$whereSql = $where !== [] ? (' WHERE ' . implode(' AND ', $where)) : '';
+
+$countSt = $pdo->prepare('SELECT COUNT(*) FROM users' . $whereSql);
+$countSt->execute($params);
+$totalRows = (int) $countSt->fetchColumn();
+$totalPages = max(1, (int) ceil($totalRows / $perPage));
+if ($page > $totalPages) {
+    $page = $totalPages;
 }
-$sql .= ' ORDER BY id DESC';
+$offset = ($page - 1) * $perPage;
+
+$sql = 'SELECT id, email, username, first_name, last_name, phone, status, created_at FROM users'
+    . $whereSql
+    . ' ORDER BY id DESC LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
 $st = $pdo->prepare($sql);
 $st->execute($params);
 $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
+$fromRow = $totalRows === 0 ? 0 : $offset + 1;
+$toRow = $totalRows === 0 ? 0 : min($offset + count($rows), $totalRows);
+
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 $usersSelf = ($base === '' || $base === '.') ? 'users.php' : $base . '/users.php';
+
+$usersUrl = static function (array $overrides = []) use ($usersSelf, $filter, $search, $page): string {
+    $query = [];
+    $status = array_key_exists('status', $overrides) ? (string) $overrides['status'] : $filter;
+    $q = array_key_exists('q', $overrides) ? (string) $overrides['q'] : $search;
+    $p = array_key_exists('page', $overrides) ? (int) $overrides['page'] : $page;
+    if ($status !== 'all') {
+        $query['status'] = $status;
+    }
+    if ($q !== '') {
+        $query['q'] = $q;
+    }
+    if ($p > 1) {
+        $query['page'] = $p;
+    }
+    return $usersSelf . ($query !== [] ? ('?' . http_build_query($query)) : '');
+};
+
 $userChipTones = [
     'all' => 'brand',
     'pending_verification' => 'warning',
@@ -51,18 +84,10 @@ $userChipTones = [
     'declined' => 'danger',
     'pending_otp' => 'neutral',
 ];
-$userChip = static function (string $key, string $label, string $cur) use ($usersSelf, $userChipTones, $search): string {
-    $query = [];
-    if ($key !== 'all') {
-        $query['status'] = $key;
-    }
-    if ($search !== '') {
-        $query['q'] = $search;
-    }
-    $qs = $query !== [] ? ('?' . http_build_query($query)) : '';
+$userChip = static function (string $key, string $label, string $cur) use ($usersUrl, $userChipTones): string {
     $tone = $userChipTones[$key] ?? 'brand';
 
-    return ww_admin_filter_chip($usersSelf . $qs, $label, $cur === $key, $tone);
+    return ww_admin_filter_chip($usersUrl(['status' => $key, 'page' => 1]), $label, $cur === $key, $tone);
 };
 
 $userPhp = ($base === '' || $base === '.') ? 'user.php' : $base . '/user.php';
@@ -101,12 +126,22 @@ require __DIR__ . '/partials/shell_open.php';
       />
       <button type="submit" class="admin-btn admin-btn--primary">Search</button>
       <?php if ($search !== ''): ?>
-        <a href="<?= htmlspecialchars($usersSelf . ($filter !== 'all' ? '?status=' . urlencode($filter) : ''), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft">Clear</a>
+        <a href="<?= htmlspecialchars($usersUrl(['q' => '', 'page' => 1]), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft">Clear</a>
       <?php endif; ?>
     </form>
-    <?php if ($search !== ''): ?>
-      <p class="text-xs text-slate-500"><?= count($rows) ?> result<?= count($rows) === 1 ? '' : 's' ?> for “<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>”</p>
-    <?php endif; ?>
+    <p class="text-xs text-slate-500">
+      <?php if ($search !== ''): ?>
+        <?= (int) $totalRows ?> result<?= $totalRows === 1 ? '' : 's' ?> for “<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>”
+        <?php if ($totalRows > 0): ?>
+          · showing <?= (int) $fromRow ?>–<?= (int) $toRow ?>
+        <?php endif; ?>
+      <?php else: ?>
+        <?= (int) $totalRows ?> user<?= $totalRows === 1 ? '' : 's' ?>
+        <?php if ($totalRows > 0): ?>
+          · showing <?= (int) $fromRow ?>–<?= (int) $toRow ?>
+        <?php endif; ?>
+      <?php endif; ?>
+    </p>
     <div class="flex flex-wrap gap-2">
       <?= $userChip('all', 'All', $filter) ?>
       <?= $userChip('pending_verification', 'Pending verification', $filter) ?>
@@ -166,6 +201,41 @@ require __DIR__ . '/partials/shell_open.php';
       </tbody>
     </table>
   </div>
+  <?php if ($totalPages > 1): ?>
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-4">
+      <p class="text-xs text-slate-500">Page <?= (int) $page ?> of <?= (int) $totalPages ?></p>
+      <div class="flex flex-wrap items-center gap-2">
+        <?php if ($page > 1): ?>
+          <a href="<?= htmlspecialchars($usersUrl(['page' => $page - 1]), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft admin-btn--sm">← Previous</a>
+        <?php else: ?>
+          <span class="admin-btn admin-btn--soft admin-btn--sm pointer-events-none opacity-40">← Previous</span>
+        <?php endif; ?>
+        <?php
+        $windowStart = max(1, $page - 2);
+        $windowEnd = min($totalPages, $page + 2);
+        if ($windowStart > 1): ?>
+          <a href="<?= htmlspecialchars($usersUrl(['page' => 1]), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft admin-btn--sm">1</a>
+          <?php if ($windowStart > 2): ?><span class="px-1 text-xs text-slate-400">…</span><?php endif; ?>
+        <?php endif; ?>
+        <?php for ($p = $windowStart; $p <= $windowEnd; $p++): ?>
+          <?php if ($p === $page): ?>
+            <span class="admin-btn admin-btn--primary admin-btn--sm pointer-events-none"><?= (int) $p ?></span>
+          <?php else: ?>
+            <a href="<?= htmlspecialchars($usersUrl(['page' => $p]), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft admin-btn--sm"><?= (int) $p ?></a>
+          <?php endif; ?>
+        <?php endfor; ?>
+        <?php if ($windowEnd < $totalPages): ?>
+          <?php if ($windowEnd < $totalPages - 1): ?><span class="px-1 text-xs text-slate-400">…</span><?php endif; ?>
+          <a href="<?= htmlspecialchars($usersUrl(['page' => $totalPages]), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft admin-btn--sm"><?= (int) $totalPages ?></a>
+        <?php endif; ?>
+        <?php if ($page < $totalPages): ?>
+          <a href="<?= htmlspecialchars($usersUrl(['page' => $page + 1]), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft admin-btn--sm">Next →</a>
+        <?php else: ?>
+          <span class="admin-btn admin-btn--soft admin-btn--sm pointer-events-none opacity-40">Next →</span>
+        <?php endif; ?>
+      </div>
+    </div>
+  <?php endif; ?>
 </div>
 
 <div id="user-review-modal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="user-review-modal-title">
