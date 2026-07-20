@@ -32,12 +32,10 @@ if ($entryId <= 0) {
 }
 
 try {
-    $del = $pdo->prepare(
-        "DELETE FROM directory_entries WHERE id = ? AND user_id = ? AND moderation_status IN ('pending_approval','rejected')"
-    );
+    $del = $pdo->prepare('DELETE FROM directory_entries WHERE id = ? AND user_id = ?');
     $del->execute([$entryId, $userId]);
     if ($del->rowCount() === 0) {
-        ww_json(['ok' => false, 'error' => 'Not found or only pending/rejected listings can be deleted'], 404);
+        ww_json(['ok' => false, 'error' => 'Listing not found or not yours'], 404);
     }
 } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Could not delete'], 500);

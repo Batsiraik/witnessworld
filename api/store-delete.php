@@ -32,12 +32,10 @@ if ($storeId <= 0) {
 }
 
 try {
-    $del = $pdo->prepare(
-        "DELETE FROM stores WHERE id = ? AND user_id = ? AND moderation_status IN ('pending_approval','rejected')"
-    );
+    $del = $pdo->prepare('DELETE FROM stores WHERE id = ? AND user_id = ?');
     $del->execute([$storeId, $userId]);
     if ($del->rowCount() === 0) {
-        ww_json(['ok' => false, 'error' => 'Store not found, or it cannot be deleted (only pending or rejected stores).'], 404);
+        ww_json(['ok' => false, 'error' => 'Store not found or not yours'], 404);
     }
 } catch (Throwable) {
     ww_json(['ok' => false, 'error' => 'Could not delete'], 500);

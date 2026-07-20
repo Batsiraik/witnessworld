@@ -148,7 +148,7 @@ export function MyOfficeScreen({ navigation }: Props) {
   };
 
   const confirmDeleteStore = (s: StoreRow) => {
-    Alert.alert('Delete store', `Remove “${s.name}”? You can only delete pending or rejected stores.`, [
+    Alert.alert('Delete store', `Remove “${s.name}”? This cannot be undone.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -168,7 +168,7 @@ export function MyOfficeScreen({ navigation }: Props) {
   };
 
   const confirmDeleteDir = (d: DirRow) => {
-    Alert.alert('Delete listing', `Remove “${d.business_name}”? Only pending or rejected listings can be deleted.`, [
+    Alert.alert('Delete listing', `Remove “${d.business_name}”? This cannot be undone.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -196,7 +196,6 @@ export function MyOfficeScreen({ navigation }: Props) {
         </Text>
       ) : (
         dirEntries.map((d) => {
-          const canDelete = d.moderation_status === 'pending_approval' || d.moderation_status === 'rejected';
           const suspended = d.moderation_status === 'suspended';
           return (
             <View key={d.id} style={styles.storeCard}>
@@ -234,14 +233,12 @@ export function MyOfficeScreen({ navigation }: Props) {
                     <Text style={styles.btnDirText}>Edit listing</Text>
                   </Pressable>
                 ) : null}
-                {canDelete ? (
-                  <Pressable
-                    onPress={() => confirmDeleteDir(d)}
-                    style={({ pressed }) => [styles.storeBtn, styles.btnDangerSm, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.btnDangerText}>Delete</Text>
-                  </Pressable>
-                ) : null}
+                <Pressable
+                  onPress={() => confirmDeleteDir(d)}
+                  style={({ pressed }) => [styles.storeBtn, styles.btnDangerSm, pressed && styles.pressed]}
+                >
+                  <Text style={styles.btnDangerText}>Delete</Text>
+                </Pressable>
               </View>
             </View>
           );
@@ -260,7 +257,6 @@ export function MyOfficeScreen({ navigation }: Props) {
       ) : (
         stores.map((s) => {
           const approved = s.moderation_status === 'approved';
-          const canDelete = s.moderation_status === 'pending_approval' || s.moderation_status === 'rejected';
           const suspended = s.moderation_status === 'suspended';
           return (
             <View key={s.id} style={styles.storeCard}>
@@ -306,14 +302,12 @@ export function MyOfficeScreen({ navigation }: Props) {
                     <Text style={styles.btnSecondaryText}>Edit storefront</Text>
                   </Pressable>
                 ) : null}
-                {canDelete ? (
-                  <Pressable
-                    onPress={() => confirmDeleteStore(s)}
-                    style={({ pressed }) => [styles.storeBtn, styles.btnDangerSm, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.btnDangerText}>Delete</Text>
-                  </Pressable>
-                ) : null}
+                <Pressable
+                  onPress={() => confirmDeleteStore(s)}
+                  style={({ pressed }) => [styles.storeBtn, styles.btnDangerSm, pressed && styles.pressed]}
+                >
+                  <Text style={styles.btnDangerText}>Delete</Text>
+                </Pressable>
               </View>
             </View>
           );

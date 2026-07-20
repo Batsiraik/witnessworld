@@ -8,7 +8,7 @@ $pageTitle = 'Export data';
 $activeNav = 'dashboard';
 
 $period = strtolower(trim((string) ($_GET['period'] ?? 'month')));
-if (!in_array($period, ['day', 'week', 'month'], true)) {
+if (!in_array($period, ['all', 'day', 'week', 'month'], true)) {
     $period = 'month';
 }
 
@@ -18,48 +18,58 @@ if (!$anchor) {
     $anchor = new DateTimeImmutable('today');
 }
 
-[$from, $toExclusive, $rangeLabel] = match ($period) {
-    'day' => [
-        $anchor->setTime(0, 0, 0),
-        $anchor->modify('+1 day')->setTime(0, 0, 0),
-        $anchor->format('M j, Y'),
-    ],
-    'week' => (static function (DateTimeImmutable $d): array {
-        $monday = $d->modify('monday this week')->setTime(0, 0, 0);
-        // PHP "monday this week" can jump forward on Sunday in some locales — normalize.
-        if ((int) $d->format('N') === 7) {
-            $monday = $d->modify('monday last week')->setTime(0, 0, 0);
-        }
-        $next = $monday->modify('+7 days');
-        return [
-            $monday,
-            $next,
-            $monday->format('M j, Y') . ' – ' . $monday->modify('+6 days')->format('M j, Y'),
-        ];
-    })($anchor),
-    default => [
-        $anchor->modify('first day of this month')->setTime(0, 0, 0),
-        $anchor->modify('first day of next month')->setTime(0, 0, 0),
-        $anchor->format('F Y'),
-    ],
-};
+$from = null;
+$toExclusive = null;
+$rangeLabel = 'All members';
+
+if ($period !== 'all') {
+    [$from, $toExclusive, $rangeLabel] = match ($period) {
+        'day' => [
+            $anchor->setTime(0, 0, 0),
+            $anchor->modify('+1 day')->setTime(0, 0, 0),
+            $anchor->format('M j, Y'),
+        ],
+        'week' => (static function (DateTimeImmutable $d): array {
+            $monday = $d->modify('monday this week')->setTime(0, 0, 0);
+            // PHP "monday this week" can jump forward on Sunday in some locales — normalize.
+            if ((int) $d->format('N') === 7) {
+                $monday = $d->modify('monday last week')->setTime(0, 0, 0);
+            }
+            $next = $monday->modify('+7 days');
+            return [
+                $monday,
+                $next,
+                $monday->format('M j, Y') . ' – ' . $monday->modify('+6 days')->format('M j, Y'),
+            ];
+        })($anchor),
+        default => [
+            $anchor->modify('first day of this month')->setTime(0, 0, 0),
+            $anchor->modify('first day of next month')->setTime(0, 0, 0),
+            $anchor->format('F Y'),
+        ],
+    };
+}
 
 $pdo = witnessworld_pdo();
 $previewCount = 0;
 try {
-    $st = $pdo->prepare(
-        'SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at < ?'
-    );
-    $st->execute([$from->format('Y-m-d H:i:s'), $toExclusive->format('Y-m-d H:i:s')]);
-    $previewCount = (int) $st->fetchColumn();
+    if ($period === 'all') {
+        $previewCount = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+    } else {
+        $st = $pdo->prepare(
+            'SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at < ?'
+        );
+        $st->execute([$from->format('Y-m-d H:i:s'), $toExclusive->format('Y-m-d H:i:s')]);
+        $previewCount = (int) $st->fetchColumn();
+    }
 } catch (Throwable) {
     $previewCount = 0;
 }
 
-$downloadQs = http_build_query([
+$downloadQs = http_build_query(array_filter([
     'period' => $period,
-    'date' => $anchor->format('Y-m-d'),
-]);
+    'date' => $period === 'all' ? null : $anchor->format('Y-m-d'),
+]));
 
 require __DIR__ . '/partials/head.php';
 require __DIR__ . '/partials/sidebar.php';
@@ -70,7 +80,7 @@ require __DIR__ . '/partials/shell_open.php';
   <div>
     <p class="text-sm text-slate-500"><a href="index.php" class="font-semibold text-brand hover:underline">← Dashboard</a></p>
     <h1 class="mt-1 text-xl font-bold text-slate-900">Export member data</h1>
-    <p class="mt-2 text-sm text-slate-600">Download an Excel-compatible spreadsheet of members who joined in the selected period, including verification poll answers and active listing counts.</p>
+    <p class="mt-2 text-sm text-slate-600">Download an Excel-compatible spreadsheet of members — all users, or filtered by day, week, or month — including verification poll answers and active listing counts.</p>
   </div>
 
   <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-panel">
@@ -79,7 +89,7 @@ require __DIR__ . '/partials/shell_open.php';
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Period</p>
         <div class="mt-3 flex flex-wrap gap-2">
           <?php
-          $chips = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month'];
+          $chips = ['all' => 'All users', 'day' => 'Day', 'week' => 'Week', 'month' => 'Month'];
           foreach ($chips as $key => $label):
               $active = $period === $key;
               ?>
@@ -93,6 +103,7 @@ require __DIR__ . '/partials/shell_open.php';
         </div>
       </div>
 
+      <?php if ($period !== 'all'): ?>
       <div>
         <label class="block text-xs font-semibold text-slate-600" for="export-date">Reference date</label>
         <input
@@ -113,6 +124,7 @@ require __DIR__ . '/partials/shell_open.php';
           <?php endif; ?>
         </p>
       </div>
+      <?php endif; ?>
 
       <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-700">
         <span class="font-semibold text-slate-900"><?= (int) $previewCount ?></span>

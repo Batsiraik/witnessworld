@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/registration_poll_labels.php';
 
 $period = strtolower(trim((string) ($_GET['period'] ?? 'month')));
-if (!in_array($period, ['day', 'week', 'month'], true)) {
+if (!in_array($period, ['all', 'day', 'week', 'month'], true)) {
     $period = 'month';
 }
 
@@ -16,33 +16,39 @@ if (!$anchor) {
     $anchor = new DateTimeImmutable('today');
 }
 
-[$from, $toExclusive, $rangeSlug] = match ($period) {
-    'day' => [
-        $anchor->setTime(0, 0, 0),
-        $anchor->modify('+1 day')->setTime(0, 0, 0),
-        $anchor->format('Y-m-d'),
-    ],
-    'week' => (static function (DateTimeImmutable $d): array {
-        $monday = $d->modify('monday this week')->setTime(0, 0, 0);
-        if ((int) $d->format('N') === 7) {
-            $monday = $d->modify('monday last week')->setTime(0, 0, 0);
-        }
-        return [
-            $monday,
-            $monday->modify('+7 days'),
-            $monday->format('Y-m-d') . '_to_' . $monday->modify('+6 days')->format('Y-m-d'),
-        ];
-    })($anchor),
-    default => [
-        $anchor->modify('first day of this month')->setTime(0, 0, 0),
-        $anchor->modify('first day of next month')->setTime(0, 0, 0),
-        $anchor->format('Y-m'),
-    ],
-};
+$from = null;
+$toExclusive = null;
+$rangeSlug = 'all';
+
+if ($period !== 'all') {
+    [$from, $toExclusive, $rangeSlug] = match ($period) {
+        'day' => [
+            $anchor->setTime(0, 0, 0),
+            $anchor->modify('+1 day')->setTime(0, 0, 0),
+            $anchor->format('Y-m-d'),
+        ],
+        'week' => (static function (DateTimeImmutable $d): array {
+            $monday = $d->modify('monday this week')->setTime(0, 0, 0);
+            if ((int) $d->format('N') === 7) {
+                $monday = $d->modify('monday last week')->setTime(0, 0, 0);
+            }
+            return [
+                $monday,
+                $monday->modify('+7 days'),
+                $monday->format('Y-m-d') . '_to_' . $monday->modify('+6 days')->format('Y-m-d'),
+            ];
+        })($anchor),
+        default => [
+            $anchor->modify('first day of this month')->setTime(0, 0, 0),
+            $anchor->modify('first day of next month')->setTime(0, 0, 0),
+            $anchor->format('Y-m'),
+        ],
+    };
+}
 
 $pdo = witnessworld_pdo();
 
-$sql = "SELECT
+$selectSql = "SELECT
             u.id,
             u.first_name,
             u.last_name,
@@ -65,19 +71,9 @@ $sql = "SELECT
               WHERE l.user_id = u.id
                 AND l.moderation_status = 'approved'
             ) AS active_listing_titles
-        FROM users u
-        WHERE u.created_at >= ?
-          AND u.created_at < ?
-        ORDER BY u.created_at ASC, u.id ASC";
+        FROM users u";
 
-try {
-    $st = $pdo->prepare($sql);
-    $st->execute([$from->format('Y-m-d H:i:s'), $toExclusive->format('Y-m-d H:i:s')]);
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    // Older DBs may miss some poll columns — fall back without optional fields.
-    $st = $pdo->prepare(
-        "SELECT u.id, u.first_name, u.last_name, u.email, u.created_at,
+$fallbackSql = "SELECT u.id, u.first_name, u.last_name, u.email, u.created_at,
                 (
                   SELECT COUNT(*) FROM listings l
                   WHERE l.user_id = u.id AND l.moderation_status = 'approved'
@@ -87,12 +83,27 @@ try {
                   FROM listings l
                   WHERE l.user_id = u.id AND l.moderation_status = 'approved'
                 ) AS active_listing_titles
-         FROM users u
-         WHERE u.created_at >= ? AND u.created_at < ?
-         ORDER BY u.created_at ASC, u.id ASC"
-    );
-    $st->execute([$from->format('Y-m-d H:i:s'), $toExclusive->format('Y-m-d H:i:s')]);
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+         FROM users u";
+
+$orderSql = ' ORDER BY u.created_at ASC, u.id ASC';
+
+try {
+    if ($period === 'all') {
+        $rows = $pdo->query($selectSql . $orderSql)->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $st = $pdo->prepare($selectSql . ' WHERE u.created_at >= ? AND u.created_at < ?' . $orderSql);
+        $st->execute([$from->format('Y-m-d H:i:s'), $toExclusive->format('Y-m-d H:i:s')]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Throwable $e) {
+    // Older DBs may miss some poll columns — fall back without optional fields.
+    if ($period === 'all') {
+        $rows = $pdo->query($fallbackSql . $orderSql)->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $st = $pdo->prepare($fallbackSql . ' WHERE u.created_at >= ? AND u.created_at < ?' . $orderSql);
+        $st->execute([$from->format('Y-m-d H:i:s'), $toExclusive->format('Y-m-d H:i:s')]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 
 $headers = [

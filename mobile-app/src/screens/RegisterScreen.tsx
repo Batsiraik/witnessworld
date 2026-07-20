@@ -59,7 +59,6 @@ const FIELD_ERROR_ORDER = [
   'dateOfBirth',
   'memberType',
   'baptismDate',
-  'congregation',
   'country',
   'password',
   'confirm',
@@ -185,7 +184,6 @@ export function RegisterScreen({ navigation }: Props) {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [memberRole, setMemberRole] = useState('');
   const [baptismDate, setBaptismDate] = useState('');
-  const [congregation, setCongregation] = useState('');
   const [signupCountry, setSignupCountry] = useState<SignupCountry | null>(null);
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [countryNameByLabel, setCountryNameByLabel] = useState<Record<string, SignupCountry>>({});
@@ -218,7 +216,6 @@ export function RegisterScreen({ navigation }: Props) {
     } else if (baptismDate.trim() && !parseDate(baptismDate)) {
       next.baptismDate = 'Use YYYY-MM-DD format';
     }
-    if (!congregation.trim()) next.congregation = 'Enter your congregation';
     if (!signupCountry?.code) next.country = 'Select your country';
     if (password.length < 8) next.password = 'Use at least 8 characters';
     if (password !== confirm) next.confirm = 'Passwords do not match';
@@ -247,7 +244,6 @@ export function RegisterScreen({ navigation }: Props) {
           date_of_birth: dateOfBirth.trim(),
           member_type: memberRole.trim(),
           baptism_date: baptismDate.trim(),
-          congregation: congregation.trim(),
           registration_country_code: signupCountry!.code,
           membership_plan: 'free',
         },
@@ -401,19 +397,6 @@ export function RegisterScreen({ navigation }: Props) {
                   isUnbaptizedPublisher(memberRole) ? 'Optional for unbaptized publishers' : undefined
                 }
                 error={errors.baptismDate}
-              />
-
-              <AppTextField
-                ref={(el) => {
-                  fieldRefs.current.congregation = el;
-                }}
-                label="Congregation"
-                value={congregation}
-                onChangeText={setCongregation}
-                autoCapitalize="words"
-                leftIcon="home-outline"
-                placeholder="Your congregation name"
-                error={errors.congregation}
               />
 
               <AppSelectField

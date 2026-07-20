@@ -23,7 +23,6 @@ $phone = trim((string) ($in['phone'] ?? ''));
 $dateOfBirth = trim((string) ($in['date_of_birth'] ?? ''));
 $memberType = trim((string) ($in['member_type'] ?? ''));
 $baptismDate = trim((string) ($in['baptism_date'] ?? ''));
-$congregation = trim((string) ($in['congregation'] ?? ''));
 $countryCode = strtoupper(trim((string) ($in['registration_country_code'] ?? $in['country_code'] ?? '')));
 $plan = ww_valid_membership_plan(strtolower(trim((string) ($in['membership_plan'] ?? 'free'))));
 
@@ -90,9 +89,6 @@ if (!$isUnbaptized) {
     ww_json(['ok' => false, 'error' => 'Use YYYY-MM-DD format for baptism date'], 422);
 }
 $baptismStored = $baptismParsed ? $baptismParsed->format('Y-m-d') : null;
-if ($congregation === '') {
-    ww_json(['ok' => false, 'error' => 'Congregation is required'], 422);
-}
 $countryMap = ww_listing_country_map();
 if ($countryCode === '' || strlen($countryCode) !== 2 || !isset($countryMap[$countryCode])) {
     ww_json(['ok' => false, 'error' => 'Select a valid country'], 422);
@@ -141,7 +137,7 @@ $ins->execute([
     $dateOfBirth,
     $memberType,
     $baptismStored,
-    $congregation,
+    '',
     $countryCode,
     $countryName,
     $plan,

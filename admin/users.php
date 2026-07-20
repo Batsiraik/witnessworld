@@ -21,11 +21,21 @@ if (!in_array($filter, $allowed, true)) {
     $filter = 'all';
 }
 
+$search = trim((string) ($_GET['q'] ?? ''));
 $sql = 'SELECT id, email, username, first_name, last_name, phone, status, created_at FROM users';
+$where = [];
 $params = [];
 if ($filter !== 'all') {
-    $sql .= ' WHERE status = ?';
+    $where[] = 'status = ?';
     $params[] = $filter;
+}
+if ($search !== '') {
+    $where[] = '(first_name LIKE ? OR last_name LIKE ? OR CONCAT(first_name, " ", last_name) LIKE ? OR email LIKE ? OR username LIKE ? OR phone LIKE ?)';
+    $term = '%' . $search . '%';
+    array_push($params, $term, $term, $term, $term, $term, $term);
+}
+if ($where !== []) {
+    $sql .= ' WHERE ' . implode(' AND ', $where);
 }
 $sql .= ' ORDER BY id DESC';
 $st = $pdo->prepare($sql);
@@ -41,8 +51,15 @@ $userChipTones = [
     'declined' => 'danger',
     'pending_otp' => 'neutral',
 ];
-$userChip = static function (string $key, string $label, string $cur) use ($usersSelf, $userChipTones): string {
-    $qs = $key === 'all' ? '' : ('?status=' . urlencode($key));
+$userChip = static function (string $key, string $label, string $cur) use ($usersSelf, $userChipTones, $search): string {
+    $query = [];
+    if ($key !== 'all') {
+        $query['status'] = $key;
+    }
+    if ($search !== '') {
+        $query['q'] = $search;
+    }
+    $qs = $query !== [] ? ('?' . http_build_query($query)) : '';
     $tone = $userChipTones[$key] ?? 'brand';
 
     return ww_admin_filter_chip($usersSelf . $qs, $label, $cur === $key, $tone);
@@ -69,6 +86,27 @@ require __DIR__ . '/partials/shell_open.php';
       <h2 class="text-base font-semibold text-slate-900">App users</h2>
       <p class="text-sm text-slate-500">Open a user to review signup details and approve or decline.</p>
     </div>
+    <form method="get" class="flex w-full max-w-xl flex-col gap-2 sm:flex-row">
+      <?php if ($filter !== 'all'): ?>
+        <input type="hidden" name="status" value="<?= htmlspecialchars($filter, ENT_QUOTES, 'UTF-8') ?>" />
+      <?php endif; ?>
+      <label class="sr-only" for="user-search">Search users</label>
+      <input
+        id="user-search"
+        type="search"
+        name="q"
+        value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>"
+        placeholder="Search name, username, email, or phone"
+        class="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+      />
+      <button type="submit" class="admin-btn admin-btn--primary">Search</button>
+      <?php if ($search !== ''): ?>
+        <a href="<?= htmlspecialchars($usersSelf . ($filter !== 'all' ? '?status=' . urlencode($filter) : ''), ENT_QUOTES, 'UTF-8') ?>" class="admin-btn admin-btn--soft">Clear</a>
+      <?php endif; ?>
+    </form>
+    <?php if ($search !== ''): ?>
+      <p class="text-xs text-slate-500"><?= count($rows) ?> result<?= count($rows) === 1 ? '' : 's' ?> for “<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>”</p>
+    <?php endif; ?>
     <div class="flex flex-wrap gap-2">
       <?= $userChip('all', 'All', $filter) ?>
       <?= $userChip('pending_verification', 'Pending verification', $filter) ?>
@@ -123,7 +161,7 @@ require __DIR__ . '/partials/shell_open.php';
           </tr>
         <?php endforeach; ?>
         <?php if ($rows === []): ?>
-          <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No users yet.</td></tr>
+          <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500"><?= $search !== '' ? 'No users match your search.' : 'No users yet.' ?></td></tr>
         <?php endif; ?>
       </tbody>
     </table>

@@ -79,7 +79,6 @@
         date_of_birth: dobInput.value,
         member_type: role,
         baptism_date: baptismVal || null,
-        congregation: document.getElementById('congregation').value.trim(),
         registration_country_code: document.getElementById('country').value,
         membership_plan: 'free',
       }, true);
