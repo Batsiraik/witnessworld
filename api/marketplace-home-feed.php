@@ -67,9 +67,16 @@ function ww_feed_listing_sql(string $listingType, int $limit, string $country, s
     $sql = 'SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
                     l.is_featured, l.is_urgent, l.is_verified,
                     l.location_country_name, l.location_us_state, l.created_at,
-                    u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
+                    u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url,
+                    rv.avg_rating AS rating_average, rv.review_count AS rating_count
              FROM listings l
              INNER JOIN users u ON u.id = l.user_id
+             LEFT JOIN (
+                SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                FROM content_reviews
+                WHERE subject_type = \'listing\' AND status = \'published\'
+                GROUP BY subject_id
+             ) rv ON rv.subject_id = l.id
              WHERE l.moderation_status = ? AND l.listing_type = ?';
     $params = ['approved', $listingType];
     if ($country !== '' && strlen($country) === 2) {
@@ -258,9 +265,16 @@ try {
         $sqlF = 'SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
                         l.listing_type, l.is_featured, l.is_urgent, l.is_verified,
                         l.location_country_name, l.location_us_state, l.created_at,
-                        u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url
+                        u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url,
+                        rv.avg_rating AS rating_average, rv.review_count AS rating_count
                  FROM listings l
                  INNER JOIN users u ON u.id = l.user_id
+                 LEFT JOIN (
+                    SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                    FROM content_reviews
+                    WHERE subject_type = \'listing\' AND status = \'published\'
+                    GROUP BY subject_id
+                 ) rv ON rv.subject_id = l.id
                  WHERE l.moderation_status = ? AND l.is_featured = 1';
         $paramsF = ['approved'];
         if ($country !== '' && strlen($country) === 2) {
@@ -320,5 +334,9 @@ function ww_feed_row_listing(array $r): array
         'seller_username' => (string) $r['username'],
         'seller_label' => trim((string) $r['first_name'] . ' ' . (string) $r['last_name']),
         'seller_avatar_url' => $r['avatar_url'] ? (string) $r['avatar_url'] : null,
+        'rating_average' => isset($r['rating_average']) && $r['rating_average'] !== null
+            ? round((float) $r['rating_average'], 1)
+            : null,
+        'rating_count' => isset($r['rating_count']) ? (int) $r['rating_count'] : 0,
     ];
 }

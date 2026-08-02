@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
-import { FeaturedBadge } from '../components/FeaturedBadge';
 import { GradientBackground } from '../components/GradientBackground';
 import { NotificationsModal } from '../components/NotificationsModal';
 import { RemoteImage } from '../components/RemoteImage';
@@ -29,12 +28,11 @@ import type { LocCountry, LocState } from '../components/BrowseLocationFilters';
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
 const SCREEN_W = Dimensions.get('window').width;
-const TOP_CAT_COUNT = 5;
-const TOP_CAT_GAP = 6;
-/** Slightly smaller on narrow phones so "Marketplace" stays on one line. */
-const TOP_CAT_LABEL_FONT = SCREEN_W < 375 ? 10 : 11;
 const HOME_LOGO = require('../../assets/logo.jpg');
-const FEATURED_CARD_W = Math.min(SCREEN_W * 0.74, 300);
+const FEATURED_CARD_W = Math.min(SCREEN_W * 0.4, 156);
+const TREND_CARD_W = Math.min(SCREEN_W * 0.42, 168);
+const ACTION_GAP = 10;
+const STAR_GOLD = '#F5C518';
 
 type Feed = {
   services: Record<string, unknown>[];
@@ -99,52 +97,7 @@ function normalizeFeed(raw: unknown): Feed {
   };
 }
 
-type TopCategoryRoute = 'Classifieds' | 'Services' | 'Community' | 'Directory' | 'Stores';
-
-const TOP_CATEGORIES: {
-  label: string;
-  route: TopCategoryRoute;
-  icon: keyof typeof Ionicons.glyphMap;
-  bg: string;
-  iconColor: string;
-}[] = [
-  { label: 'Marketplace', route: 'Classifieds', icon: 'bag-handle-outline', bg: '#E8F4FD', iconColor: '#1D4ED8' },
-  { label: 'Services', route: 'Services', icon: 'construct-outline', bg: '#F3E8FF', iconColor: '#7C3AED' },
-  { label: 'Community', route: 'Community', icon: 'people-outline', bg: '#FEF3C7', iconColor: '#B45309' },
-  { label: 'Businesses', route: 'Directory', icon: 'business-outline', bg: '#DCFCE7', iconColor: '#15803D' },
-  { label: 'Stores', route: 'Stores', icon: 'storefront-outline', bg: '#FFEDD5', iconColor: '#C2410C' },
-];
-
-function navigateTopCategory(navigation: Props['navigation'], route: TopCategoryRoute) {
-  switch (route) {
-    case 'Classifieds':
-      navigation.navigate('Classifieds');
-      break;
-    case 'Services':
-      navigation.navigate('Services');
-      break;
-    case 'Community':
-      navigation.navigate('Community');
-      break;
-    case 'Directory':
-      navigation.navigate('Directory');
-      break;
-    case 'Stores':
-      navigation.navigate('Stores');
-      break;
-    default:
-      break;
-  }
-}
-
 function formatListingLocation(row: Record<string, unknown>): string {
-  const st = row.location_us_state ? String(row.location_us_state) : '';
-  const c = row.location_country_name ? String(row.location_country_name) : '';
-  const parts = [st, c].filter(Boolean);
-  return parts.join(', ') || 'Location not set';
-}
-
-function formatProductLocation(row: Record<string, unknown>): string {
   const st = row.location_us_state ? String(row.location_us_state) : '';
   const c = row.location_country_name ? String(row.location_country_name) : '';
   const parts = [st, c].filter(Boolean);
@@ -158,8 +111,51 @@ function formatDirLocation(row: Record<string, unknown>): string {
   return parts.join(', ') || formatListingLocation(row);
 }
 
+function sellerLabel(row: Record<string, unknown>): string {
+  const label = String(row.seller_label ?? '').trim();
+  if (label) return label;
+  const u = String(row.seller_username ?? '').trim();
+  return u || 'Member';
+}
+
+function formatPrice(row: Record<string, unknown>): string | null {
+  const price = row.price_amount != null && row.price_amount !== '' ? String(row.price_amount) : null;
+  if (!price) return null;
+  const cur = String(row.currency ?? 'USD');
+  const pt = String(row.pricing_type ?? 'fixed');
+  const symbol = cur === 'USD' ? '$' : `${cur} `;
+  return `${symbol}${price}${pt === 'hourly' ? ' /HR' : ''}`;
+}
+
+function priceParts(row: Record<string, unknown>): { amount: string; suffix: string } | null {
+  const price = row.price_amount != null && row.price_amount !== '' ? String(row.price_amount) : null;
+  if (!price) return null;
+  const cur = String(row.currency ?? 'USD');
+  const pt = String(row.pricing_type ?? 'fixed');
+  const amount = cur === 'USD' ? `$${price}` : `${cur} ${price}`;
+  const suffix = pt === 'hourly' ? '/hr' : 'flat';
+  return { amount, suffix };
+}
+
+function StarRow({ rating }: { rating: number }) {
+  const filled = Math.max(0, Math.min(5, Math.round(rating)));
+  return (
+    <View style={styles.starRow}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Ionicons
+          key={n}
+          name={n <= filled ? 'star' : 'star-outline'}
+          size={9}
+          color={n <= filled ? STAR_GOLD : '#C5CAD3'}
+        />
+      ))}
+    </View>
+  );
+}
+
 export function HomeScreen({ navigation }: Props) {
   const { isGuest, showGuestPrompt } = useDashboardContext();
+  const searchRef = useRef<TextInput>(null);
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
   const [locModal, setLocModal] = useState(false);
@@ -267,300 +263,186 @@ export function HomeScreen({ navigation }: Props) {
     return countries.filter((c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q));
   }, [countries, countryQuery]);
 
-  const featuredCard = (item: FeaturedRow, showBadge: boolean) => {
-    if (item?.kind === 'product' && item.product) {
-      const row = item.product;
-      const id = Number(row.id);
-      const name = String(row.name ?? '');
-      const img = row.image_url ? String(row.image_url) : null;
-      const price = String(row.price_amount ?? '');
-      const cur = String(row.currency ?? 'USD');
-      const loc = formatProductLocation(row);
-      return (
-        <Pressable
-          key={`fp-${id}`}
-          style={({ pressed }) => [styles.fCard, { width: FEATURED_CARD_W }, pressed && styles.pressed]}
-          onPress={() => navigation.push('ProductDetail', { id })}
-        >
-          <View style={styles.fImgWrap}>
-            {img ? (
-              <RemoteImage url={img} style={styles.fImg} contentFit="cover" />
-            ) : (
-              <View style={[styles.fImg, styles.hPh]}>
-                <Ionicons name="cube-outline" size={32} color={colors.textMuted} />
-              </View>
-            )}
-            {showBadge ? (
-              <View style={styles.featuredBadge}>
-                <FeaturedBadge />
-              </View>
-            ) : null}
-          </View>
-          <Text style={styles.fTitle} numberOfLines={2}>
-            {name}
-          </Text>
-          <Text style={styles.fPrice}>
-            {cur} {price}
-          </Text>
-          <View style={styles.locRow}>
-            <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-            <Text style={styles.fLoc} numberOfLines={1}>
-              {loc}
-            </Text>
-          </View>
-        </Pressable>
-      );
+  const featuredServices = useMemo(() => {
+    if (!feed) return [] as Record<string, unknown>[];
+    const fromFeatured = feed.featured
+      .filter((f) => f.kind === 'service' && f.listing)
+      .map((f) => f.listing as Record<string, unknown>);
+    if (fromFeatured.length) return fromFeatured;
+    return feed.services;
+  }, [feed]);
+
+  const trendingRows = useMemo(() => {
+    if (!feed) return [] as { kind: 'product' | 'listing'; row: Record<string, unknown> }[];
+    const out: { kind: 'product' | 'listing'; row: Record<string, unknown> }[] = [];
+    for (const p of feed.products.slice(0, 6)) out.push({ kind: 'product', row: p });
+    for (const c of feed.classifieds.slice(0, 6)) out.push({ kind: 'listing', row: c });
+    return out.slice(0, 10);
+  }, [feed]);
+
+  const submitSearch = () => {
+    const q = searchQ.trim();
+    if (!q) {
+      searchRef.current?.focus();
+      return;
     }
-    if (item?.listing) {
-      const row = item.listing;
-      const id = Number(row.id);
-      const title = String(row.title ?? '');
-      const media = row.media_url ? String(row.media_url) : null;
-      const price = row.price_amount ? String(row.price_amount) : null;
-      const cur = String(row.currency ?? 'USD');
-      const pt = String(row.pricing_type ?? 'fixed');
-      const loc = formatListingLocation(row);
-      const isFeatured = row.is_featured === true || showBadge;
-      const isUrgent = row.is_urgent === true;
-      const isVerified = row.is_verified === true;
-      return (
-        <Pressable
-          key={`fl-${id}`}
-          style={({ pressed }) => [
-            styles.fCard,
-            isFeatured && styles.fCardFeatured,
-            isUrgent && styles.fCardUrgent,
-            { width: FEATURED_CARD_W },
-            pressed && styles.pressed,
-          ]}
-          onPress={() => navigation.push('ListingDetail', { id })}
-        >
-          <View style={styles.fImgWrap}>
-            {media ? (
-              <RemoteImage url={media} style={styles.fImg} contentFit="cover" />
-            ) : (
-              <View style={[styles.fImg, styles.hPh]}>
-                <Ionicons name="document-text-outline" size={32} color={colors.textMuted} />
-              </View>
-            )}
-            {isFeatured ? (
-              <View style={styles.featuredBadge}>
-                <FeaturedBadge />
-              </View>
-            ) : null}
-          </View>
-          {isUrgent || isVerified ? (
-            <View style={styles.flagRow}>
-              {isUrgent ? <Text style={[styles.flagBadge, styles.flagUrgent]}>Urgent</Text> : null}
-              {isVerified ? <Text style={[styles.flagBadge, styles.flagVerified]}>Verified</Text> : null}
-            </View>
-          ) : null}
-          <Text style={styles.fTitle} numberOfLines={2}>
-            {title}
-          </Text>
-          {price ? (
-            <Text style={styles.fPrice}>
-              {cur} {price}
-              {pt === 'hourly' ? '/hr' : ''}
-            </Text>
-          ) : (
-            <Text style={styles.fPriceMuted}>See listing</Text>
-          )}
-          <View style={styles.locRow}>
-            <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-            <Text style={styles.fLoc} numberOfLines={1}>
-              {loc}
-            </Text>
-          </View>
-        </Pressable>
-      );
+    navigation.navigate('Services', { initialQuery: q });
+  };
+
+  const goPromote = () => {
+    if (isGuest) {
+      showGuestPrompt();
+      return;
     }
-    return null;
+    navigation.navigate('ProviderHub');
   };
 
-  const compactListing = (row: Record<string, unknown>, isService: boolean) => {
-    const id = Number(row.id);
-    const title = String(row.title ?? '');
-    const media = row.media_url ? String(row.media_url) : null;
-    const price = row.price_amount ? String(row.price_amount) : null;
-    const cur = String(row.currency ?? 'USD');
-    const pt = String(row.pricing_type ?? 'fixed');
-    const loc = formatListingLocation(row);
-    const isFeatured = row.is_featured === true;
-    const isUrgent = row.is_urgent === true;
-    const isVerified = row.is_verified === true;
-    return (
-      <Pressable
-        key={`${isService ? 's' : 'c'}-${id}`}
-        style={({ pressed }) => [
-          styles.fCard,
-          isFeatured && styles.fCardFeatured,
-          isUrgent && styles.fCardUrgent,
-          { width: FEATURED_CARD_W },
-          pressed && styles.pressed,
-        ]}
-        onPress={() => navigation.push('ListingDetail', { id })}
-      >
-        <View style={styles.fImgWrap}>
-          {media ? (
-            <RemoteImage url={media} style={styles.fImg} contentFit="cover" />
-          ) : (
-            <View style={[styles.fImg, styles.hPh]}>
-              <Ionicons name="document-text-outline" size={32} color={colors.textMuted} />
-            </View>
-          )}
-          {isFeatured ? (
-            <View style={styles.featuredBadge}>
-              <FeaturedBadge />
-            </View>
-          ) : null}
-        </View>
-        {isUrgent || isVerified ? (
-          <View style={styles.flagRow}>
-            {isUrgent ? <Text style={[styles.flagBadge, styles.flagUrgent]}>Urgent</Text> : null}
-            {isVerified ? <Text style={[styles.flagBadge, styles.flagVerified]}>Verified</Text> : null}
-          </View>
-        ) : null}
-        <Text style={styles.fTitle} numberOfLines={2}>
-          {title}
-        </Text>
-        {price ? (
-          <Text style={styles.fPrice}>
-            {cur} {price}
-            {pt === 'hourly' ? '/hr' : ''}
-          </Text>
-        ) : (
-          <Text style={styles.fPriceMuted}>View</Text>
-        )}
-        <View style={styles.locRow}>
-          <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.fLoc} numberOfLines={1}>
-            {loc}
-          </Text>
-        </View>
-      </Pressable>
-    );
-  };
-
-  const compactProduct = (row: Record<string, unknown>) => {
-    const id = Number(row.id);
-    const name = String(row.name ?? '');
-    const img = row.image_url ? String(row.image_url) : null;
-    const price = String(row.price_amount ?? '');
-    const cur = String(row.currency ?? 'USD');
-    const loc = formatProductLocation(row);
-    return (
-      <Pressable
-        key={`p-${id}`}
-        style={({ pressed }) => [styles.fCard, { width: FEATURED_CARD_W }, pressed && styles.pressed]}
-        onPress={() => navigation.push('ProductDetail', { id })}
-      >
-        <View style={styles.fImgWrap}>
-          {img ? (
-            <RemoteImage url={img} style={styles.fImg} contentFit="cover" />
-          ) : (
-            <View style={[styles.fImg, styles.hPh]}>
-              <Ionicons name="cube-outline" size={32} color={colors.textMuted} />
-            </View>
-          )}
-        </View>
-        <Text style={styles.fTitle} numberOfLines={2}>
-          {name}
-        </Text>
-        <Text style={styles.fPrice}>
-          {cur} {price}
-        </Text>
-        <View style={styles.locRow}>
-          <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.fLoc} numberOfLines={1}>
-            {loc}
-          </Text>
-        </View>
-      </Pressable>
-    );
-  };
-
-  const compactStore = (row: Record<string, unknown>) => {
-    const id = Number(row.id);
-    const name = String(row.name ?? '');
-    const logo = row.logo_url ? String(row.logo_url) : '';
-    const loc = formatListingLocation(row);
-    return (
-      <Pressable
-        key={`st-${id}`}
-        style={({ pressed }) => [styles.fCard, { width: FEATURED_CARD_W }, pressed && styles.pressed]}
-        onPress={() => navigation.push('StoreDetailPublic', { id })}
-      >
-        <View style={styles.fImgWrap}>
-          {logo ? (
-            <RemoteImage url={logo} style={styles.fImg} contentFit="cover" />
-          ) : (
-            <View style={[styles.fImg, styles.hPh]}>
-              <Ionicons name="storefront-outline" size={32} color={colors.textMuted} />
-            </View>
-          )}
-        </View>
-        <Text style={styles.fTitle} numberOfLines={2}>
-          {name}
-        </Text>
-        <Text style={styles.fPriceMuted}>Store</Text>
-        <View style={styles.locRow}>
-          <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.fLoc} numberOfLines={1}>
-            {loc}
-          </Text>
-        </View>
-      </Pressable>
-    );
-  };
-
-  const compactDir = (row: Record<string, unknown>) => {
-    const id = Number(row.id);
-    const bn = String(row.business_name ?? '');
-    const logo = row.logo_url ? String(row.logo_url) : null;
-    const loc = formatDirLocation(row);
-    return (
-      <Pressable
-        key={`d-${id}`}
-        style={({ pressed }) => [styles.fCard, { width: FEATURED_CARD_W }, pressed && styles.pressed]}
-        onPress={() => navigation.push('DirectoryDetail', { id })}
-      >
-        <View style={styles.fImgWrap}>
-          {logo ? (
-            <RemoteImage url={logo} style={styles.fImg} contentFit="cover" />
-          ) : (
-            <View style={[styles.fImg, styles.hPh]}>
-              <Ionicons name="business-outline" size={32} color={colors.textMuted} />
-            </View>
-          )}
-        </View>
-        <Text style={styles.fTitle} numberOfLines={2}>
-          {bn}
-        </Text>
-        <Text style={styles.fPriceMuted}>Business</Text>
-        <View style={styles.locRow}>
-          <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.fLoc} numberOfLines={1}>
-            {loc}
-          </Text>
-        </View>
-      </Pressable>
-    );
-  };
-
-  const rail = (title: string, seeAll: () => void, children: ReactNode) => (
+  const rail = (title: string, seeAll: (() => void) | null, children: ReactNode) => (
     <View style={styles.rail}>
       <View style={styles.railHead}>
         <Text style={styles.railTitle}>{title}</Text>
-        <Pressable onPress={seeAll} hitSlop={8}>
-          <Text style={styles.seeAll}>See all {'>'}</Text>
-        </Pressable>
+        {seeAll ? (
+          <Pressable onPress={seeAll} hitSlop={8}>
+            <Text style={styles.seeAll}>See All {'>'}</Text>
+          </Pressable>
+        ) : null}
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-        {children}
-      </ScrollView>
+      {children}
     </View>
   );
+
+  const serviceCard = (row: Record<string, unknown>) => {
+    const id = Number(row.id);
+    const title = String(row.title ?? '');
+    const media = row.media_url ? String(row.media_url) : null;
+    const avatar = row.seller_avatar_url ? String(row.seller_avatar_url) : null;
+    const seller = sellerLabel(row);
+    const parts = priceParts(row);
+    const ratingAvg = typeof row.rating_average === 'number' ? row.rating_average : Number(row.rating_average);
+    const ratingCount = typeof row.rating_count === 'number' ? row.rating_count : Number(row.rating_count ?? 0);
+    const stars = Number.isFinite(ratingAvg) && ratingCount > 0 ? ratingAvg : 0;
+    return (
+      <Pressable
+        key={`svc-${id}`}
+        style={({ pressed }) => [styles.svcCard, pressed && styles.pressed]}
+        onPress={() => navigation.push('ListingDetail', { id })}
+      >
+        <View style={styles.svcImgWrap}>
+          {media ? (
+            <RemoteImage url={media} style={styles.svcImg} contentFit="cover" />
+          ) : (
+            <View style={[styles.svcImg, styles.hPh]}>
+              <Ionicons name="construct-outline" size={28} color={colors.textMuted} />
+            </View>
+          )}
+          <View style={styles.svcOverlayRow}>
+            <View style={styles.svcLogoChip}>
+              {avatar ? (
+                <RemoteImage url={avatar} style={styles.svcLogoImg} contentFit="cover" />
+              ) : (
+                <View style={[styles.svcLogoImg, styles.hPh]}>
+                  <Ionicons name="briefcase-outline" size={14} color={colors.primaryDark} />
+                </View>
+              )}
+            </View>
+            <View style={styles.svcRatingPill}>
+              <StarRow rating={stars} />
+            </View>
+          </View>
+        </View>
+        <View style={styles.svcBody}>
+          <Text style={styles.svcTitle} numberOfLines={1}>
+            {title}
+          </Text>
+          <Text style={styles.svcSeller} numberOfLines={1}>
+            {seller}
+          </Text>
+          {parts ? (
+            <View style={styles.svcPriceRow}>
+              <Text style={styles.svcPrice}>{parts.amount}</Text>
+              <Text style={styles.svcPriceSuffix}>{parts.suffix}</Text>
+            </View>
+          ) : (
+            <Text style={styles.svcPriceMuted}>See listing</Text>
+          )}
+        </View>
+      </Pressable>
+    );
+  };
+
+  const localBizCard = (row: Record<string, unknown>) => {
+    const id = Number(row.id);
+    const name = String(row.business_name ?? '');
+    const logo = row.logo_url ? String(row.logo_url) : null;
+    const loc = formatDirLocation(row);
+    return (
+      <View key={`biz-${id}`} style={styles.bizCard}>
+        <View style={styles.bizLeft}>
+          <View style={styles.bizIconRow}>
+            <View style={styles.bizIconWrap}>
+              <Ionicons name="storefront-outline" size={18} color={colors.primaryDark} />
+            </View>
+            <View style={styles.bizTextCol}>
+              <Text style={styles.bizName} numberOfLines={2}>
+                {name}
+              </Text>
+              <Text style={styles.bizLoc} numberOfLines={1}>
+                {loc}
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            style={({ pressed }) => [styles.bizBtn, pressed && styles.pressed]}
+            onPress={() => navigation.push('DirectoryDetail', { id })}
+          >
+            <Text style={styles.bizBtnText}>View Profile</Text>
+          </Pressable>
+        </View>
+        <View style={styles.bizThumbWrap}>
+          {logo ? (
+            <RemoteImage url={logo} style={styles.bizThumb} contentFit="cover" />
+          ) : (
+            <View style={[styles.bizThumb, styles.hPh]}>
+              <Ionicons name="business-outline" size={28} color={colors.textMuted} />
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  const trendCard = (kind: 'product' | 'listing', row: Record<string, unknown>) => {
+    const id = Number(row.id);
+    const title = String(kind === 'product' ? row.name ?? '' : row.title ?? '');
+    const img = kind === 'product' ? (row.image_url ? String(row.image_url) : null) : row.media_url ? String(row.media_url) : null;
+    const price =
+      kind === 'product'
+        ? `${String(row.currency ?? 'USD') === 'USD' ? '$' : `${row.currency} `}${String(row.price_amount ?? '')}`
+        : formatPrice(row);
+    return (
+      <Pressable
+        key={`tr-${kind}-${id}`}
+        style={({ pressed }) => [styles.trendCard, pressed && styles.pressed]}
+        onPress={() =>
+          kind === 'product' ? navigation.push('ProductDetail', { id }) : navigation.push('ListingDetail', { id })
+        }
+      >
+        <View style={styles.trendImgWrap}>
+          {img ? (
+            <RemoteImage url={img} style={styles.trendImg} contentFit="cover" />
+          ) : (
+            <View style={[styles.trendImg, styles.hPh]}>
+              <Ionicons name={kind === 'product' ? 'cube-outline' : 'pricetag-outline'} size={26} color={colors.textMuted} />
+            </View>
+          )}
+        </View>
+        <Text style={styles.trendTitle} numberOfLines={2}>
+          {title}
+        </Text>
+        {price ? <Text style={styles.trendPrice}>{price}</Text> : null}
+      </Pressable>
+    );
+  };
 
   return (
     <GradientBackground>
@@ -568,6 +450,7 @@ export function HomeScreen({ navigation }: Props) {
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={feedRefreshing}
@@ -578,52 +461,11 @@ export function HomeScreen({ navigation }: Props) {
           }
         >
           <View style={styles.topRow} accessibilityRole="header">
-            <View style={styles.topRowEnd}>
-              <Pressable
-                accessibilityLabel="Profile"
-                onPress={() => navigation.getParent()?.navigate('ProfileTab')}
-                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="person-outline" size={22} color={colors.text} />
-              </Pressable>
+            <View style={styles.brandBlock}>
+              <Image source={HOME_LOGO} style={styles.brandLogo} resizeMode="cover" accessibilityLabel="WWC logo" />
+              <Text style={styles.brandTitle}>WWC</Text>
             </View>
-
-            <View style={styles.topRowLogoSlot} pointerEvents="none">
-              <Image
-                source={HOME_LOGO}
-                style={styles.headerLogo}
-                resizeMode="cover"
-                accessibilityLabel="WWC logo"
-              />
-            </View>
-
-            <View style={[styles.topRowEnd, styles.topRowEndRight]}>
-              <Pressable
-                accessibilityLabel="Favorites"
-                onPress={() => {
-                  if (isGuest) {
-                    showGuestPrompt();
-                    return;
-                  }
-                  navigation.navigate('Favorites');
-                }}
-                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="heart" size={22} color={colors.danger} />
-              </Pressable>
-              <Pressable
-                accessibilityLabel="My orders"
-                onPress={() => {
-                  if (isGuest) {
-                    showGuestPrompt();
-                    return;
-                  }
-                  navigation.navigate('Orders');
-                }}
-                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="receipt-outline" size={22} color={colors.text} />
-              </Pressable>
+            <View style={styles.headerActions}>
               <Pressable
                 accessibilityLabel="Notifications"
                 onPress={() => {
@@ -638,51 +480,68 @@ export function HomeScreen({ navigation }: Props) {
                 <Ionicons name="notifications-outline" size={22} color={colors.text} />
                 {notifUnread > 0 ? <View style={styles.bellBadge} /> : null}
               </Pressable>
+              <Pressable
+                accessibilityLabel="Search"
+                onPress={() => searchRef.current?.focus()}
+                style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="search-outline" size={22} color={colors.text} />
+              </Pressable>
             </View>
           </View>
 
-          <Pressable onPress={() => setLocModal(true)} style={({ pressed }) => [styles.locLine, pressed && styles.pressed]}>
-            <Ionicons name="location" size={16} color={colors.primaryDark} />
-            <Text style={styles.locLineText}>{locationLabel}</Text>
-          </Pressable>
+          <Text style={styles.welcome}>Welcome back 👋</Text>
 
           <View style={styles.searchPill}>
             <Ionicons name="search-outline" size={20} color={colors.textMuted} />
             <TextInput
-              placeholder="Search services, products, businesses…"
+              ref={searchRef}
+              placeholder="Find services, businesses, or items"
               placeholderTextColor={colors.textMuted}
               style={styles.searchInput}
               value={searchQ}
               onChangeText={setSearchQ}
               returnKeyType="search"
-              onSubmitEditing={() => {
-                const q = searchQ.trim();
-                if (!q) return;
-                navigation.navigate('Services', { initialQuery: q });
-              }}
+              onSubmitEditing={submitSearch}
             />
           </View>
 
-          <View style={styles.catRow}>
-            {TOP_CATEGORIES.map((c) => (
-              <Pressable
-                key={c.route}
-                onPress={() => navigateTopCategory(navigation, c.route)}
-                style={({ pressed }) => [styles.catTile, pressed && styles.pressed]}
-              >
-                <View style={[styles.catIconWrap, { backgroundColor: c.bg }]}>
-                  <Ionicons name={c.icon} size={26} color={c.iconColor} />
-                </View>
-                <Text
-                  style={[styles.catLabel, { fontSize: TOP_CAT_LABEL_FONT }]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.78}
-                >
-                  {c.label}
-                </Text>
-              </Pressable>
-            ))}
+          <Pressable onPress={() => setLocModal(true)} style={({ pressed }) => [styles.locChip, pressed && styles.pressed]}>
+            <Ionicons name="location" size={14} color={colors.primaryDark} />
+            <Text style={styles.locChipText} numberOfLines={1}>
+              {locationLabel}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
+          </Pressable>
+
+          <View style={styles.actionRow}>
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, styles.actionServices, pressed && styles.pressed]}
+              onPress={() => navigation.navigate('Services')}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(31, 170, 242, 0.18)' }]}>
+                <Ionicons name="clipboard-outline" size={26} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.actionLabel}>Find{'\n'}Services</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, styles.actionPromote, pressed && styles.pressed]}
+              onPress={goPromote}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(31, 170, 242, 0.14)' }]}>
+                <Ionicons name="megaphone-outline" size={26} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.actionLabel}>Promote My{'\n'}Business</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, styles.actionMarket, pressed && styles.pressed]}
+              onPress={() => navigation.navigate('Classifieds')}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(200, 162, 74, 0.22)' }]}>
+                <Ionicons name="bag-handle-outline" size={26} color={colors.goldDark} />
+              </View>
+              <Text style={styles.actionLabel}>Browse{'\n'}Marketplace</Text>
+            </Pressable>
           </View>
 
           {feedLoading ? (
@@ -698,41 +557,70 @@ export function HomeScreen({ navigation }: Props) {
             </View>
           ) : feed ? (
             <View style={styles.feedBox}>
-              {feed.featured?.length
-                ? rail('Featured', () => navigation.navigate('Services'), feed.featured.map((f) => featuredCard(f, true)))
+              {featuredServices.length
+                ? rail(
+                    'Featured Services',
+                    () => navigation.navigate('Services'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {featuredServices.map((r) => serviceCard(r))}
+                    </ScrollView>
+                  )
                 : null}
 
-              {feed && (feed.classifieds.length > 0 || feed.stores.length > 0)
-                ? rail('Recommended', () => navigation.navigate('Classifieds'), [
-                    ...feed.classifieds.slice(0, 6).map((r) => compactListing(r, false)),
-                    ...feed.stores.slice(0, 4).map((r) => compactStore(r)),
-                  ])
-                : null}
-
-              {feed.services.length
-                ? rail('Service marketplace', () => navigation.navigate('Services'), feed.services.map((r) => compactListing(r, true)))
-                : null}
-              {feed.community.length
-                ? rail('Community', () => navigation.navigate('Community'), feed.community.map((r) => compactListing(r, false)))
-                : null}
-              {feed.products.length
-                ? rail('Products', () => navigation.navigate('ProductsBrowse'), feed.products.map((r) => compactProduct(r)))
-                : null}
-              {feed.classifieds.length
-                ? rail('Classifieds', () => navigation.navigate('Classifieds'), feed.classifieds.map((r) => compactListing(r, false)))
-                : null}
-              {feed.stores.length
-                ? rail('Online stores', () => navigation.navigate('Stores'), feed.stores.map((r) => compactStore(r)))
-                : null}
               {feed.directory.length
-                ? rail('Business directory', () => navigation.navigate('Directory'), feed.directory.map((r) => compactDir(r)))
+                ? rail(
+                    'Local Businesses',
+                    () => navigation.navigate('Directory'),
+                    <View style={styles.bizStack}>{feed.directory.slice(0, 3).map((r) => localBizCard(r))}</View>
+                  )
+                : null}
+
+              {trendingRows.length
+                ? rail(
+                    'Trending Now',
+                    () => navigation.navigate('Classifieds'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {trendingRows.map((t) => trendCard(t.kind, t.row))}
+                    </ScrollView>
+                  )
+                : null}
+
+              {feed.stores.length
+                ? rail(
+                    'Online Stores',
+                    () => navigation.navigate('Stores'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {feed.stores.map((row) => {
+                        const id = Number(row.id);
+                        const name = String(row.name ?? '');
+                        const logo = row.logo_url ? String(row.logo_url) : '';
+                        return (
+                          <Pressable
+                            key={`st-${id}`}
+                            style={({ pressed }) => [styles.trendCard, pressed && styles.pressed]}
+                            onPress={() => navigation.push('StoreDetailPublic', { id })}
+                          >
+                            <View style={styles.trendImgWrap}>
+                              {logo ? (
+                                <RemoteImage url={logo} style={styles.trendImg} contentFit="cover" />
+                              ) : (
+                                <View style={[styles.trendImg, styles.hPh]}>
+                                  <Ionicons name="storefront-outline" size={26} color={colors.textMuted} />
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.trendTitle} numberOfLines={2}>
+                              {name}
+                            </Text>
+                            <Text style={styles.svcPriceMuted}>Store</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  )
                 : null}
             </View>
           ) : null}
-
-          <Text style={styles.footnote}>
-            Message sellers from listing and product screens — threads appear in Messages.
-          </Text>
         </ScrollView>
 
         <Modal visible={locModal} animationType="slide" transparent>
@@ -822,36 +710,25 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    marginBottom: 18,
     minHeight: 48,
-    position: 'relative',
   },
-  topRowEnd: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    zIndex: 1,
-  },
-  topRowEndRight: { justifyContent: 'flex-end' },
-  topRowLogoSlot: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 0,
-  },
-  headerLogo: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  brandBlock: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: 'rgba(11, 18, 32, 0.08)',
   },
+  brandTitle: { fontSize: 22, fontWeight: '800', color: colors.primary, letterSpacing: 0.3 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerIconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -869,37 +746,61 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.white,
   },
-  locLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  locLineText: { fontSize: 14, fontWeight: '600', color: colors.textMuted, flex: 1 },
+  welcome: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.4, marginBottom: 2 },
   searchPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.white,
-    borderRadius: 999,
+    backgroundColor: 'rgba(11, 18, 32, 0.05)',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(11, 18, 32, 0.06)',
+    paddingVertical: 14,
+    marginTop: 14,
+    marginBottom: 10,
   },
   searchInput: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500', paddingVertical: 0 },
-  catRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22, gap: TOP_CAT_GAP },
-  catTile: {
-    flex: 1,
+  locChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 0,
-    maxWidth: (SCREEN_W - 40 - TOP_CAT_GAP * (TOP_CAT_COUNT - 1)) / TOP_CAT_COUNT,
+    gap: 4,
+    backgroundColor: colors.white,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(11, 18, 32, 0.08)',
+    maxWidth: '100%',
   },
-  catIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+  locChipText: { fontSize: 13, fontWeight: '700', color: colors.textMuted, maxWidth: SCREEN_W * 0.55 },
+  actionRow: { flexDirection: 'row', gap: ACTION_GAP, marginBottom: 26 },
+  actionCard: {
+    flex: 1,
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    minHeight: 118,
+  },
+  actionServices: { backgroundColor: '#D7F0FC' },
+  actionPromote: { backgroundColor: '#E4F3FA' },
+  actionMarket: { backgroundColor: '#F0E8D8' },
+  actionIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  catLabel: { fontWeight: '700', color: colors.text, textAlign: 'center', width: '100%' },
+  actionLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
   feedLoad: { paddingVertical: 28, alignItems: 'center' },
   feedErrBox: { marginBottom: 12 },
   feedErr: { color: '#b91c1c', fontWeight: '600', marginBottom: 10, lineHeight: 20 },
@@ -914,83 +815,163 @@ const styles = StyleSheet.create({
   },
   feedRetryText: { fontSize: 15, fontWeight: '800', color: colors.primaryDark },
   feedBox: { marginBottom: 8 },
-  rail: { marginBottom: 22 },
-  railHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  rail: { marginBottom: 26 },
+  railHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   railTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  seeAll: { fontSize: 14, fontWeight: '800', color: colors.primaryDark },
-  hScroll: { gap: 14, paddingRight: 8 },
-  fCard: {
-    marginRight: 0,
+  seeAll: { fontSize: 14, fontWeight: '800', color: colors.primary },
+  hScroll: { gap: 12, paddingRight: 8 },
+  svcCard: {
+    width: FEATURED_CARD_W,
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  svcImgWrap: { position: 'relative' },
+  svcImg: {
+    width: '100%',
+    aspectRatio: 16 / 10,
+    backgroundColor: colors.primarySoft,
+  },
+  svcOverlayRow: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    bottom: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  svcLogoChip: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.white,
+    padding: 2,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  svcLogoImg: { width: '100%', height: '100%', borderRadius: 6, backgroundColor: colors.sand },
+  svcRatingPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  starRow: { flexDirection: 'row', alignItems: 'center', gap: 1 },
+  svcBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12 },
+  svcTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  svcSeller: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginBottom: 8,
+  },
+  svcPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  svcPrice: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  svcPriceSuffix: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#9AA3AF',
+  },
+  svcPriceMuted: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  bizStack: { gap: 12 },
+  bizCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(11, 18, 32, 0.06)',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  bizLeft: { flex: 1, justifyContent: 'space-between', minWidth: 0 },
+  bizIconRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  bizIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bizTextCol: { flex: 1, minWidth: 0 },
+  bizName: { fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 2 },
+  bizLoc: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  bizBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+  },
+  bizBtnText: { fontSize: 13, fontWeight: '800', color: colors.white },
+  bizThumbWrap: { width: 96, height: 96, borderRadius: 14, overflow: 'hidden' },
+  bizThumb: { width: '100%', height: '100%', backgroundColor: colors.primarySoft },
+  trendCard: {
+    width: TREND_CARD_W,
     backgroundColor: colors.white,
     borderRadius: 16,
     overflow: 'hidden',
+    paddingBottom: 10,
     shadowColor: '#0B1220',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-    paddingBottom: 12,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  fCardFeatured: { borderWidth: 1, borderColor: 'rgba(31, 170, 242, 0.32)' },
-  fCardUrgent: { borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.34)' },
-  fImgWrap: { position: 'relative', overflow: 'hidden' },
-  /** Landscape hero (~16:9): shorter than the old 1.25 ratio; top corners only, flat bottom against text */
-  fImg: {
+  trendImgWrap: { overflow: 'hidden' },
+  trendImg: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    aspectRatio: 1.15,
     backgroundColor: colors.primarySoft,
   },
-  featuredBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-  },
-  flagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 12, paddingTop: 10 },
-  flagBadge: {
-    overflow: 'hidden',
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  flagUrgent: { backgroundColor: 'rgba(220, 38, 38, 0.1)', color: colors.danger },
-  flagVerified: { backgroundColor: colors.primarySoft, color: colors.primaryDark },
-  hPh: { alignItems: 'center', justifyContent: 'center' },
-  fTitle: {
-    fontSize: 16,
+  trendTitle: {
+    fontSize: 13,
     fontWeight: '800',
     color: colors.text,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-    marginTop: 10,
-  },
-  fPrice: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#2563EB',
-    marginBottom: 4,
-    paddingHorizontal: 12,
-  },
-  fPriceMuted: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textMuted,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-  },
-  locRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12 },
-  fLoc: { fontSize: 12, color: colors.textMuted, fontWeight: '600', flex: 1 },
-  pressed: { opacity: 0.9 },
-  footnote: {
+    paddingHorizontal: 10,
     marginTop: 8,
-    fontSize: 12,
-    lineHeight: 18,
-    color: colors.textMuted,
-    fontWeight: '500',
+    marginBottom: 4,
   },
+  trendPrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    paddingHorizontal: 10,
+  },
+  hPh: { alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.9 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(11, 18, 32, 0.45)',

@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -21,7 +21,7 @@ import { RemoteImage } from '../components/RemoteImage';
 import type { DiscoverStackParamList, HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radii, surfaces, typography } from '../theme/designSystem';
-import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
+import { GRID_GAP, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 
 type Props = NativeStackScreenProps<DiscoverStackParamList, 'Discover'>;
 
@@ -91,67 +91,42 @@ const PILLS: { id: PillId; label: string }[] = [
   { id: 'businesses', label: 'Businesses' },
 ];
 
-const FEED_LIMIT = '24';
+const PAGE_SIZE = 50;
 
-type MarketplaceFeedBundle = {
-  services?: FeedListing[];
-  classifieds?: FeedListing[];
-  community?: FeedListing[];
-  products?: FeedProduct[];
-  stores?: FeedStore[];
-  directory?: FeedDirectory[];
-};
-
-function parseMarketplaceFeed(data: Awaited<ReturnType<typeof apiGet>>): MarketplaceFeedBundle {
-  const f = data.feed;
-  if (f && typeof f === 'object' && !Array.isArray(f)) return f as MarketplaceFeedBundle;
-  return {};
-}
-
-function mergeAll(feed: {
-  services?: FeedListing[];
-  classifieds?: FeedListing[];
-  community?: FeedListing[];
-  products?: FeedProduct[];
-  stores?: FeedStore[];
-  directory?: FeedDirectory[];
-}): DiscoverItem[] {
+function parseDiscoverItems(raw: unknown): DiscoverItem[] {
+  if (!Array.isArray(raw)) return [];
   const out: DiscoverItem[] = [];
-  for (const l of feed.services ?? []) {
-    out.push({ kind: 'service', listing: l, created_at: l.created_at });
+  for (const row of raw) {
+    if (row == null || typeof row !== 'object') continue;
+    const o = row as Record<string, unknown>;
+    const kind = String(o.kind ?? '');
+    const created_at = String(o.created_at ?? '');
+    if (
+      (kind === 'service' || kind === 'classified' || kind === 'community') &&
+      o.listing != null &&
+      typeof o.listing === 'object'
+    ) {
+      out.push({ kind, listing: o.listing as FeedListing, created_at });
+      continue;
+    }
+    if (kind === 'product' && o.product != null && typeof o.product === 'object') {
+      out.push({ kind: 'product', product: o.product as FeedProduct, created_at });
+      continue;
+    }
+    if (kind === 'store' && o.store != null && typeof o.store === 'object') {
+      out.push({ kind: 'store', store: o.store as FeedStore, created_at });
+      continue;
+    }
+    if (kind === 'directory' && o.entry != null && typeof o.entry === 'object') {
+      out.push({ kind: 'directory', entry: o.entry as FeedDirectory, created_at });
+    }
   }
-  for (const l of feed.classifieds ?? []) {
-    out.push({ kind: 'classified', listing: l, created_at: l.created_at });
-  }
-  for (const l of feed.community ?? []) {
-    out.push({ kind: 'community', listing: l, created_at: l.created_at });
-  }
-  for (const p of feed.products ?? []) {
-    out.push({ kind: 'product', product: p, created_at: p.created_at });
-  }
-  for (const s of feed.stores ?? []) {
-    out.push({ kind: 'store', store: s, created_at: s.created_at });
-  }
-  for (const d of feed.directory ?? []) {
-    out.push({ kind: 'directory', entry: d, created_at: d.created_at });
-  }
-  return out.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  return out;
 }
 
-function mapListings(rows: FeedListing[], kind: 'classified' | 'service' | 'community'): DiscoverItem[] {
-  return rows.map((l) => ({ kind, listing: l, created_at: l.created_at }));
-}
-
-function mapProducts(rows: FeedProduct[]): DiscoverItem[] {
-  return rows.map((p) => ({ kind: 'product' as const, product: p, created_at: p.created_at }));
-}
-
-function mapStores(rows: FeedStore[]): DiscoverItem[] {
-  return rows.map((s) => ({ kind: 'store' as const, store: s, created_at: s.created_at }));
-}
-
-function mapDirectory(rows: FeedDirectory[]): DiscoverItem[] {
-  return rows.map((d) => ({ kind: 'directory' as const, entry: d, created_at: d.created_at }));
+function discoverSection(pill: PillId): string {
+  if (pill === 'businesses') return 'directory';
+  return pill;
 }
 
 export function DiscoverScreen({ navigation }: Props) {
@@ -161,66 +136,104 @@ export function DiscoverScreen({ navigation }: Props) {
   const [items, setItems] = useState<DiscoverItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
 
-  const locQuery = useMemo(() => {
+  const locParams = useMemo(() => {
     const p = new URLSearchParams();
-    p.set('limit', FEED_LIMIT);
     if (country?.code) p.set('country', country.code.toUpperCase());
     if (usState?.name) p.set('us_state', usState.name);
-    return p.toString();
+    return p;
   }, [country, usState]);
 
+  const itemsLenRef = useRef(0);
+  const hasMoreRef = useRef(false);
+  const loadingMoreRef = useRef(false);
+  const searchRef = useRef(search);
+
+  useEffect(() => {
+    itemsLenRef.current = items.length;
+  }, [items.length]);
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+  useEffect(() => {
+    searchRef.current = search;
+  }, [search]);
+
+  const itemKey = (it: DiscoverItem) => {
+    if (it.kind === 'classified' || it.kind === 'service' || it.kind === 'community') {
+      return `l-${it.kind}-${it.listing.id}`;
+    }
+    if (it.kind === 'product') return `p-${it.product.id}`;
+    if (it.kind === 'store') return `s-${it.store.id}`;
+    return `d-${it.entry.id}`;
+  };
+
   const load = useCallback(
-    async (mode: 'full' | 'refresh' = 'full') => {
-      if (mode === 'refresh') setRefreshing(true);
-      else setLoading(true);
+    async (mode: 'full' | 'refresh' | 'more' = 'full') => {
+      if (mode === 'more') {
+        if (loadingMoreRef.current || !hasMoreRef.current || searchRef.current.trim()) return;
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+      } else if (mode === 'refresh') {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setErr(null);
       try {
-        const base = locQuery;
-        if (pill === 'all') {
-          const data = await apiGet(`marketplace-home-feed.php?section=all&${base}`, true);
-          setItems(mergeAll(parseMarketplaceFeed(data)));
-        } else if (pill === 'marketplace') {
-          const [a, b] = await Promise.all([
-            apiGet(`marketplace-home-feed.php?section=classifieds&${base}`, true),
-            apiGet(`marketplace-home-feed.php?section=products&${base}`, true),
-          ]);
-          const fa = parseMarketplaceFeed(a);
-          const fb = parseMarketplaceFeed(b);
-          const merged = [
-            ...mapListings(fa.classifieds ?? [], 'classified'),
-            ...mapProducts(fb.products ?? []),
-          ].sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)));
-          setItems(merged);
-        } else if (pill === 'services') {
-          const data = await apiGet(`marketplace-home-feed.php?section=services&${base}`, true);
-          setItems(mapListings(parseMarketplaceFeed(data).services ?? [], 'service'));
-        } else if (pill === 'community') {
-          const data = await apiGet(`marketplace-home-feed.php?section=community&${base}`, true);
-          setItems(mapListings(parseMarketplaceFeed(data).community ?? [], 'community'));
-        } else if (pill === 'stores') {
-          const data = await apiGet(`marketplace-home-feed.php?section=stores&${base}`, true);
-          setItems(mapStores(parseMarketplaceFeed(data).stores ?? []));
+        const offset = mode === 'more' ? itemsLenRef.current : 0;
+        const qs = new URLSearchParams(locParams);
+        qs.set('section', discoverSection(pill));
+        qs.set('limit', String(PAGE_SIZE));
+        qs.set('offset', String(offset));
+        const data = await apiGet(`discover-feed.php?${qs.toString()}`, true);
+        const page = parseDiscoverItems(data.items);
+        const more = data.has_more === true;
+        if (mode === 'more') {
+          setItems((prev) => {
+            const seen = new Set(prev.map(itemKey));
+            const next = [...prev];
+            for (const it of page) {
+              const key = itemKey(it);
+              if (!seen.has(key)) {
+                seen.add(key);
+                next.push(it);
+              }
+            }
+            return next;
+          });
         } else {
-          const data = await apiGet(`marketplace-home-feed.php?section=directory&${base}`, true);
-          setItems(mapDirectory(parseMarketplaceFeed(data).directory ?? []));
+          setItems(page);
         }
+        setHasMore(more);
+        hasMoreRef.current = more;
       } catch (e) {
-        setErr(e instanceof Error ? e.message : 'Could not load');
-        setItems([]);
+        if (mode !== 'more') {
+          setErr(e instanceof Error ? e.message : 'Could not load');
+          setItems([]);
+          setHasMore(false);
+          hasMoreRef.current = false;
+        }
       } finally {
         if (mode === 'refresh') setRefreshing(false);
-        else setLoading(false);
+        else if (mode === 'more') {
+          loadingMoreRef.current = false;
+          setLoadingMore(false);
+        } else setLoading(false);
       }
     },
-    [pill, locQuery]
+    [pill, locParams]
   );
 
   useEffect(() => {
+    setHasMore(false);
+    hasMoreRef.current = false;
     void load('full');
   }, [load]);
 
@@ -508,6 +521,10 @@ export function DiscoverScreen({ navigation }: Props) {
             numColumns={2}
             columnWrapperStyle={styles.gridRow}
             contentContainerStyle={styles.listPad}
+            onEndReached={() => {
+              if (!search.trim()) void load('more');
+            }}
+            onEndReachedThreshold={0.35}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -519,8 +536,17 @@ export function DiscoverScreen({ navigation }: Props) {
             ListHeaderComponent={
               filtered.length > 0 ? (
                 <Text style={styles.resultCount}>
-                  {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
+                  {filtered.length}
+                  {hasMore && !search.trim() ? '+' : ''}{' '}
+                  {filtered.length === 1 ? 'result' : 'results'}
                 </Text>
+              ) : null
+            }
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={styles.moreWrap}>
+                  <ActivityIndicator color={colors.primary} />
+                </View>
               ) : null
             }
             ListEmptyComponent={<Text style={styles.empty}>Nothing matches yet.</Text>}
@@ -613,6 +639,7 @@ const styles = StyleSheet.create({
   listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
   gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
   resultCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 12 },
+  moreWrap: { paddingVertical: 18, alignItems: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   err: { color: '#b91c1c', fontWeight: '600', textAlign: 'center' },
   retry: { marginTop: 12, paddingVertical: 10, paddingHorizontal: 20 },
@@ -622,7 +649,7 @@ const styles = StyleSheet.create({
   tileFeatured: { borderWidth: 1, borderColor: 'rgba(200, 162, 74, 0.48)' },
   tileUrgent: { borderWidth: 1, borderColor: 'rgba(220, 38, 38, 0.34)' },
   imgWrap: { overflow: 'hidden' },
-  img: { width: '100%', aspectRatio: GRID_IMAGE_ASPECT, backgroundColor: colors.primarySoft },
+  img: { width: '100%', aspectRatio: 16 / 10, backgroundColor: colors.primarySoft },
   imgPh: { alignItems: 'center', justifyContent: 'center' },
   tileBody: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12, flex: 1 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 6 },
