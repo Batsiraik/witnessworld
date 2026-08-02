@@ -1,9 +1,10 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
+  Dimensions,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -16,7 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
-import { apiLogout, apiPost, apiUploadAvatar, setStoredToken } from '../api/client';
+import { apiGet, apiLogout, apiPost, apiUploadAvatar, setStoredToken } from '../api/client';
 import { AppPasswordField } from '../components/AppPasswordField';
 import { GlassCard } from '../components/GlassCard';
 import { GradientBackground } from '../components/GradientBackground';
@@ -36,6 +37,20 @@ const BROWSE_LINKS: { route: ExploreKey; label: string; icon: keyof typeof Ionic
 ];
 
 import { colors } from '../theme/colors';
+
+const PROFILE_CARD_W = Math.min((Dimensions.get('window').width - 40 - 12) / 2, 180);
+
+type OwnListing = {
+  id: number;
+  listing_type: string;
+  title: string;
+  moderation_status: string;
+  display_image_url: string | null;
+  media_url: string | null;
+  price_amount: string | null;
+  pricing_type: string;
+  currency: string;
+};
 
 type MenuRowProps = {
   label: string;
@@ -122,6 +137,7 @@ export function ProfileSettingsScreen({ navigation }: Props) {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [billingBusy, setBillingBusy] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [ownListings, setOwnListings] = useState<OwnListing[]>([]);
 
   const avatarUri =
     user?.avatar_url && String(user.avatar_url).trim() !== '' ? String(user.avatar_url) : null;
@@ -134,14 +150,76 @@ export function ProfileSettingsScreen({ navigation }: Props) {
     subscription?.plan_title?.trim() ||
     (user?.membership_plan && user.membership_plan !== 'free' ? user.membership_plan : '') ||
     'Member';
+  const isVerified = user?.status === 'verified';
+  const roleLabel =
+    user?.registration_account_type === 'business'
+      ? 'Business'
+      : user?.registration_account_type === 'individual'
+        ? 'Member'
+        : 'Member';
+  const profileSubtitle = [roleLabel, accountUsername ? `@${accountUsername}` : null].filter(Boolean).join(' · ');
+
+  const myServices = useMemo(
+    () => ownListings.filter((l) => l.listing_type === 'service').slice(0, 6),
+    [ownListings]
+  );
+  const myClassifieds = useMemo(
+    () => ownListings.filter((l) => l.listing_type === 'classified').slice(0, 6),
+    [ownListings]
+  );
 
   const showAccountEdit = () => {
     navigation.navigate('EditAccount');
   };
 
+  const openListing = (id: number) => {
+    stackNavigation.navigate('Dashboard', {
+      screen: 'HomeTab',
+      params: { screen: 'ListingDetail', params: { id }, initial: false },
+    });
+  };
+
+  const formatOwnPrice = (row: OwnListing) => {
+    if (!row.price_amount) return null;
+    const cur = row.currency === 'USD' ? '$' : `${row.currency} `;
+    const suffix = row.pricing_type === 'hourly' ? '/hr' : '';
+    return `${cur}${row.price_amount}${suffix}`;
+  };
+
   useFocusEffect(
     useCallback(() => {
       void refreshProfile();
+      let cancelled = false;
+      (async () => {
+        try {
+          const data = await apiGet('my-listings.php', true);
+          if (cancelled || !Array.isArray(data.listings)) return;
+          const next: OwnListing[] = [];
+          for (const row of data.listings) {
+            if (row == null || typeof row !== 'object') continue;
+            const o = row as Record<string, unknown>;
+            const id = Number(o.id);
+            if (!id) continue;
+            next.push({
+              id,
+              listing_type: String(o.listing_type ?? ''),
+              title: String(o.title ?? ''),
+              moderation_status: String(o.moderation_status ?? ''),
+              display_image_url: o.display_image_url ? String(o.display_image_url) : null,
+              media_url: o.media_url ? String(o.media_url) : null,
+              price_amount: o.price_amount != null && o.price_amount !== '' ? String(o.price_amount) : null,
+              pricing_type: String(o.pricing_type ?? 'fixed'),
+              currency: String(o.currency ?? 'USD'),
+            });
+          }
+          setOwnListings(next);
+        } catch {
+          if (!cancelled) setOwnListings([]);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
     }, [refreshProfile])
   );
 
@@ -305,38 +383,128 @@ export function ProfileSettingsScreen({ navigation }: Props) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.pageTitle}>Profile & settings</Text>
+            <View style={styles.hero}>
+              <Pressable
+                onPress={() => void pickAvatar()}
+                disabled={avatarBusy}
+                style={({ pressed }) => [styles.avatarHeroWrap, pressed && styles.pressed]}
+                accessibilityLabel="Change profile photo"
+              >
+                <View style={styles.avatarHero}>
+                  {avatarUri ? (
+                    <RemoteImage
+                      url={avatarUri}
+                      style={styles.avatarHeroImg}
+                      contentFit="cover"
+                      accessibilityLabel="Your profile photo"
+                    />
+                  ) : (
+                    <Ionicons name="person" size={42} color={colors.primaryDark} />
+                  )}
+                </View>
+                {isVerified ? (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark" size={14} color={colors.white} />
+                  </View>
+                ) : null}
+              </Pressable>
+              <Text style={styles.heroName}>{displayName}</Text>
+              <Text style={styles.heroSub}>{profileSubtitle}</Text>
+              {monetizationOn ? <Text style={styles.profilePlan}>{planLabel}</Text> : null}
+              <Pressable
+                onPress={showAccountEdit}
+                style={({ pressed }) => [styles.editProfileBtn, pressed && styles.pressed]}
+              >
+                <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+              </Pressable>
+            </View>
+
+            {myServices.length > 0 ? (
+              <View style={styles.listingSection}>
+                <View style={styles.listingSectionHead}>
+                  <Text style={styles.listingSectionTitle}>My Services</Text>
+                  <Pressable onPress={goOffice} hitSlop={8}>
+                    <Text style={styles.seeAll}>See All {'>'}</Text>
+                  </Pressable>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listingRail}>
+                  {myServices.map((row) => {
+                    const img = row.display_image_url || row.media_url;
+                    const price = formatOwnPrice(row);
+                    return (
+                      <Pressable
+                        key={`svc-${row.id}`}
+                        style={({ pressed }) => [styles.listingCard, pressed && styles.pressed]}
+                        onPress={() => openListing(row.id)}
+                      >
+                        <View style={styles.listingImgWrap}>
+                          {img ? (
+                            <RemoteImage url={img} style={styles.listingImg} contentFit="cover" />
+                          ) : (
+                            <View style={[styles.listingImg, styles.listingImgPh]}>
+                              <Ionicons name="briefcase-outline" size={28} color={colors.textMuted} />
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.listingTitle} numberOfLines={1}>
+                          {row.title}
+                        </Text>
+                        {price ? (
+                          <Text style={styles.listingPrice}>Starting at {price}</Text>
+                        ) : (
+                          <Text style={styles.listingPriceMuted}>View listing</Text>
+                        )}
+                        <View style={styles.listingCta}>
+                          <Text style={styles.listingCtaText}>View</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            {myClassifieds.length > 0 ? (
+              <View style={styles.listingSection}>
+                <View style={styles.listingSectionHead}>
+                  <Text style={styles.listingSectionTitle}>My Listings</Text>
+                  <Pressable onPress={goOffice} hitSlop={8}>
+                    <Text style={styles.seeAll}>See All {'>'}</Text>
+                  </Pressable>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listingRail}>
+                  {myClassifieds.map((row) => {
+                    const img = row.display_image_url || row.media_url;
+                    const price = formatOwnPrice(row);
+                    return (
+                      <Pressable
+                        key={`cls-${row.id}`}
+                        style={({ pressed }) => [styles.listingCard, pressed && styles.pressed]}
+                        onPress={() => openListing(row.id)}
+                      >
+                        <View style={styles.listingImgWrap}>
+                          {img ? (
+                            <RemoteImage url={img} style={styles.listingImgSquare} contentFit="cover" />
+                          ) : (
+                            <View style={[styles.listingImgSquare, styles.listingImgPh]}>
+                              <Ionicons name="pricetag-outline" size={28} color={colors.textMuted} />
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.listingTitle} numberOfLines={2}>
+                          {row.title}
+                        </Text>
+                        {price ? <Text style={styles.listingPrice}>{price}</Text> : null}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            <Text style={styles.settingsHeading}>Account & settings</Text>
 
             <GlassCard style={[styles.card, styles.menuCard]}>
-              <View style={styles.profileHead}>
-                <Pressable
-                  onPress={() => void pickAvatar()}
-                  disabled={avatarBusy}
-                  style={({ pressed }) => [pressed && styles.pressed]}
-                >
-                  <View style={styles.avatarCompact}>
-                    {avatarUri ? (
-                      <RemoteImage
-                        url={avatarUri}
-                        style={styles.avatarImgCompact}
-                        contentFit="cover"
-                        accessibilityLabel="Your profile photo"
-                      />
-                    ) : (
-                      <Ionicons name="person" size={28} color={colors.primaryDark} />
-                    )}
-                  </View>
-                </Pressable>
-                <View style={styles.profileHeadText}>
-                  <Text style={styles.profileName}>{displayName}</Text>
-                  <Text style={styles.profileMeta}>{accountEmail}</Text>
-                  {accountUsername ? (
-                    <Text style={styles.profileMeta}>@{accountUsername}</Text>
-                  ) : null}
-                  {monetizationOn ? <Text style={styles.profilePlan}>{planLabel}</Text> : null}
-                </View>
-              </View>
-              <MenuDivider />
               <MenuRow
                 icon="person-outline"
                 label="Full name"
@@ -611,25 +779,114 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 },
-  pageTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 12 },
-  menuCard: { paddingVertical: 8, paddingHorizontal: 16, overflow: 'hidden' },
-  profileHead: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 4 },
-  profileHeadText: { flex: 1, minWidth: 0 },
-  profileName: { fontSize: 18, fontWeight: '800', color: colors.text },
-  profileMeta: { marginTop: 3, fontSize: 14, color: colors.textMuted, fontWeight: '500' },
-  profilePlan: { marginTop: 6, fontSize: 13, fontWeight: '700', color: colors.primaryDark },
-  avatarCompact: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  hero: { alignItems: 'center', marginBottom: 22, paddingTop: 8 },
+  avatarHeroWrap: { position: 'relative', marginBottom: 12 },
+  avatarHero: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderWidth: 3,
+    borderColor: colors.white,
   },
-  avatarImgCompact: { width: 56, height: 56, borderRadius: 28 },
+  avatarHeroImg: { width: 96, height: 96, borderRadius: 48 },
+  verifiedBadge: {
+    position: 'absolute',
+    right: 2,
+    bottom: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.white,
+  },
+  heroName: { fontSize: 24, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  heroSub: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  profilePlan: { marginTop: 6, fontSize: 13, fontWeight: '700', color: colors.primaryDark },
+  editProfileBtn: {
+    marginTop: 14,
+    minWidth: 200,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    backgroundColor: colors.sand,
+    alignItems: 'center',
+  },
+  editProfileBtnText: { fontSize: 15, fontWeight: '800', color: colors.text },
+  listingSection: { marginBottom: 22 },
+  listingSectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  listingSectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+  seeAll: { fontSize: 14, fontWeight: '800', color: colors.primary },
+  listingRail: { gap: 12, paddingRight: 8 },
+  listingCard: {
+    width: PROFILE_CARD_W,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    overflow: 'hidden',
+    paddingBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(11, 18, 32, 0.06)',
+  },
+  listingImgWrap: { overflow: 'hidden' },
+  listingImg: { width: '100%', aspectRatio: 16 / 10, backgroundColor: colors.primarySoft },
+  listingImgSquare: { width: '100%', aspectRatio: 1, backgroundColor: colors.primarySoft },
+  listingImgPh: { alignItems: 'center', justifyContent: 'center' },
+  listingTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text,
+    paddingHorizontal: 10,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  listingPrice: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  listingPriceMuted: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  listingCta: {
+    marginHorizontal: 10,
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  listingCtaText: { fontSize: 13, fontWeight: '800', color: colors.white },
+  settingsHeading: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 10,
+  },
+  menuCard: { paddingVertical: 8, paddingHorizontal: 16, overflow: 'hidden' },
   menuSectionLabel: {
     fontSize: 13,
     fontWeight: '800',

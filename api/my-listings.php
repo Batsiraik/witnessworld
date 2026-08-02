@@ -51,6 +51,7 @@ $listingDisplayImage = static function (array $r): ?string {
 try {
     $st = $pdo->prepare(
         'SELECT id, listing_type, title, moderation_status, media_url, video_url, portfolio_urls_json,
+                price_amount, pricing_type, currency,
                 location_country_code, location_country_name, location_us_state,
                 created_at, updated_at
          FROM listings
@@ -76,6 +77,9 @@ foreach ($rows as $r) {
         'video_url' => $hasVideo ? trim((string) $vid) : null,
         'display_image_url' => $listingDisplayImage($r),
         'has_video' => $hasVideo,
+        'price_amount' => $r['price_amount'] !== null ? (string) $r['price_amount'] : null,
+        'pricing_type' => (string) ($r['pricing_type'] ?? 'fixed'),
+        'currency' => (string) ($r['currency'] ?? 'USD'),
         'location_country_code' => $r['location_country_code'] ? (string) $r['location_country_code'] : null,
         'location_country_name' => $r['location_country_name'] ? (string) $r['location_country_name'] : null,
         'location_us_state' => $r['location_us_state'] ? (string) $r['location_us_state'] : null,

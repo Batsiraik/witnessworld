@@ -15,6 +15,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $keys = [
         'support_email',
         'support_user_id',
+        'onboarding_app_url',
+        'onboarding_tutorial_url',
         'membership_trial_days',
         'monetization_enabled',
         'stripe_publishable_key',
@@ -49,6 +51,8 @@ $get = static function (string $k) use ($pdo): string {
 
 $support = $get('support_email');
 $supportUserId = $get('support_user_id');
+$onboardingAppUrl = $get('onboarding_app_url');
+$onboardingTutorialUrl = $get('onboarding_tutorial_url');
 $membershipTrialDays = $get('membership_trial_days') ?: '90';
 $monetizationEnabled = $get('monetization_enabled') === '1';
 $stripePublishableKey = $get('stripe_publishable_key');
@@ -111,6 +115,31 @@ require __DIR__ . '/partials/shell_open.php';
         Numeric <code class="rounded bg-slate-100 px-1">users.id</code> for the account that sends in-app replies (create a dedicated verified member, e.g. “Witness Support”). Required for the blue support button and
         <a href="<?= htmlspecialchars($customerSupportHref, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand underline">Customer support</a>.
       </p>
+    </div>
+    <hr class="border-slate-100" />
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Approval onboarding email</p>
+    <p class="text-xs leading-relaxed text-slate-500">Sent automatically when you approve a pending member. Uses the same SMTP settings below.</p>
+    <div>
+      <label class="text-xs font-semibold text-slate-600">App download / open link</label>
+      <input
+        type="url"
+        name="onboarding_app_url"
+        value="<?= htmlspecialchars($onboardingAppUrl, ENT_QUOTES, 'UTF-8') ?>"
+        class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        placeholder="https://witnessworldconnect.com/download/"
+      />
+      <p class="mt-1 text-xs text-slate-500">Leave blank to use the site download page by default.</p>
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-slate-600">Video tutorial URL (optional)</label>
+      <input
+        type="url"
+        name="onboarding_tutorial_url"
+        value="<?= htmlspecialchars($onboardingTutorialUrl, ENT_QUOTES, 'UTF-8') ?>"
+        class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        placeholder="https://youtube.com/..."
+      />
+      <p class="mt-1 text-xs text-slate-500">If set, the email includes a “Video tutorial” link. Leave blank to hide that line until you have a video.</p>
     </div>
     <hr class="border-slate-100" />
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Membership trials</p>

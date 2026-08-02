@@ -42,32 +42,24 @@ function ww_admin_notification_support_message(
         return;
     }
 
-    $name = 'A member';
-    try {
-        $st = $pdo->prepare('SELECT first_name, last_name, email FROM users WHERE id = ? LIMIT 1');
-        $st->execute([$memberUserId]);
-        $u = $st->fetch(PDO::FETCH_ASSOC);
-        if ($u) {
-            $fn = trim((string) ($u['first_name'] ?? ''));
-            $ln = trim((string) ($u['last_name'] ?? ''));
-            $full = trim($fn . ' ' . $ln);
-            if ($full !== '') {
-                $name = $full;
-            } elseif (trim((string) ($u['email'] ?? '')) !== '') {
-                $name = trim((string) $u['email']);
-            }
-        }
-    } catch (Throwable) {
-    }
-
+    $name = ww_admin_user_display_name($pdo, $memberUserId);
     $body = $preview !== '' ? $preview : 'Sent a message';
-    ww_admin_notification_add(
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $safePreview = htmlspecialchars($body, ENT_QUOTES, 'UTF-8');
+    $detail = '<strong>Customer support</strong><br>'
+        . 'Member: ' . $safeName . '<br><br>'
+        . 'Message:<br>' . $safePreview;
+
+    ww_admin_submission_alert(
         $pdo,
         'support_message',
         'Support message from ' . $name,
         $body,
         'customer_support.php?conversation_id=' . $conversationId,
-        $conversationId
+        $conversationId,
+        'New customer support message',
+        $name . ' sent a message to Customer Support.',
+        $detail
     );
 }
 

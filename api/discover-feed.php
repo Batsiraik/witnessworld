@@ -47,6 +47,11 @@ if ($usState !== '' && strlen($usState) > 64) {
     $usState = '';
 }
 
+$categoryId = (int) ($_GET['category_id'] ?? 0);
+if ($categoryId < 0) {
+    $categoryId = 0;
+}
+
 /**
  * @return list<string>
  */
@@ -86,7 +91,7 @@ function ww_discover_loc_sql(string $alias, string $country, string $usState): a
  * @param list<string> $kinds
  * @return array{0: string, 1: list<string|int>}
  */
-function ww_discover_index_sql(array $kinds, string $country, string $usState, int $viewerId): array
+function ww_discover_index_sql(array $kinds, string $country, string $usState, int $viewerId, int $categoryId = 0): array
 {
     $parts = [];
     $params = [];
@@ -94,13 +99,20 @@ function ww_discover_index_sql(array $kinds, string $country, string $usState, i
     foreach ($kinds as $kind) {
         if (in_array($kind, ['service', 'classified', 'community'], true)) {
             [$locSql, $locParams] = ww_discover_loc_sql('l', $country, $usState);
+            $catSql = '';
+            if ($categoryId > 0) {
+                $catSql = ' AND l.category_id = ?';
+            }
             $parts[] = "SELECT '{$kind}' AS kind, l.id AS ref_id, l.created_at
                         FROM listings l
-                        WHERE l.moderation_status = ? AND l.listing_type = ?" . $locSql;
+                        WHERE l.moderation_status = ? AND l.listing_type = ?" . $locSql . $catSql;
             $params[] = 'approved';
             $params[] = $kind;
             foreach ($locParams as $p) {
                 $params[] = $p;
+            }
+            if ($categoryId > 0) {
+                $params[] = $categoryId;
             }
             continue;
         }
@@ -189,7 +201,17 @@ function ww_discover_listing_row(array $r): array
 
 try {
     $kinds = ww_discover_kinds($section);
-    [$indexSql, $indexParams] = ww_discover_index_sql($kinds, $country, $usState, $viewerId);
+    // Category filter applies to listings only — drop products/stores/directory when filtering.
+    if ($categoryId > 0) {
+        $kinds = array_values(array_filter(
+            $kinds,
+            static fn (string $k): bool => in_array($k, ['service', 'classified', 'community'], true)
+        ));
+        if ($kinds === []) {
+            $kinds = ['classified'];
+        }
+    }
+    [$indexSql, $indexParams] = ww_discover_index_sql($kinds, $country, $usState, $viewerId, $categoryId);
     $fetchLimit = $limit + 1;
     $pageSql = $indexSql . ' LIMIT ' . (int) $fetchLimit . ' OFFSET ' . (int) $offset;
     $st = $pdo->prepare($pageSql);

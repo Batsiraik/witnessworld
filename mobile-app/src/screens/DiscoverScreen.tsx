@@ -93,6 +93,39 @@ const PILLS: { id: PillId; label: string }[] = [
 
 const PAGE_SIZE = 50;
 
+type DiscCategory = { id: number; name: string; slug: string };
+
+function categoryIcon(slug: string): keyof typeof Ionicons.glyphMap {
+  const s = slug.toLowerCase();
+  if (s.includes('furniture') || s.includes('home')) return 'home-outline';
+  if (s.includes('appliance') || s.includes('electronic')) return 'phone-portrait-outline';
+  if (s.includes('cloth') || s.includes('beauty')) return 'shirt-outline';
+  if (s.includes('baby') || s.includes('kid') || s.includes('toy')) return 'happy-outline';
+  if (s.includes('garden') || s.includes('outdoor')) return 'leaf-outline';
+  if (s.includes('sport') || s.includes('fitness')) return 'fitness-outline';
+  if (s.includes('book') || s.includes('media') || s.includes('hobb')) return 'book-outline';
+  if (s.includes('pet')) return 'paw-outline';
+  if (s.includes('office')) return 'briefcase-outline';
+  if (s.includes('design') || s.includes('brand') || s.includes('graphic')) return 'color-palette-outline';
+  if (s.includes('web') || s.includes('tech') || s.includes('develop')) return 'code-slash-outline';
+  if (s.includes('market')) return 'megaphone-outline';
+  if (s.includes('writ') || s.includes('translat')) return 'create-outline';
+  if (s.includes('virtual') || s.includes('assist')) return 'laptop-outline';
+  if (s.includes('consult') || s.includes('business')) return 'business-outline';
+  if (s.includes('financ') || s.includes('legal')) return 'document-text-outline';
+  if (s.includes('multi') || s.includes('event')) return 'videocam-outline';
+  if (s.includes('clean')) return 'sparkles-outline';
+  if (s.includes('tutor') || s.includes('educat')) return 'school-outline';
+  return 'grid-outline';
+}
+
+function categoriesEndpoint(pill: PillId): string | null {
+  if (pill === 'marketplace') return 'marketplace-categories.php';
+  if (pill === 'services') return 'service-categories.php';
+  if (pill === 'community') return 'community-categories.php';
+  return null;
+}
+
 function parseDiscoverItems(raw: unknown): DiscoverItem[] {
   if (!Array.isArray(raw)) return [];
   const out: DiscoverItem[] = [];
@@ -142,13 +175,52 @@ export function DiscoverScreen({ navigation }: Props) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [country, setCountry] = useState<LocCountry | null>(null);
   const [usState, setUsState] = useState<LocState | null>(null);
+  const [categories, setCategories] = useState<DiscCategory[]>([]);
+  const [categoryId, setCategoryId] = useState<number | null>(null);
 
   const locParams = useMemo(() => {
     const p = new URLSearchParams();
     if (country?.code) p.set('country', country.code.toUpperCase());
     if (usState?.name) p.set('us_state', usState.name);
+    if (categoryId && categoryId > 0) p.set('category_id', String(categoryId));
     return p;
-  }, [country, usState]);
+  }, [country, usState, categoryId]);
+
+  useEffect(() => {
+    setCategoryId(null);
+    const endpoint = categoriesEndpoint(pill);
+    if (!endpoint) {
+      setCategories([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiGet(endpoint, false);
+        if (cancelled) return;
+        const raw = data.categories;
+        if (!Array.isArray(raw)) {
+          setCategories([]);
+          return;
+        }
+        const next: DiscCategory[] = [];
+        for (const row of raw) {
+          if (row == null || typeof row !== 'object') continue;
+          const o = row as Record<string, unknown>;
+          const id = Number(o.id);
+          const name = String(o.name ?? '').trim();
+          const slug = String(o.slug ?? '').trim();
+          if (id > 0 && name) next.push({ id, name, slug });
+        }
+        setCategories(next);
+      } catch {
+        if (!cancelled) setCategories([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pill]);
 
   const itemsLenRef = useRef(0);
   const hasMoreRef = useRef(false);
@@ -502,6 +574,44 @@ export function DiscoverScreen({ navigation }: Props) {
           })}
         </ScrollView>
 
+        {categories.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.catRowHost}
+            contentContainerStyle={styles.catScroll}
+          >
+            <Pressable
+              onPress={() => setCategoryId(null)}
+              style={({ pressed }) => [styles.catChip, categoryId == null && styles.catChipOn, pressed && styles.pressed]}
+            >
+              <View style={[styles.catIcon, categoryId == null && styles.catIconOn]}>
+                <Ionicons name="apps-outline" size={20} color={categoryId == null ? colors.white : colors.primaryDark} />
+              </View>
+              <Text style={[styles.catLabel, categoryId == null && styles.catLabelOn]} numberOfLines={1}>
+                All
+              </Text>
+            </Pressable>
+            {categories.map((c) => {
+              const on = categoryId === c.id;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => setCategoryId(on ? null : c.id)}
+                  style={({ pressed }) => [styles.catChip, on && styles.catChipOn, pressed && styles.pressed]}
+                >
+                  <View style={[styles.catIcon, on && styles.catIconOn]}>
+                    <Ionicons name={categoryIcon(c.slug)} size={20} color={on ? colors.white : colors.primaryDark} />
+                  </View>
+                  <Text style={[styles.catLabel, on && styles.catLabelOn]} numberOfLines={1}>
+                    {c.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+
         {loading && !refreshing ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -623,6 +733,29 @@ const styles = StyleSheet.create({
   /** Stops horizontal ScrollView from growing to fill column (avoids huge gap above pills). */
   pillRowHost: { flexGrow: 0 },
   pillScroll: { paddingHorizontal: GRID_PAD, paddingBottom: 12, gap: 8, flexDirection: 'row', alignItems: 'center' },
+  catRowHost: { flexGrow: 0, maxHeight: 92 },
+  catScroll: {
+    paddingHorizontal: GRID_PAD,
+    paddingBottom: 12,
+    gap: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  catChip: { width: 76, alignItems: 'center', gap: 6 },
+  catChipOn: {},
+  catIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: 'rgba(11, 18, 32, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  catIconOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  catLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textAlign: 'center', width: '100%' },
+  catLabelOn: { color: colors.primaryDark },
   pill: {
     paddingHorizontal: 16,
     paddingVertical: 8,
