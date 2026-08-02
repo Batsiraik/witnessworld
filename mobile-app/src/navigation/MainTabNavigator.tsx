@@ -8,7 +8,7 @@ import {
   type NavigationState,
 } from '@react-navigation/native';
 import type { ViewStyle } from 'react-native';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { HOME_STACK_DETAIL_ROUTES } from './homeStackSafeBack';
@@ -22,12 +22,11 @@ import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-/** Matches reference: squircle FAB + active tab tint */
+/** Matches reference: active tab tint */
 const TAB_ACTIVE = '#5A5FE1';
 const TAB_INACTIVE = '#64748B';
-const FAB_FILL = '#5A5FE1';
 
-/** Hidden routes still get a BottomTabItem wrapper; collapse flex so visible tabs stay 5 equal columns and the FAB stays screen-centered. */
+/** Hidden routes still get a BottomTabItem wrapper; collapse flex so visible tabs stay equal. */
 const HIDDEN_TAB_ITEM: ViewStyle = {
   flexGrow: 0,
   flexShrink: 0,
@@ -39,29 +38,24 @@ const HIDDEN_TAB_ITEM: ViewStyle = {
   overflow: 'hidden',
 };
 
-function PostTabButton(props: BottomTabBarButtonProps) {
+/** Center tab opens Orders (purchases & hire requests) — replaces the old Post FAB. */
+function OrdersTabButton(props: BottomTabBarButtonProps) {
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
-  const { onLongPress, accessibilityState } = props;
+  const { onLongPress, accessibilityState, children } = props;
 
   return (
-    <View style={styles.fabSlot} pointerEvents="box-none">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Create post or listing"
-        accessibilityState={accessibilityState}
-        onPress={() => {
-          navigation.navigate('HomeTab', { screen: 'ProviderHub' });
-        }}
-        onLongPress={onLongPress}
-        style={({ pressed }) => [styles.fabOuter, pressed && styles.pressed]}
-      >
-        <View style={styles.fabSquircle}>
-          <View style={styles.fabInnerRing}>
-            <Ionicons name="add" size={22} color={colors.white} />
-          </View>
-        </View>
-      </Pressable>
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Orders and requests"
+      accessibilityState={accessibilityState}
+      onPress={() => {
+        navigation.navigate('HomeTab', { screen: 'Orders' });
+      }}
+      onLongPress={onLongPress}
+      style={({ pressed }) => [styles.ordersTabBtn, pressed && styles.pressed]}
+    >
+      {children}
+    </Pressable>
   );
 }
 
@@ -88,7 +82,6 @@ export function MainTabNavigator() {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.06,
           shadowRadius: 8,
-          overflow: 'visible',
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginBottom: Platform.OS === 'ios' ? 0 : 4 },
         tabBarItemStyle: { paddingTop: 4 },
@@ -138,11 +131,9 @@ export function MainTabNavigator() {
         name="PostTab"
         component={PostStackNavigator}
         options={{
-          title: 'Post',
-          tabBarLabel: () => null,
-          tabBarIcon: () => null,
-          tabBarButton: (props) => <PostTabButton {...props} />,
-          tabBarItemStyle: { overflow: 'visible' },
+          title: 'Orders',
+          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+          tabBarButton: (props) => <OrdersTabButton {...props} />,
         }}
       />
       <Tab.Screen
@@ -175,40 +166,10 @@ export function MainTabNavigator() {
 }
 
 const styles = StyleSheet.create({
-  fabSlot: {
+  ordersTabBtn: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'visible',
-    paddingBottom: Platform.OS === 'ios' ? 2 : 4,
-  },
-  /** Offset only — shadow lives on `fabSquircle` so it paints correctly on iOS/Android. */
-  fabOuter: {
-    zIndex: 20,
-    transform: [{ translateY: -4 }],
-  },
-  /** Slightly smaller squircle (was 56); shadow on this view so it isn’t clipped by Pressable. */
-  fabSquircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: FAB_FILL,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0B1220',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: Platform.OS === 'ios' ? 0.28 : 0.4,
-    shadowRadius: 8,
-    elevation: Platform.OS === 'android' ? 10 : 0,
-  },
-  fabInnerRing: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.95)',
-    alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: { opacity: 0.92 },
+  pressed: { opacity: 0.88 },
 });

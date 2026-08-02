@@ -95,18 +95,23 @@ function ww_admin_notify_listing_review(
     int $userId,
     string $action,
     string $listingType,
-    string $title
+    string $title,
+    ?int $listingId = null
 ): void {
     $kind = $listingType === 'classified' ? 'classified' : 'service';
     $label = $kind === 'classified' ? 'Classified' : 'Service listing';
     $name = $title !== '' ? $title : 'Your listing';
+    $data = ['type' => 'listing', 'listing_type' => $listingType, 'status' => $action === 'approve' ? 'approved' : 'rejected'];
+    if ($listingId !== null && $listingId > 0) {
+        $data['listing_id'] = $listingId;
+    }
     if ($action === 'approve') {
         ww_push_to_user(
             $pdo,
             $userId,
             $label . ' approved',
             $name . ' is now live on the marketplace.',
-            ['type' => 'listing', 'listing_type' => $listingType, 'status' => 'approved']
+            $data
         );
     } elseif ($action === 'reject') {
         ww_push_to_user(
@@ -114,21 +119,25 @@ function ww_admin_notify_listing_review(
             $userId,
             $label . ' declined',
             $name . ' was not approved. Open the app for details.',
-            ['type' => 'listing', 'listing_type' => $listingType, 'status' => 'rejected']
+            $data
         );
     }
 }
 
-function ww_admin_notify_store_review(PDO $pdo, int $userId, string $action, string $storeName): void
+function ww_admin_notify_store_review(PDO $pdo, int $userId, string $action, string $storeName, ?int $storeId = null): void
 {
     $name = $storeName !== '' ? $storeName : 'Your store';
+    $data = ['type' => 'store', 'status' => $action === 'approve' ? 'approved' : 'rejected'];
+    if ($storeId !== null && $storeId > 0) {
+        $data['store_id'] = $storeId;
+    }
     if ($action === 'approve') {
         ww_push_to_user(
             $pdo,
             $userId,
             'Store approved',
             $name . ' is now live.',
-            ['type' => 'store', 'status' => 'approved']
+            $data
         );
     } elseif ($action === 'reject') {
         ww_push_to_user(
@@ -136,21 +145,30 @@ function ww_admin_notify_store_review(PDO $pdo, int $userId, string $action, str
             $userId,
             'Store declined',
             $name . ' was not approved. Open the app for details.',
-            ['type' => 'store', 'status' => 'rejected']
+            $data
         );
     }
 }
 
-function ww_admin_notify_directory_review(PDO $pdo, int $userId, string $action, string $businessName): void
-{
+function ww_admin_notify_directory_review(
+    PDO $pdo,
+    int $userId,
+    string $action,
+    string $businessName,
+    ?int $entryId = null
+): void {
     $name = $businessName !== '' ? $businessName : 'Your directory listing';
+    $data = ['type' => 'directory_entry', 'status' => $action === 'approve' ? 'approved' : 'rejected'];
+    if ($entryId !== null && $entryId > 0) {
+        $data['entry_id'] = $entryId;
+    }
     if ($action === 'approve') {
         ww_push_to_user(
             $pdo,
             $userId,
             'Directory listing approved',
             $name . ' is now in the business directory.',
-            ['type' => 'directory_entry', 'status' => 'approved']
+            $data
         );
     } elseif ($action === 'reject') {
         ww_push_to_user(
@@ -158,21 +176,30 @@ function ww_admin_notify_directory_review(PDO $pdo, int $userId, string $action,
             $userId,
             'Directory listing declined',
             $name . ' was not approved. Open the app for details.',
-            ['type' => 'directory_entry', 'status' => 'rejected']
+            $data
         );
     }
 }
 
-function ww_admin_notify_product_review(PDO $pdo, int $ownerUserId, string $action, string $productName): void
-{
+function ww_admin_notify_product_review(
+    PDO $pdo,
+    int $ownerUserId,
+    string $action,
+    string $productName,
+    ?int $productId = null
+): void {
     $name = $productName !== '' ? $productName : 'Your product';
+    $data = ['type' => 'product', 'status' => $action === 'approve' ? 'approved' : 'rejected'];
+    if ($productId !== null && $productId > 0) {
+        $data['product_id'] = $productId;
+    }
     if ($action === 'approve') {
         ww_push_to_user(
             $pdo,
             $ownerUserId,
             'Product approved',
             $name . ' is now visible in your store.',
-            ['type' => 'product', 'status' => 'approved']
+            $data
         );
     } elseif ($action === 'reject') {
         ww_push_to_user(
@@ -180,7 +207,7 @@ function ww_admin_notify_product_review(PDO $pdo, int $ownerUserId, string $acti
             $ownerUserId,
             'Product declined',
             $name . ' was not approved. Open the app for details.',
-            ['type' => 'product', 'status' => 'rejected']
+            $data
         );
     }
 }

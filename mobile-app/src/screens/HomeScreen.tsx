@@ -18,7 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
-import { NotificationsModal } from '../components/NotificationsModal';
+import { NotificationsModal, type NotificationNavTarget } from '../components/NotificationsModal';
 import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -698,6 +698,44 @@ export function HomeScreen({ navigation }: Props) {
           visible={notifModal}
           onClose={() => setNotifModal(false)}
           onUnreadChange={setNotifUnread}
+          onNavigate={(target: NotificationNavTarget) => {
+            const tab = navigation.getParent();
+            switch (target.kind) {
+              case 'order':
+                navigation.push('OrderDetail', { id: target.id });
+                break;
+              case 'orders':
+                navigation.navigate('Orders');
+                break;
+              case 'chat':
+                tab?.navigate('InboxTab', {
+                  screen: 'Chat',
+                  initial: false,
+                  params: { conversationId: target.conversationId },
+                });
+                break;
+              case 'listing':
+                navigation.push('ListingDetail', { id: target.id });
+                break;
+              case 'store':
+                navigation.push('StoreDetailPublic', { id: target.id });
+                break;
+              case 'product':
+                navigation.push('ProductDetail', { id: target.id });
+                break;
+              case 'directory':
+                navigation.push('DirectoryDetail', { id: target.id });
+                break;
+              case 'office':
+                tab?.navigate('OfficeTab', { screen: 'MyOffice' });
+                break;
+              case 'profile':
+                tab?.navigate('ProfileTab');
+                break;
+              default:
+                break;
+            }
+          }}
         />
       </SafeAreaView>
     </GradientBackground>

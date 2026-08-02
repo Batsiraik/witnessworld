@@ -133,7 +133,8 @@ try {
             (int) $row['user_id'],
             'approve',
             (string) $row['listing_type'],
-            (string) $row['title']
+            (string) $row['title'],
+            $id
         );
     } elseif ($action === 'reject') {
         $pdo->prepare(
@@ -144,7 +145,8 @@ try {
             (int) $row['user_id'],
             'reject',
             (string) $row['listing_type'],
-            (string) $row['title']
+            (string) $row['title'],
+            $id
         );
     } elseif ($action === 'remove') {
         $pdo->prepare(

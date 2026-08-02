@@ -22,19 +22,31 @@ if (!$user) {
 }
 
 $userId = (int) $user['id'];
-$limit = (int) ($_GET['limit'] ?? 50);
+$limit = (int) ($_GET['limit'] ?? 40);
 if ($limit < 1) {
-    $limit = 50;
+    $limit = 40;
 }
 if ($limit > 100) {
     $limit = 100;
 }
+$offset = (int) ($_GET['offset'] ?? 0);
+if ($offset < 0) {
+    $offset = 0;
+}
 
-$notifications = ww_user_notifications_list($pdo, $userId, $limit);
+$fetchLimit = $limit + 1;
+$notifications = ww_user_notifications_list($pdo, $userId, $fetchLimit, $offset);
+$hasMore = count($notifications) > $limit;
+if ($hasMore) {
+    $notifications = array_slice($notifications, 0, $limit);
+}
 $unread = ww_user_notifications_unread_count($pdo, $userId);
 
 ww_json([
     'ok' => true,
     'notifications' => $notifications,
     'unread_count' => $unread,
+    'limit' => $limit,
+    'offset' => $offset,
+    'has_more' => $hasMore,
 ]);

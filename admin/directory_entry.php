@@ -41,7 +41,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $pdo,
                     (int) $row['user_id'],
                     'approve',
-                    (string) $row['business_name']
+                    (string) $row['business_name'],
+                    $id
                 );
             } elseif ($action === 'reject') {
                 $pdo->prepare(
@@ -51,7 +52,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $pdo,
                     (int) $row['user_id'],
                     'reject',
-                    (string) $row['business_name']
+                    (string) $row['business_name'],
+                    $id
                 );
             } elseif ($action === 'suspend') {
                 ww_content_suspend($pdo, 'directory', $id, $adminId, $note !== '' ? $note : null);

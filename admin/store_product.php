@@ -47,7 +47,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $pdo,
                     (int) $row['owner_user_id'],
                     'approve',
-                    (string) $row['name']
+                    (string) $row['name'],
+                    $id
                 );
             } elseif ($action === 'reject') {
                 $pdo->prepare(
@@ -57,7 +58,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $pdo,
                     (int) $row['owner_user_id'],
                     'reject',
-                    (string) $row['name']
+                    (string) $row['name'],
+                    $id
                 );
             } elseif ($action === 'remove') {
                 $pdo->prepare(

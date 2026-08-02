@@ -247,7 +247,7 @@ function ww_user_notification_add(
         )->execute([
             $userId,
             mb_substr(trim($title), 0, 200),
-            mb_substr(trim($body), 0, 500),
+            mb_substr(trim($body), 0, 4000),
             mb_substr($type !== '' ? $type : 'general', 0, 64),
             $data === [] ? null : json_encode($data, JSON_UNESCAPED_UNICODE),
         ]);
@@ -259,30 +259,42 @@ function ww_user_notification_add(
 /**
  * @return list<array<string, mixed>>
  */
-function ww_user_notifications_list(PDO $pdo, int $userId, int $limit = 50): array
+function ww_user_notifications_list(PDO $pdo, int $userId, int $limit = 50, int $offset = 0): array
 {
     if ($userId <= 0) {
         return [];
     }
+
+    $limit = max(1, min(100, $limit));
+    $offset = max(0, $offset);
 
     /** @var list<array<string, mixed>> */
     $rows = [];
 
     try {
         $st = $pdo->prepare(
-            'SELECT id, title, body, type, is_read, created_at
+            'SELECT id, title, body, type, data_json, is_read, created_at
              FROM user_notifications
              WHERE user_id = ?
-             ORDER BY created_at DESC
-             LIMIT ' . (int) $limit
+             ORDER BY created_at DESC, id DESC
+             LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset
         );
         $st->execute([$userId]);
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $data = [];
+            $raw = $r['data_json'] ?? null;
+            if (is_string($raw) && $raw !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $data = $decoded;
+                }
+            }
             $rows[] = [
                 'id' => (int) $r['id'],
                 'title' => (string) $r['title'],
                 'body' => (string) $r['body'],
                 'type' => (string) ($r['type'] ?? 'general'),
+                'data' => $data,
                 'is_read' => (int) ($r['is_read'] ?? 0) === 1,
                 'created_at' => (string) $r['created_at'],
             ];
