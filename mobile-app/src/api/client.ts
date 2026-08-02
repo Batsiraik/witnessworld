@@ -212,6 +212,48 @@ export async function apiLogout(): Promise<void> {
   await setStoredToken(null);
 }
 
+/** Resolve mime + filename so PNG/WebP are not always sent as fake .jpg parts. */
+function resolveUploadImagePart(
+  localUri: string,
+  mimeType: string | null | undefined,
+  baseName: string
+): { uri: string; name: string; type: string } {
+  const uriLower = (localUri || '').toLowerCase();
+  const mimeLower = (mimeType || '').toLowerCase().trim();
+  let ext = 'jpg';
+  let type = 'image/jpeg';
+
+  if (mimeLower.includes('png') || uriLower.includes('.png')) {
+    ext = 'png';
+    type = 'image/png';
+  } else if (mimeLower.includes('webp') || uriLower.includes('.webp')) {
+    ext = 'webp';
+    type = 'image/webp';
+  } else if (mimeLower.includes('gif') || uriLower.includes('.gif')) {
+    ext = 'gif';
+    type = 'image/gif';
+  } else if (
+    mimeLower.includes('jpeg') ||
+    mimeLower.includes('jpg') ||
+    uriLower.includes('.jpg') ||
+    uriLower.includes('.jpeg')
+  ) {
+    ext = 'jpg';
+    type = 'image/jpeg';
+  } else if (mimeLower.startsWith('image/')) {
+    type = mimeLower;
+    const m = /^image\/([a-z0-9.+-]+)/.exec(mimeLower);
+    if (m?.[1] === 'jpeg' || m?.[1] === 'jpg' || m?.[1] === 'pjpeg') ext = 'jpg';
+    else if (m?.[1]) ext = m[1].replace(/[^a-z0-9]/g, '') || 'jpg';
+  }
+
+  return {
+    uri: localUri,
+    name: `${baseName}.${ext}`,
+    type,
+  };
+}
+
 /** Multipart avatar upload (React Native FormData). */
 export async function apiUploadAvatar(
   localUri: string,
@@ -223,11 +265,7 @@ export async function apiUploadAvatar(
     throw new Error('Not signed in');
   }
   const form = new FormData();
-  form.append('avatar', {
-    uri: localUri,
-    name: 'avatar.jpg',
-    type: mimeType || 'image/jpeg',
-  } as unknown as Blob);
+  form.append('avatar', resolveUploadImagePart(localUri, mimeType, 'avatar') as unknown as Blob);
   const data = await multipartPostWithProgress('profile-avatar.php', form, token, onProgress);
   const url = data.avatar_url as string | undefined;
   if (!url) {
@@ -247,13 +285,18 @@ export async function apiUploadListingMedia(
     throw new Error('Not signed in');
   }
   const isVid = (mimeType || '').toLowerCase().startsWith('video/');
-  const ext = isVid ? 'mp4' : 'jpg';
   const form = new FormData();
-  form.append('file', {
-    uri: localUri,
-    name: isVid ? `clip.${ext}` : `photo.${ext}`,
-    type: mimeType || (isVid ? 'video/mp4' : 'image/jpeg'),
-  } as unknown as Blob);
+  if (isVid) {
+    const mimeLower = (mimeType || '').toLowerCase();
+    const ext = mimeLower.includes('quicktime') || localUri.toLowerCase().includes('.mov') ? 'mov' : 'mp4';
+    form.append('file', {
+      uri: localUri,
+      name: `clip.${ext}`,
+      type: mimeType || (ext === 'mov' ? 'video/quicktime' : 'video/mp4'),
+    } as unknown as Blob);
+  } else {
+    form.append('file', resolveUploadImagePart(localUri, mimeType, 'photo') as unknown as Blob);
+  }
   const data = await multipartPostWithProgress('listing-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   const kind = (data.kind as string) || 'image';
@@ -276,11 +319,7 @@ export async function apiUploadStoreMedia(
   }
   const form = new FormData();
   form.append('asset', asset);
-  form.append('file', {
-    uri: localUri,
-    name: asset === 'logo' ? 'logo.jpg' : 'banner.jpg',
-    type: mimeType || 'image/jpeg',
-  } as unknown as Blob);
+  form.append('file', resolveUploadImagePart(localUri, mimeType, asset) as unknown as Blob);
   const data = await multipartPostWithProgress('store-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   if (!url) {
@@ -302,11 +341,7 @@ export async function apiUploadProductMedia(
   }
   const form = new FormData();
   form.append('store_id', String(storeId));
-  form.append('file', {
-    uri: localUri,
-    name: 'product.jpg',
-    type: mimeType || 'image/jpeg',
-  } as unknown as Blob);
+  form.append('file', resolveUploadImagePart(localUri, mimeType, 'product') as unknown as Blob);
   const data = await multipartPostWithProgress('product-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   if (!url) {
@@ -326,11 +361,7 @@ export async function apiUploadDirectoryLogo(
     throw new Error('Not signed in');
   }
   const form = new FormData();
-  form.append('file', {
-    uri: localUri,
-    name: 'logo.jpg',
-    type: mimeType || 'image/jpeg',
-  } as unknown as Blob);
+  form.append('file', resolveUploadImagePart(localUri, mimeType, 'logo') as unknown as Blob);
   const data = await multipartPostWithProgress('directory-media-upload.php', form, token, onProgress);
   const url = data.url as string | undefined;
   if (!url) {

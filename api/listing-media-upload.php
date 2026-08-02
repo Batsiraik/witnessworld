@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
 require_once __DIR__ . '/lib/listing_helpers.php';
+require_once __DIR__ . '/lib/image_upload_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -44,14 +45,9 @@ if ($size <= 0) {
 }
 
 $tmp = (string) $f['tmp_name'];
-$finfo = new finfo(FILEINFO_MIME_TYPE);
-$mime = is_object($finfo) ? (string) $finfo->file($tmp) : '';
+$clientMime = strtolower(trim((string) ($f['type'] ?? '')));
+$origName = (string) ($f['name'] ?? '');
 
-$imageMimes = [
-    'image/jpeg' => 'jpg',
-    'image/png' => 'png',
-    'image/webp' => 'webp',
-];
 $videoMimes = [
     'video/mp4' => 'mp4',
     'video/quicktime' => 'mov',
@@ -59,7 +55,14 @@ $videoMimes = [
 
 $ext = null;
 $kind = null;
-if (isset($imageMimes[$mime])) {
+
+$imageDetected = ww_image_upload_detect_allowed(
+    $tmp,
+    ['jpg', 'png', 'webp'],
+    $clientMime,
+    $origName
+);
+if ($imageDetected !== null) {
     if ($size > $maxImage) {
         ww_json(['ok' => false, 'error' => 'Image must be 5 MB or smaller'], 422);
     }
@@ -67,16 +70,23 @@ if (isset($imageMimes[$mime])) {
     if ($info === false) {
         ww_json(['ok' => false, 'error' => 'Invalid image file'], 422);
     }
-    $ext = $imageMimes[$mime];
+    $ext = $imageDetected['ext'];
     $kind = 'image';
-} elseif (isset($videoMimes[$mime])) {
-    if ($size > $maxVideo) {
-        ww_json(['ok' => false, 'error' => 'Video must be 45 MB or smaller'], 422);
-    }
-    $ext = $videoMimes[$mime];
-    $kind = 'video';
 } else {
-    ww_json(['ok' => false, 'error' => 'Use JPEG, PNG, WebP for images, or MP4/MOV for video'], 422);
+    $finfo = class_exists('finfo') ? new finfo(FILEINFO_MIME_TYPE) : null;
+    $mime = is_object($finfo) ? (string) $finfo->file($tmp) : $clientMime;
+    if (!isset($videoMimes[$mime]) && isset($videoMimes[$clientMime])) {
+        $mime = $clientMime;
+    }
+    if (isset($videoMimes[$mime])) {
+        if ($size > $maxVideo) {
+            ww_json(['ok' => false, 'error' => 'Video must be 45 MB or smaller'], 422);
+        }
+        $ext = $videoMimes[$mime];
+        $kind = 'video';
+    } else {
+        ww_json(['ok' => false, 'error' => 'Use JPEG, PNG, WebP for images, or MP4/MOV for video'], 422);
+    }
 }
 
 $dir = dirname(__DIR__) . '/uploads/listings/' . $userId;

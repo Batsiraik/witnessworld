@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/user_tokens.php';
+require_once __DIR__ . '/lib/image_upload_helpers.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     ww_json(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -42,16 +43,13 @@ if ($size <= 0 || $size > $max) {
 }
 
 $tmp = (string) $f['tmp_name'];
-$finfo = new finfo(FILEINFO_MIME_TYPE);
-$mime = is_object($finfo) ? (string) $finfo->file($tmp) : '';
-
-$imageMimes = [
-    'image/jpeg' => 'jpg',
-    'image/png' => 'png',
-    'image/webp' => 'webp',
-];
-
-if (!isset($imageMimes[$mime])) {
+$detected = ww_image_upload_detect_allowed(
+    $tmp,
+    ['jpg', 'png', 'webp'],
+    (string) ($f['type'] ?? ''),
+    (string) ($f['name'] ?? '')
+);
+if ($detected === null) {
     ww_json(['ok' => false, 'error' => 'Use JPEG, PNG, or WebP'], 422);
 }
 
@@ -60,7 +58,7 @@ if ($info === false) {
     ww_json(['ok' => false, 'error' => 'Invalid image file'], 422);
 }
 
-$ext = $imageMimes[$mime];
+$ext = $detected['ext'];
 $dir = dirname(__DIR__) . '/uploads/directory_logos/' . $userId;
 if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
     ww_json(['ok' => false, 'error' => 'Server could not create upload folder'], 500);

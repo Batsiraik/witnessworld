@@ -487,20 +487,42 @@ function ww_admin_handle_upload(array $file, string $destDir, string $publicPath
         return ['ok' => false, 'error' => 'File too large'];
     }
     $tmp = (string) $file['tmp_name'];
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = is_object($finfo) ? (string) $finfo->file($tmp) : '';
-    $map = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-    if (!$imagesOnly) {
-        $map['video/mp4'] = 'mp4';
-        $map['video/quicktime'] = 'mov';
-    }
-    if (!isset($map[$mime])) {
-        return ['ok' => false, 'error' => 'Invalid file type'];
+    require_once dirname(__DIR__, 2) . '/api/lib/image_upload_helpers.php';
+    $ext = null;
+    if ($imagesOnly) {
+        $detected = ww_image_upload_detect_allowed(
+            $tmp,
+            ['jpg', 'png', 'webp'],
+            (string) ($file['type'] ?? ''),
+            (string) ($file['name'] ?? '')
+        );
+        if ($detected === null) {
+            return ['ok' => false, 'error' => 'Invalid file type — use JPEG, PNG, or WebP'];
+        }
+        $ext = $detected['ext'];
+    } else {
+        $detected = ww_image_upload_detect_allowed(
+            $tmp,
+            ['jpg', 'png', 'webp'],
+            (string) ($file['type'] ?? ''),
+            (string) ($file['name'] ?? '')
+        );
+        if ($detected !== null) {
+            $ext = $detected['ext'];
+        } else {
+            $finfo = class_exists('finfo') ? new finfo(FILEINFO_MIME_TYPE) : null;
+            $mime = is_object($finfo) ? (string) $finfo->file($tmp) : (string) ($file['type'] ?? '');
+            $videoMap = ['video/mp4' => 'mp4', 'video/quicktime' => 'mov'];
+            if (!isset($videoMap[$mime])) {
+                return ['ok' => false, 'error' => 'Invalid file type'];
+            }
+            $ext = $videoMap[$mime];
+        }
     }
     if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
         return ['ok' => false, 'error' => 'Could not create upload folder'];
     }
-    $name = 'admin_' . bin2hex(random_bytes(8)) . '.' . $map[$mime];
+    $name = 'admin_' . bin2hex(random_bytes(8)) . '.' . $ext;
     if (!move_uploaded_file($tmp, $destDir . '/' . $name)) {
         return ['ok' => false, 'error' => 'Could not save file'];
     }
