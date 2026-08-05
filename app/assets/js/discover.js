@@ -2,8 +2,7 @@
   const PILLS = [
     { id: 'all', label: 'All', section: 'all' },
     { id: 'marketplace', label: 'Marketplace', section: 'marketplace' },
-    { id: 'services', label: 'Services', section: 'services' },
-    { id: 'community', label: 'Community', section: 'community' },
+    { id: 'services', label: 'Professional services', section: 'services' },
     { id: 'stores', label: 'Stores', section: 'stores' },
     { id: 'businesses', label: 'Businesses', section: 'businesses' },
   ];
@@ -26,7 +25,6 @@
       (feed.classifieds || []).forEach((r) => push('classified', r, r.created_at));
       (feed.products || []).forEach((r) => push('product', r, r.created_at));
     }
-    if (pill === 'all' || pill === 'community') (feed.community || []).forEach((r) => push('community', r, r.created_at));
     if (pill === 'all' || pill === 'stores') (feed.stores || []).forEach((r) => push('store', r, r.created_at));
     if (pill === 'all' || pill === 'businesses') (feed.directory || []).forEach((r) => push('directory', r, r.created_at));
 

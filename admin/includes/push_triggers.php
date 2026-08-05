@@ -64,6 +64,96 @@ function ww_admin_send_account_approved_email(PDO $pdo, int $userId): bool
     return $mailer->send($email, $name !== '' ? $name : $email, $subject, $tpl['html'], $tpl['text']);
 }
 
+function ww_admin_send_week1_onboarding_email(PDO $pdo, int $userId): bool
+{
+    $st = $pdo->prepare('SELECT email, first_name, last_name FROM users WHERE id = ? LIMIT 1');
+    $st->execute([$userId]);
+    $user = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        return false;
+    }
+    $email = trim((string) ($user['email'] ?? ''));
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+
+    $root = dirname(__DIR__, 2);
+    require_once $root . '/api/lib/EmailTemplates.php';
+    require_once $root . '/api/lib/Mailer.php';
+    if (!defined('WW_EMAIL_LOGO_URL')) {
+        $cfg = $root . '/api/config.php';
+        if (is_file($cfg)) {
+            require_once $cfg;
+        }
+    }
+
+    $first = trim((string) ($user['first_name'] ?? ''));
+    $last = trim((string) ($user['last_name'] ?? ''));
+    $name = trim($first . ' ' . $last);
+    $support = trim((string) (ww_get_setting($pdo, 'support_email', 'support@witnessworldconnect.com') ?? ''));
+    if ($support === '') {
+        $support = 'support@witnessworldconnect.com';
+    }
+    $logo = (defined('WW_EMAIL_LOGO_URL') && WW_EMAIL_LOGO_URL !== '') ? (string) WW_EMAIL_LOGO_URL : null;
+
+    $tpl = EmailTemplates::accountWeekOneOnboarding(
+        $first !== '' ? $first : 'there',
+        $support,
+        $logo
+    );
+    $mailer = new Mailer($pdo);
+    $subject = 'Your first week on WWC — here is how to get started';
+
+    return $mailer->send($email, $name !== '' ? $name : $email, $subject, $tpl['html'], $tpl['text']);
+}
+
+/**
+ * Send day-7 onboarding emails that are due. Returns stats.
+ *
+ * @return array{ok: bool, due: int, sent: int, failed: int, error?: string}
+ */
+function ww_admin_process_week1_onboarding_emails(PDO $pdo, int $limit = 50): array
+{
+    $limit = max(1, min(200, $limit));
+    try {
+        $st = $pdo->prepare(
+            'SELECT id FROM users
+             WHERE status = ?
+               AND account_approved_at IS NOT NULL
+               AND onboarding_week1_email_sent_at IS NULL
+               AND account_approved_at <= DATE_SUB(NOW(), INTERVAL 7 DAY)
+             ORDER BY account_approved_at ASC
+             LIMIT ' . (int) $limit
+        );
+        $st->execute(['verified']);
+        $ids = array_map(static fn ($r) => (int) $r['id'], $st->fetchAll(PDO::FETCH_ASSOC));
+    } catch (Throwable $e) {
+        return ['ok' => false, 'due' => 0, 'sent' => 0, 'failed' => 0, 'error' => $e->getMessage()];
+    }
+
+    $sent = 0;
+    $failed = 0;
+    foreach ($ids as $userId) {
+        try {
+            $ok = ww_admin_send_week1_onboarding_email($pdo, $userId);
+            if ($ok) {
+                $pdo->prepare(
+                    'UPDATE users SET onboarding_week1_email_sent_at = NOW()
+                     WHERE id = ? AND onboarding_week1_email_sent_at IS NULL'
+                )->execute([$userId]);
+                $sent++;
+            } else {
+                $failed++;
+            }
+        } catch (Throwable $e) {
+            error_log('[WitnessWorld] Week-1 email failed for user ' . $userId . ': ' . $e->getMessage());
+            $failed++;
+        }
+    }
+
+    return ['ok' => true, 'due' => count($ids), 'sent' => $sent, 'failed' => $failed];
+}
+
 function ww_admin_notify_account_review(PDO $pdo, int $userId, string $action): void
 {
     if ($action === 'approve') {

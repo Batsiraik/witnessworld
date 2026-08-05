@@ -27,7 +27,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $cur = $st->fetchColumn();
         if ($cur === 'pending_verification') {
             if ($action === 'approve') {
-                $pdo->prepare("UPDATE users SET status = 'verified' WHERE id = ?")->execute([$id]);
+                $pdo->prepare("UPDATE users SET status = 'verified', account_approved_at = COALESCE(account_approved_at, NOW()) WHERE id = ?")->execute([$id]);
                 ww_admin_notify_account_review($pdo, $id, 'approve');
             } elseif ($action === 'decline') {
                 $pdo->prepare("UPDATE users SET status = 'declined' WHERE id = ?")->execute([$id]);

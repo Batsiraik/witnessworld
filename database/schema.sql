@@ -114,6 +114,8 @@ CREATE TABLE users (
     'verified',
     'declined'
   ) NOT NULL DEFAULT 'pending_otp',
+  account_approved_at DATETIME NULL DEFAULT NULL,
+  onboarding_week1_email_sent_at DATETIME NULL DEFAULT NULL,
   registration_otp VARCHAR(12) NULL,
   registration_otp_expires_at DATETIME NULL,
   password_reset_otp VARCHAR(12) NULL,

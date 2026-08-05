@@ -265,7 +265,7 @@ final class EmailTemplates
     }
 
     /**
-     * Sent when an admin approves a member account (onboarding guide).
+     * Sent when an admin approves a member account (onboarding guide) — Email 1.
      *
      * @return array{html: string, text: string}
      */
@@ -276,7 +276,8 @@ final class EmailTemplates
         ?string $tutorialUrl = null,
         ?string $logoUrl = null
     ): array {
-        $safeName = self::e($firstName !== '' ? $firstName : 'there');
+        $displayName = $firstName !== '' ? $firstName : 'there';
+        $safeName = self::e($displayName);
         $safeApp = self::e($appUrl);
         $safeSupport = self::e($supportEmail);
         $navy = self::NAVY;
@@ -295,12 +296,12 @@ final class EmailTemplates
         };
 
         $features = '
-              <ul style="margin:0;padding:0 0 0 18px;color:' . $navy . ';">
-                <li style="margin:0 0 8px;"><strong>Marketplace</strong> — Buy and sell personal items with brothers and sisters</li>
-                <li style="margin:0 0 8px;"><strong>Services</strong> — Find or offer professional and trade services</li>
-                <li style="margin:0 0 8px;"><strong>Business Directory</strong> — Discover JW-owned businesses near you and worldwide</li>
-                <li style="margin:0 0 8px;"><strong>Stores</strong> — Shop products from JW-owned online stores</li>
-                <li style="margin:0;"><strong>Messaging</strong> — Connect directly and privately with any seller or member</li>
+              <ul style="margin:0;padding:0 0 0 18px;color:' . $navy . ';list-style:none;">
+                <li style="margin:0 0 8px;">🛒 <strong>Marketplace</strong> — Buy and sell personal items with brothers and sisters</li>
+                <li style="margin:0 0 8px;">🛠️ <strong>Services</strong> — Find or offer professional and trade services</li>
+                <li style="margin:0 0 8px;">🏢 <strong>Business Directory</strong> — Discover JW-owned businesses near you and worldwide</li>
+                <li style="margin:0 0 8px;">🏪 <strong>Stores</strong> — Shop products from JW-owned online stores</li>
+                <li style="margin:0;">💬 <strong>Messaging</strong> — Connect directly and privately with any seller or member</li>
               </ul>
               <p style="margin:12px 0 0;font-size:14px;line-height:1.55;color:' . $muted . ';">Take a few minutes to browse each section — you might be surprised what you find!</p>';
 
@@ -317,16 +318,19 @@ final class EmailTemplates
         $ctaLinks = '
               <p style="margin:0 0 10px;">Download or open the app here:</p>
               <p style="margin:0 0 16px;text-align:center;">
-                <a href="' . $safeApp . '" style="display:inline-block;background:' . $brand . ';color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Open WWC</a>
+                <a href="' . $safeApp . '" style="display:inline-block;background:' . $brand . ';color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">App Link</a>
               </p>
               <p style="margin:0 0 8px;font-size:12px;line-height:1.5;color:' . $muted . ';text-align:center;word-break:break-all;">' . $safeApp . '</p>';
 
-        if ($tutorialUrl !== null && $tutorialUrl !== '') {
-            $safeTut = self::e($tutorialUrl);
+        if ($tutorialUrl !== null && trim($tutorialUrl) !== '') {
+            $safeTut = self::e(trim($tutorialUrl));
             $ctaLinks .= '
               <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:' . $navy . ';">How to create an account:
-                <a href="' . $safeTut . '" style="color:' . $brandDark . ';font-weight:700;text-decoration:underline;">Video tutorial</a>
+                <a href="' . $safeTut . '" style="color:' . $brandDark . ';font-weight:700;text-decoration:underline;">Video Tutorial</a>
               </p>';
+        } else {
+            $ctaLinks .= '
+              <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:' . $navy . ';">How to create an account: <strong>Video Tutorial</strong></p>';
         }
 
         $main = '
@@ -338,7 +342,7 @@ final class EmailTemplates
                 '<p style="margin:0;">See a listing you like or a business you want to reach out to? Tap the message button on any listing to connect directly. All conversations are private and secure.</p>'
             )
             . $step(
-                'One more thing — Account Management support',
+                '🌟 One more thing — Account Management support',
                 '<p style="margin:0;">Feeling a little overwhelmed or just want someone to set everything up for you? We offer dedicated Account Management support — your own personal WWC helper to set up your profile, listings, and store. Stay tuned for more details coming soon!</p>'
             )
             . $step(
@@ -347,48 +351,182 @@ final class EmailTemplates
             )
             . '
               </table>
-              <p style="margin:8px 0 0;font-size:14px;line-height:1.6;color:' . $muted . ';">As always, if you have any questions or run into anything, just reply to this email or write to <a href="mailto:' . $safeSupport . '" style="color:' . $brandDark . ';font-weight:700;">' . $safeSupport . '</a>. We are here to help!</p>
-              <p style="margin:18px 0 0;font-size:14px;line-height:1.55;color:' . $navy . ';">Warm regards,<br /><strong>The WWC Team</strong><br />Witness World Connect</p>';
+              <p style="margin:8px 0 0;font-size:14px;line-height:1.6;color:' . $muted . ';">As always, if you have any questions or run into anything, just reply to this email. We are here to help!</p>
+              <p style="margin:18px 0 0;font-size:14px;line-height:1.55;color:' . $navy . ';">Warm regards,<br /><strong>The WWC Team</strong><br />Witness World Connect<br /><a href="mailto:' . $safeSupport . '" style="color:' . $brandDark . ';font-weight:700;">' . $safeSupport . '</a></p>';
 
-        $intro = "Hi {$safeName}, thank you so much for being part of the WWC family! Whether you joined during our beta period or signed up right at launch — you are part of something truly special. This app was built by and for our community, and we are so grateful you are here.<br /><br />Now that we are officially live, we want to make sure you know exactly how to get the most out of WWC. Here is a quick guide to help you get started!";
+        $intro = 'Hi ' . $safeName . ',<br /><br />'
+            . 'Thank you so much for being part of the WWC family! Whether you joined during our beta period or signed up right at launch — you are part of something truly special. This app was built by and for our community, and we are so grateful you are here. 🙏<br /><br />'
+            . 'Now that we are officially live, we want to make sure you know exactly how to get the most out of WWC. Here is a quick guide to help you get started!';
 
         $html = self::shell(
-            preheader: 'You\'re approved — here\'s how to make the most of Witness World Connect.',
-            heading: 'You\'re in — here\'s how to make the most of WWC',
+            preheader: 'You\'re in — here\'s how to make the most of WWC.',
+            heading: 'You\'re in — here\'s how to make the most of WWC 🌟',
             intro: $intro,
             mainHtml: $main,
             footerLine: 'Witness World Connect · ' . $supportEmail,
             logoUrl: $logoUrl
         );
 
-        $text = "Hi {$firstName},\n\n"
-            . "Thank you so much for being part of the WWC family! Whether you joined during our beta period or signed up right at launch — you are part of something truly special. This app was built by and for our community, and we are so grateful you are here.\n\n"
+        $text = "Hi {$displayName},\n\n"
+            . "Thank you so much for being part of the WWC family! Whether you joined during our beta period or signed up right at launch — you are part of something truly special. This app was built by and for our community, and we are so grateful you are here. 🙏\n\n"
             . "Now that we are officially live, we want to make sure you know exactly how to get the most out of WWC. Here is a quick guide to help you get started!\n\n"
-            . "STEP 1 — EXPLORE THE APP\n"
-            . "Marketplace — Buy and sell personal items with brothers and sisters\n"
-            . "Services — Find or offer professional and trade services\n"
-            . "Business Directory — Discover JW-owned businesses near you and worldwide\n"
-            . "Stores — Shop products from JW-owned online stores\n"
-            . "Messaging — Connect directly and privately with any seller or member\n\n"
+            . "---\n"
+            . "STEP 1 — EXPLORE THE APP\n\n"
+            . "Here is what you will find inside WWC:\n\n"
+            . "🛒 Marketplace — Buy and sell personal items with brothers and sisters\n"
+            . "🛠️ Services — Find or offer professional and trade services\n"
+            . "🏢 Business Directory — Discover JW-owned businesses near you and worldwide\n"
+            . "🏪 Stores — Shop products from JW-owned online stores\n"
+            . "💬 Messaging — Connect directly and privately with any seller or member\n\n"
             . "Take a few minutes to browse each section — you might be surprised what you find!\n\n"
-            . "STEP 2 — POST YOUR FIRST LISTING\n"
+            . "---\n"
+            . "STEP 2 — POST YOUR FIRST LISTING\n\n"
+            . "Have something to sell, a service to offer, or a business to promote? Here's how:\n\n"
             . "1. Tap the Post button in the app\n"
             . "2. Choose your category\n"
             . "3. Add your title, description, price, and photos\n"
             . "4. Submit — your listing goes live once approved by our team\n\n"
             . "Tip: Listings with good photos and clear descriptions get the most responses!\n\n"
-            . "STEP 3 — SEND YOUR FIRST MESSAGE\n"
+            . "---\n"
+            . "STEP 3 — SEND YOUR FIRST MESSAGE\n\n"
             . "See a listing you like or a business you want to reach out to? Tap the message button on any listing to connect directly. All conversations are private and secure.\n\n"
-            . "ONE MORE THING — ACCOUNT MANAGEMENT SUPPORT\n"
+            . "---\n"
+            . "🌟 ONE MORE THING — ACCOUNT MANAGEMENT SUPPORT\n\n"
             . "Feeling a little overwhelmed or just want someone to set everything up for you? We offer dedicated Account Management support — your own personal WWC helper to set up your profile, listings, and store. Stay tuned for more details coming soon!\n\n"
-            . "YOUR NEXT STEP\n"
+            . "---\n"
+            . "YOUR NEXT STEP\n\n"
             . "Open the app right now and complete your profile. It is the single best thing you can do today to get the most out of WWC.\n\n"
             . "Download or open the app here: {$appUrl}\n";
-        if ($tutorialUrl !== null && $tutorialUrl !== '') {
-            $text .= "How to create an account (video tutorial): {$tutorialUrl}\n";
+        if ($tutorialUrl !== null && trim($tutorialUrl) !== '') {
+            $text .= 'How to create an account: Video Tutorial — ' . trim($tutorialUrl) . "\n";
+        } else {
+            $text .= "How to create an account: Video Tutorial\n";
         }
         $text .= "\nAs always, if you have any questions or run into anything, just reply to this email. We are here to help!\n\n"
-            . "Warm regards,\nThe WWC Team\nWitness World Connect\n{$supportEmail}\n";
+            . "Warm regards,\n"
+            . "The WWC Team\n"
+            . "Witness World Connect\n"
+            . "{$supportEmail}\n";
+
+        return ['html' => $html, 'text' => $text];
+    }
+
+    /**
+     * Day-7 onboarding email after account approval (Email 2).
+     *
+     * @return array{html: string, text: string}
+     */
+    public static function accountWeekOneOnboarding(
+        string $firstName,
+        string $supportEmail,
+        ?string $logoUrl = null
+    ): array {
+        $displayName = $firstName !== '' ? $firstName : 'there';
+        $safeName = self::e($displayName);
+        $safeSupport = self::e($supportEmail);
+        $mailto = 'mailto:' . $supportEmail;
+        $safeMailto = self::e($mailto);
+        $navy = self::NAVY;
+        $muted = self::MUTED;
+        $brand = self::BRAND;
+        $brandDark = self::BRAND_DARK;
+
+        $step = static function (string $title, string $bodyHtml) use ($navy, $brand): string {
+            return '
+              <tr>
+                <td style="padding:0 0 18px;">
+                  <p style="margin:0 0 8px;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:' . $brand . ';">' . $title . '</p>
+                  <div style="font-size:14px;line-height:1.6;color:' . $navy . ';">' . $bodyHtml . '</div>
+                </td>
+              </tr>';
+        };
+
+        $main = '
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">'
+            . $step(
+                'Find a business or service',
+                '<p style="margin:0;">Looking for a plumber, a designer, a tutor, or anything else? Tap the search bar or browse the Marketplace, Services, or Business Directory sections. You can filter by category and location to find exactly what you need.</p>'
+            )
+            . $step(
+                'Post your first listing',
+                '<p style="margin:0 0 8px;">Have something to sell or a service to offer? Here\'s how:</p>
+              <ol style="margin:0;padding:0 0 0 18px;color:' . $navy . ';">
+                <li style="margin:0 0 6px;">Tap the <strong>Post</strong> button in the app</li>
+                <li style="margin:0 0 6px;">Choose your category (Marketplace, Services, Businesses, or Stores)</li>
+                <li style="margin:0 0 6px;">Fill in your listing details — title, description, price, and photos</li>
+                <li style="margin:0 0 6px;">Submit — your listing will go live once approved by our team</li>
+              </ol>
+              <p style="margin:12px 0 0;font-size:13px;line-height:1.55;color:' . $muted . ';"><strong>Tip:</strong> Listings with clear photos and detailed descriptions get the most responses!</p>'
+            )
+            . $step(
+                'Message a seller',
+                '<p style="margin:0;">See something you like? Tap the message button on any listing to reach out to the seller directly. All conversations stay private between you and the seller.</p>'
+            )
+            . $step(
+                'Leave a review',
+                '<p style="margin:0;">After connecting with a seller or using a service, leave a review to help others in the community make confident decisions. Your feedback makes WWC better for everyone.</p>'
+            )
+            . $step(
+                'Spotted something? Let us know!',
+                '<p style="margin:0 0 10px;">WWC is brand new and we are constantly improving. If you notice a bug, something that doesn\'t look right, or have an idea for a feature you\'d love to see — we want to hear from you!</p>
+              <p style="margin:0 0 10px;">Submit your feedback here 👉
+                <a href="' . $safeMailto . '" style="color:' . $brandDark . ';font-weight:700;text-decoration:underline;">email support</a>
+                or send us an email at <a href="' . $safeMailto . '" style="color:' . $brandDark . ';font-weight:700;">' . $safeSupport . '</a></p>
+              <p style="margin:0;font-size:14px;line-height:1.55;color:' . $muted . ';">Every piece of feedback helps us make WWC better for the whole community.</p>'
+            )
+            . '
+              </table>
+              <p style="margin:8px 0 0;font-size:14px;line-height:1.6;color:' . $muted . ';">If you have any questions, just reply to this email and we\'ll help you right away.</p>
+              <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:' . $navy . ';">Enjoy exploring WWC! 🌟</p>
+              <p style="margin:18px 0 0;font-size:14px;line-height:1.55;color:' . $navy . ';">Warm regards,<br /><strong>The WWC Team</strong><br />Witness World Connect<br /><a href="' . $safeMailto . '" style="color:' . $brandDark . ';font-weight:700;">' . $safeSupport . '</a></p>';
+
+        $intro = 'Hi ' . $safeName . ',<br /><br />'
+            . 'Welcome to WWC! We\'re so glad you\'re here. 🙏<br /><br />'
+            . 'This is your community marketplace — a place to find trusted JW-owned businesses and services, post your own listings, and connect with brothers and sisters near you and around the world.<br /><br />'
+            . 'Here are a few simple things you can do right now to get the most out of WWC:';
+
+        $html = self::shell(
+            preheader: 'Your first week on WWC — here is how to get started.',
+            heading: 'Your first week on WWC — here is how to get started',
+            intro: $intro,
+            mainHtml: $main,
+            footerLine: 'Witness World Connect · ' . $supportEmail,
+            logoUrl: $logoUrl
+        );
+
+        $text = "Hi {$displayName},\n\n"
+            . "Welcome to WWC! We're so glad you're here. 🙏\n\n"
+            . "This is your community marketplace — a place to find trusted JW-owned businesses and services, post your own listings, and connect with brothers and sisters near you and around the world.\n\n"
+            . "Here are a few simple things you can do right now to get the most out of WWC:\n\n"
+            . "---\n"
+            . "FIND A BUSINESS OR SERVICE\n\n"
+            . "Looking for a plumber, a designer, a tutor, or anything else? Tap the search bar or browse the Marketplace, Services, or Business Directory sections. You can filter by category and location to find exactly what you need.\n\n"
+            . "---\n"
+            . "POST YOUR FIRST LISTING\n\n"
+            . "Have something to sell or a service to offer? Here's how:\n\n"
+            . "1. Tap the Post button in the app\n"
+            . "2. Choose your category (Marketplace, Services, Businesses, or Stores)\n"
+            . "3. Fill in your listing details — title, description, price, and photos\n"
+            . "4. Submit — your listing will go live once approved by our team\n\n"
+            . "Tip: Listings with clear photos and detailed descriptions get the most responses!\n\n"
+            . "---\n"
+            . "MESSAGE A SELLER\n\n"
+            . "See something you like? Tap the message button on any listing to reach out to the seller directly. All conversations stay private between you and the seller.\n\n"
+            . "---\n"
+            . "LEAVE A REVIEW\n\n"
+            . "After connecting with a seller or using a service, leave a review to help others in the community make confident decisions. Your feedback makes WWC better for everyone.\n\n"
+            . "---\n"
+            . "SPOTTED SOMETHING? LET US KNOW!\n\n"
+            . "WWC is brand new and we are constantly improving. If you notice a bug, something that doesn't look right, or have an idea for a feature you'd love to see — we want to hear from you!\n\n"
+            . "Submit your feedback here 👉 {$mailto} or send us an email at {$supportEmail}\n\n"
+            . "Every piece of feedback helps us make WWC better for the whole community.\n\n"
+            . "---\n"
+            . "If you have any questions, just reply to this email and we'll help you right away.\n\n"
+            . "Enjoy exploring WWC! 🌟\n\n"
+            . "Warm regards,\n"
+            . "The WWC Team\n"
+            . "Witness World Connect\n"
+            . "{$supportEmail}\n";
 
         return ['html' => $html, 'text' => $text];
     }

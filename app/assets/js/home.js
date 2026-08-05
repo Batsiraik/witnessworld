@@ -13,13 +13,6 @@
       svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
     },
     {
-      label: 'Marketplace',
-      href: 'classifieds.html',
-      bg: '#e8f4fd',
-      color: '#1d4ed8',
-      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>',
-    },
-    {
       label: 'Business directory',
       href: 'directory.html',
       bg: '#dcfce7',
@@ -27,18 +20,18 @@
       svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>',
     },
     {
+      label: 'Marketplace',
+      href: 'classifieds.html',
+      bg: '#e8f4fd',
+      color: '#1d4ed8',
+      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>',
+    },
+    {
       label: 'Online stores',
       href: 'stores.html',
       bg: '#ffedd5',
       color: '#c2410c',
       svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>',
-    },
-    {
-      label: 'Community classifieds',
-      href: 'community.html',
-      bg: '#fef3c7',
-      color: '#b45309',
-      svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
     },
   ];
 
@@ -272,6 +265,16 @@
       );
     }
 
+    if (feed.directory.length) {
+      parts.push(
+        rail(
+          'Business directory',
+          'directory.html',
+          cap(feed.directory).map((r) => cardDirectory(r)).join('')
+        )
+      );
+    }
+
     if (feed.classifieds.length || feed.stores.length) {
       const recRows = [
         ...feed.classifieds.map((r) => ({ kind: 'listing', row: r })),
@@ -288,18 +291,9 @@
     if (feed.services.length) {
       parts.push(
         rail(
-          'Service marketplace',
+          'Professional services',
           'services.html',
           cap(feed.services).map((r) => cardListing(r, 'listing.html')).join('')
-        )
-      );
-    }
-    if (feed.community.length) {
-      parts.push(
-        rail(
-          'Community',
-          'community.html',
-          cap(feed.community).map((r) => cardListing(r, 'listing.html')).join('')
         )
       );
     }
@@ -327,15 +321,6 @@
           'Online stores',
           'stores.html',
           cap(feed.stores).map((r) => cardStore(r)).join('')
-        )
-      );
-    }
-    if (feed.directory.length) {
-      parts.push(
-        rail(
-          'Business directory',
-          'directory.html',
-          cap(feed.directory).map((r) => cardDirectory(r)).join('')
         )
       );
     }

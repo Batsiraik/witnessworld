@@ -17,6 +17,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         'support_user_id',
         'onboarding_app_url',
         'onboarding_tutorial_url',
+        'cron_secret',
         'membership_trial_days',
         'monetization_enabled',
         'stripe_publishable_key',
@@ -31,18 +32,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         'smtp_from_email',
         'smtp_encryption',
     ];
-    foreach ($keys as $k) {
-        if ($k === 'monetization_enabled') {
-            ww_set_setting($pdo, $k, !empty($_POST['monetization_enabled']) ? '1' : '0');
-            continue;
+    if (!empty($_POST['generate_cron_secret'])) {
+        ww_set_setting($pdo, 'cron_secret', bin2hex(random_bytes(24)));
+        $flash = 'Cron secret generated. Copy it into your Hostinger cron job URL.';
+    } else {
+        foreach ($keys as $k) {
+            if ($k === 'monetization_enabled') {
+                ww_set_setting($pdo, $k, !empty($_POST['monetization_enabled']) ? '1' : '0');
+                continue;
+            }
+            if ($k === 'cron_secret') {
+                $v = trim((string) ($_POST[$k] ?? ''));
+                if ($v === '') {
+                    continue;
+                }
+                ww_set_setting($pdo, $k, $v);
+                continue;
+            }
+            $v = trim((string) ($_POST[$k] ?? ''));
+            if ($k === 'smtp_pass' && $v === '') {
+                continue;
+            }
+            ww_set_setting($pdo, $k, $v);
         }
-        $v = trim((string) ($_POST[$k] ?? ''));
-        if ($k === 'smtp_pass' && $v === '') {
-            continue;
-        }
-        ww_set_setting($pdo, $k, $v);
+        $flash = 'Settings saved.';
     }
-    $flash = 'Settings saved.';
 }
 
 $get = static function (string $k) use ($pdo): string {
@@ -53,6 +67,7 @@ $support = $get('support_email');
 $supportUserId = $get('support_user_id');
 $onboardingAppUrl = $get('onboarding_app_url');
 $onboardingTutorialUrl = $get('onboarding_tutorial_url');
+$cronSecret = $get('cron_secret');
 $membershipTrialDays = $get('membership_trial_days') ?: '90';
 $monetizationEnabled = $get('monetization_enabled') === '1';
 $stripePublishableKey = $get('stripe_publishable_key');
@@ -140,6 +155,41 @@ require __DIR__ . '/partials/shell_open.php';
         placeholder="https://youtube.com/..."
       />
       <p class="mt-1 text-xs text-slate-500">If set, the email includes a “Video tutorial” link. Leave blank to hide that line until you have a video.</p>
+    </div>
+    <hr class="border-slate-100" />
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Day-7 onboarding email (cron)</p>
+    <p class="text-xs leading-relaxed text-slate-500">
+      Seven days after you approve a member, Email 2 (“Your first week on WWC…”) is sent automatically when Hostinger hits the cron URL below (once a day is enough).
+    </p>
+    <div>
+      <label class="text-xs font-semibold text-slate-600">Cron secret</label>
+      <input
+        type="text"
+        name="cron_secret"
+        value="<?= htmlspecialchars($cronSecret, ENT_QUOTES, 'UTF-8') ?>"
+        class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono"
+        placeholder="Click Generate if empty"
+        autocomplete="off"
+      />
+      <p class="mt-1 text-xs text-slate-500">Keep this private. Leave blank when saving other settings to keep the current secret.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button type="submit" name="generate_cron_secret" value="1" class="admin-btn admin-btn--ghost admin-btn--sm"
+              onclick="return confirm('Generate a new cron secret? Update your Hostinger cron URL afterward.');">
+        Generate cron secret
+      </button>
+    </div>
+    <?php
+      $cronUrlExample = 'https://witnessworldconnect.com/api/cron-onboarding-emails.php?key='
+          . ($cronSecret !== '' ? rawurlencode($cronSecret) : 'YOUR_SECRET');
+    ?>
+    <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-600">
+      <p class="font-semibold text-slate-800">Hostinger cron command (daily)</p>
+      <code class="mt-2 block break-all rounded-lg bg-white px-2 py-2 text-[11px] text-slate-800 ring-1 ring-slate-100"><?= htmlspecialchars(
+          'curl -fsS "' . $cronUrlExample . '"',
+          ENT_QUOTES,
+          'UTF-8'
+      ) ?></code>
     </div>
     <hr class="border-slate-100" />
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Membership trials</p>

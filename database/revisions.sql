@@ -418,4 +418,5 @@ ALTER TABLE admins
 
 -- ---------------------------------------------------------------------------
 -- 2026-08-05: Content + module unique daily views — see revisions_analytics.sql
+-- 2026-08-05: Day-7 onboarding email — see revisions_onboarding_week1_email.sql
 -- ---------------------------------------------------------------------------
