@@ -5,6 +5,7 @@
   const ROWS = [
     { title: 'Marketplace listing', sub: 'Sell products or items', href: 'create-listing.html?type=classified', icon: 'bag-handle-outline', bg: '#E8F4FD', color: '#1D4ED8' },
     { title: 'Professional service', sub: 'Offer a skill or service', href: 'create-listing.html?type=service', icon: 'construct-outline', bg: '#F3E8FF', color: '#7C3AED' },
+    { title: 'Classifieds post', sub: 'Housing, jobs, community needs', href: 'create-listing.html?type=community', icon: 'newspaper-outline', bg: '#FEF3C7', color: '#B45309' },
     { title: 'Online store', sub: 'Open a storefront', href: 'create-store.html', icon: 'storefront-outline', bg: '#FFEDD5', color: '#C2410C' },
     { title: 'Business directory', sub: 'List your business', href: 'create-directory.html', icon: 'business-outline', bg: '#DCFCE7', color: '#15803D' },
     { title: 'Add store product', sub: 'Add products to an approved store', href: 'my-office.html', icon: 'cube-outline', bg: '#E0E7FF', color: '#4338CA' },

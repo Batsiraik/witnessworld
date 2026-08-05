@@ -4,18 +4,25 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" href="assets/images/favicon.png" type="image/png" sizes="any" />
   <link rel="apple-touch-icon" href="assets/images/favicon.png" />
-  <title>Classifieds · Witness World Connect</title>
+  <title>Marketplace · Witness World Connect</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/app.css" /><link rel="stylesheet" href="assets/css/home.css" /><link rel="stylesheet" href="assets/css/browse.css" />
+  <link rel="stylesheet" href="assets/css/app.css" /><link rel="stylesheet" href="assets/css/home.css" /><link rel="stylesheet" href="assets/css/browse.css?v=2" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </head>
 <body data-browse-type="classified">
   <div class="wwc-app"><div id="wwc-shell-top"></div>
   <main class="wwc-main">
     <a href="index.html" class="wwc-back-link"><ion-icon name="arrow-back-outline"></ion-icon> Home</a>
-    <div class="wwc-page-head"><h1 class="wwc-page-title" id="page-title">Classifieds</h1></div>
+    <section class="wwc-module-intro wwc-module-intro--marketplace" aria-label="Marketplace">
+      <div class="wwc-module-intro-icon" aria-hidden="true"><ion-icon name="bag-handle-outline"></ion-icon></div>
+      <div>
+        <p class="wwc-module-intro-tag">Marketplace</p>
+        <h1 class="wwc-module-intro-title">Your Local Buy &amp; Sell Hub</h1>
+        <p class="wwc-module-intro-body">Easily list pre-loved goods, browse deals nearby, and chat directly with buyers and sellers in your community to make quick, easy transactions.</p>
+      </div>
+    </section>
     <div class="wwc-filters">
-      <div class="wwc-search-row"><ion-icon name="search-outline"></ion-icon><input type="search" id="browse-search" placeholder="Search classifieds…" /></div>
+      <div class="wwc-search-row"><ion-icon name="search-outline"></ion-icon><input type="search" id="browse-search" placeholder="Search marketplace…" /></div>
       <div class="wwc-filter-row"><button type="button" class="wwc-loc-btn" id="loc-btn"><ion-icon name="location-outline"></ion-icon><span id="loc-label">All locations</span></button>
         <select id="browse-category"><option value="">All categories</option></select>
         <input type="number" id="price-min" placeholder="Min $" /><input type="number" id="price-max" placeholder="Max $" />

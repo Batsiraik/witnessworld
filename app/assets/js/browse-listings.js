@@ -1,8 +1,8 @@
 (function () {
   const CONFIG = {
     service: { title: 'Professional services', catApi: 'service-categories.php', type: 'service' },
-    classified: { title: 'Classifieds', catApi: 'marketplace-categories.php', type: 'classified' },
-    community: { title: 'Community', catApi: 'community-categories.php', type: 'community' },
+    classified: { title: 'Marketplace', catApi: 'marketplace-categories.php', type: 'classified' },
+    community: { title: 'Classifieds', catApi: 'community-categories.php', type: 'community' },
   };
 
   const pageType = document.body.dataset.browseType || 'service';

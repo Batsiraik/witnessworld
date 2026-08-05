@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/app.css" />
   <link rel="stylesheet" href="assets/css/home.css" />
-  <link rel="stylesheet" href="assets/css/browse.css" />
+  <link rel="stylesheet" href="assets/css/browse.css?v=2" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </head>
 <body data-browse-type="service">
@@ -17,7 +17,14 @@
     <div id="wwc-shell-top"></div>
     <main class="wwc-main">
       <a href="index.html" class="wwc-back-link"><ion-icon name="arrow-back-outline"></ion-icon> Home</a>
-      <div class="wwc-page-head"><h1 class="wwc-page-title" id="page-title">Professional services</h1></div>
+      <section class="wwc-module-intro wwc-module-intro--services" aria-label="Professional Services">
+        <div class="wwc-module-intro-icon" aria-hidden="true"><ion-icon name="briefcase-outline"></ion-icon></div>
+        <div>
+          <p class="wwc-module-intro-tag">Professional Services</p>
+          <h1 class="wwc-module-intro-title">Hire Skilled Pros or Offer Your Expertise</h1>
+          <p class="wwc-module-intro-body">Browse specialized freelance services, compare top-rated talent, and order custom projects directly—or list your own professional services to grow your client base.</p>
+        </div>
+      </section>
       <div class="wwc-filters">
         <div class="wwc-search-row"><ion-icon name="search-outline"></ion-icon><input type="search" id="browse-search" placeholder="Search services…" /></div>
         <div class="wwc-filter-row">

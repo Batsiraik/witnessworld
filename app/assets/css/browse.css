@@ -17,6 +17,98 @@
   font-weight: 600;
 }
 
+/* Module intro banner (shown on browse pages) */
+.wwc-module-intro {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--wwc-white);
+  border: 1px solid rgba(11, 18, 32, 0.06);
+  box-shadow: 0 4px 18px rgba(11, 18, 32, 0.04);
+}
+
+.wwc-module-intro-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wwc-module-intro-icon ion-icon {
+  font-size: 26px;
+}
+
+.wwc-module-intro-tag {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wwc-primary, #1faaf2);
+}
+
+.wwc-module-intro-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--wwc-text, #0b1220);
+}
+
+.wwc-module-intro-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 600;
+  color: var(--wwc-text-muted);
+}
+
+.wwc-module-intro--services .wwc-module-intro-icon {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+.wwc-module-intro--services .wwc-module-intro-tag {
+  color: #7c3aed;
+}
+
+.wwc-module-intro--stores .wwc-module-intro-icon {
+  background: #ffedd5;
+  color: #c2410c;
+}
+.wwc-module-intro--stores .wwc-module-intro-tag {
+  color: #c2410c;
+}
+
+.wwc-module-intro--directory .wwc-module-intro-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+.wwc-module-intro--directory .wwc-module-intro-tag {
+  color: #15803d;
+}
+
+.wwc-module-intro--classifieds .wwc-module-intro-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+.wwc-module-intro--classifieds .wwc-module-intro-tag {
+  color: #b45309;
+}
+
+.wwc-module-intro--marketplace .wwc-module-intro-icon {
+  background: #e8f4fd;
+  color: #1d4ed8;
+}
+.wwc-module-intro--marketplace .wwc-module-intro-tag {
+  color: #1d4ed8;
+}
+
 .wwc-filters {
   display: flex;
   flex-direction: column;

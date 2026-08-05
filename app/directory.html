@@ -6,14 +6,22 @@
   <link rel="apple-touch-icon" href="assets/images/favicon.png" />
   <title>Business directory · Witness World Connect</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/app.css" /><link rel="stylesheet" href="assets/css/home.css" /><link rel="stylesheet" href="assets/css/browse.css" />
+  <link rel="stylesheet" href="assets/css/app.css" /><link rel="stylesheet" href="assets/css/home.css" /><link rel="stylesheet" href="assets/css/browse.css?v=2" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </head>
 <body>
   <div class="wwc-app"><div id="wwc-shell-top"></div>
   <main class="wwc-main">
     <a href="index.html" class="wwc-back-link"><ion-icon name="arrow-back-outline"></ion-icon> Home</a>
-    <div class="wwc-page-head"><h1 class="wwc-page-title">Business directory</h1><p class="wwc-page-sub" id="dir-hint">Select a country to browse businesses.</p></div>
+    <section class="wwc-module-intro wwc-module-intro--directory" aria-label="Business Directory">
+      <div class="wwc-module-intro-icon" aria-hidden="true"><ion-icon name="business-outline"></ion-icon></div>
+      <div>
+        <p class="wwc-module-intro-tag">Business Directory</p>
+        <h1 class="wwc-module-intro-title">Connect with Local &amp; Global Businesses</h1>
+        <p class="wwc-module-intro-body">Explore local services, verified companies, and trusted brands—or list your business here to boost your visibility and attract new customers.</p>
+        <p class="wwc-page-sub" id="dir-hint" style="margin-top:10px">Select a country to browse businesses.</p>
+      </div>
+    </section>
     <div class="wwc-filters">
       <div class="wwc-search-row"><ion-icon name="search-outline"></ion-icon><input type="search" id="browse-search" placeholder="Search businesses…" /></div>
       <div class="wwc-filter-row"><button type="button" class="wwc-loc-btn" id="loc-btn"><ion-icon name="location-outline"></ion-icon><span id="loc-label">Select country</span></button>
