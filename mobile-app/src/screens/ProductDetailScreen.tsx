@@ -24,6 +24,7 @@ import { useShoppingCart } from '../context/ShoppingCartContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
+import { trackContentView } from '../lib/analytics';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ProductDetail'>;
 
@@ -95,6 +96,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           review_summary: j.review_summary as ReviewSummary | undefined,
           reviews: Array.isArray(j.reviews) ? (j.reviews as ReviewRow[]) : [],
         });
+        trackContentView('product', id, 'product_detail');
       } catch (e) {
         if (!cancelled) setErr(e instanceof Error ? e.message : 'Error');
       } finally {

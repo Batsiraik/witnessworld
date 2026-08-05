@@ -23,6 +23,7 @@ import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
+import { trackContentView } from '../lib/analytics';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'DirectoryDetail'>;
 
@@ -85,6 +86,7 @@ export function DirectoryDetailScreen({ navigation, route }: Props) {
           return;
         }
         setEntry(E);
+        trackContentView('directory_entry', id, 'directory_detail');
       } catch (e) {
         if (!cancelled) setErr(e instanceof Error ? e.message : 'Error');
       } finally {

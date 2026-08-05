@@ -30,9 +30,11 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 const SCREEN_W = Dimensions.get('window').width;
 const HOME_LOGO = require('../../assets/logo.jpg');
 const FEATURED_CARD_W = Math.min(SCREEN_W * 0.4, 156);
-const TREND_CARD_W = Math.min(SCREEN_W * 0.42, 168);
+const TREND_CARD_W = Math.min(SCREEN_W * 0.58, 220);
 const ACTION_GAP = 10;
 const STAR_GOLD = '#F5C518';
+/** Max items shown in a homepage horizontal rail before See All. */
+const RAIL_LIMIT = 7;
 
 type Feed = {
   services: Record<string, unknown>[];
@@ -42,6 +44,7 @@ type Feed = {
   stores: Record<string, unknown>[];
   directory: Record<string, unknown>[];
   featured: FeaturedRow[];
+  recommended: FeaturedRow[];
 };
 
 type FeaturedRow = {
@@ -82,6 +85,7 @@ function normalizeFeed(raw: unknown): Feed {
       stores: [],
       directory: [],
       featured: [],
+      recommended: [],
     };
   }
   const f = raw as Record<string, unknown>;
@@ -94,6 +98,7 @@ function normalizeFeed(raw: unknown): Feed {
     stores: arr('stores'),
     directory: arr('directory'),
     featured: normalizeFeatured(f.featured),
+    recommended: normalizeFeatured(f.recommended),
   };
 }
 
@@ -237,7 +242,7 @@ export function HomeScreen({ navigation }: Props) {
       try {
         const qs = new URLSearchParams();
         qs.set('section', 'all');
-        qs.set('limit', '12');
+        qs.set('limit', '14');
         if (country?.code) qs.set('country', country.code);
         if (usState?.name) qs.set('us_state', usState.name);
         const data = await apiGet(`marketplace-home-feed.php?${qs.toString()}`, true);
@@ -278,6 +283,16 @@ export function HomeScreen({ navigation }: Props) {
     for (const p of feed.products.slice(0, 6)) out.push({ kind: 'product', row: p });
     for (const c of feed.classifieds.slice(0, 6)) out.push({ kind: 'listing', row: c });
     return out.slice(0, 10);
+  }, [feed]);
+
+  const recommendedRows = useMemo(() => {
+    if (!feed) return [] as { kind: 'product' | 'listing'; row: Record<string, unknown> }[];
+    const out: { kind: 'product' | 'listing'; row: Record<string, unknown> }[] = [];
+    for (const f of feed.recommended) {
+      if (f.kind === 'product' && f.product) out.push({ kind: 'product', row: f.product });
+      else if (f.listing) out.push({ kind: 'listing', row: f.listing });
+    }
+    return out;
   }, [feed]);
 
   const submitSearch = () => {
@@ -411,7 +426,7 @@ export function HomeScreen({ navigation }: Props) {
     );
   };
 
-  const trendCard = (kind: 'product' | 'listing', row: Record<string, unknown>) => {
+  const trendCard = (kind: 'product' | 'listing', row: Record<string, unknown>, keyPrefix = 'tr') => {
     const id = Number(row.id);
     const title = String(kind === 'product' ? row.name ?? '' : row.title ?? '');
     const img = kind === 'product' ? (row.image_url ? String(row.image_url) : null) : row.media_url ? String(row.media_url) : null;
@@ -419,9 +434,12 @@ export function HomeScreen({ navigation }: Props) {
       kind === 'product'
         ? `${String(row.currency ?? 'USD') === 'USD' ? '$' : `${row.currency} `}${String(row.price_amount ?? '')}`
         : formatPrice(row);
+    const ratingAvg = typeof row.rating_average === 'number' ? row.rating_average : Number(row.rating_average);
+    const ratingCount = typeof row.rating_count === 'number' ? row.rating_count : Number(row.rating_count ?? 0);
+    const showStars = Number.isFinite(ratingAvg) && ratingCount > 0;
     return (
       <Pressable
-        key={`tr-${kind}-${id}`}
+        key={`${keyPrefix}-${kind}-${id}`}
         style={({ pressed }) => [styles.trendCard, pressed && styles.pressed]}
         onPress={() =>
           kind === 'product' ? navigation.push('ProductDetail', { id }) : navigation.push('ListingDetail', { id })
@@ -435,11 +453,74 @@ export function HomeScreen({ navigation }: Props) {
               <Ionicons name={kind === 'product' ? 'cube-outline' : 'pricetag-outline'} size={26} color={colors.textMuted} />
             </View>
           )}
+          {showStars ? (
+            <View style={styles.trendStarPill}>
+              <Ionicons name="star" size={11} color={STAR_GOLD} />
+              <Text style={styles.trendStarText}>{ratingAvg.toFixed(1)}</Text>
+            </View>
+          ) : null}
         </View>
         <Text style={styles.trendTitle} numberOfLines={2}>
           {title}
         </Text>
         {price ? <Text style={styles.trendPrice}>{price}</Text> : null}
+      </Pressable>
+    );
+  };
+
+  const directoryRailCard = (row: Record<string, unknown>) => {
+    const id = Number(row.id);
+    const name = String(row.business_name ?? '');
+    const logo = row.logo_url ? String(row.logo_url) : null;
+    const loc = formatDirLocation(row);
+    return (
+      <Pressable
+        key={`dir-rail-${id}`}
+        style={({ pressed }) => [styles.trendCard, pressed && styles.pressed]}
+        onPress={() => navigation.push('DirectoryDetail', { id })}
+      >
+        <View style={styles.trendImgWrap}>
+          {logo ? (
+            <RemoteImage url={logo} style={styles.trendImg} contentFit="cover" />
+          ) : (
+            <View style={[styles.trendImg, styles.hPh]}>
+              <Ionicons name="business-outline" size={26} color={colors.textMuted} />
+            </View>
+          )}
+        </View>
+        <Text style={styles.trendTitle} numberOfLines={2}>
+          {name}
+        </Text>
+        <Text style={styles.trendMeta} numberOfLines={1}>
+          {loc}
+        </Text>
+      </Pressable>
+    );
+  };
+
+  const storeRailCard = (row: Record<string, unknown>) => {
+    const id = Number(row.id);
+    const name = String(row.name ?? '');
+    const logo = row.logo_url ? String(row.logo_url) : '';
+    return (
+      <Pressable
+        key={`st-${id}`}
+        style={({ pressed }) => [styles.trendCard, pressed && styles.pressed]}
+        onPress={() => navigation.push('StoreDetailPublic', { id })}
+      >
+        <View style={styles.trendImgWrap}>
+          {logo ? (
+            <RemoteImage url={logo} style={styles.trendImg} contentFit="cover" />
+          ) : (
+            <View style={[styles.trendImg, styles.hPh]}>
+              <Ionicons name="storefront-outline" size={26} color={colors.textMuted} />
+            </View>
+          )}
+        </View>
+        <Text style={styles.trendTitle} numberOfLines={2}>
+          {name}
+        </Text>
+        <Text style={styles.trendMeta}>Store</Text>
       </Pressable>
     );
   };
@@ -562,7 +643,7 @@ export function HomeScreen({ navigation }: Props) {
                     'Featured Services',
                     () => navigation.navigate('Services'),
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                      {featuredServices.map((r) => serviceCard(r))}
+                      {featuredServices.slice(0, RAIL_LIMIT).map((r) => serviceCard(r))}
                     </ScrollView>
                   )
                 : null}
@@ -572,6 +653,26 @@ export function HomeScreen({ navigation }: Props) {
                     'Local Businesses',
                     () => navigation.navigate('Directory'),
                     <View style={styles.bizStack}>{feed.directory.slice(0, 3).map((r) => localBizCard(r))}</View>
+                  )
+                : null}
+
+              {recommendedRows.length
+                ? rail(
+                    'Recommended',
+                    () => navigation.getParent()?.navigate('DiscoverTab'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {recommendedRows.slice(0, RAIL_LIMIT).map((t) => trendCard(t.kind, t.row, 'rec'))}
+                    </ScrollView>
+                  )
+                : null}
+
+              {feed.services.length
+                ? rail(
+                    'Professional Services',
+                    () => navigation.navigate('Services'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {feed.services.slice(0, RAIL_LIMIT).map((r) => trendCard('listing', r, 'pro'))}
+                    </ScrollView>
                   )
                 : null}
 
@@ -585,37 +686,42 @@ export function HomeScreen({ navigation }: Props) {
                   )
                 : null}
 
+              {feed.classifieds.length
+                ? rail(
+                    'Classifieds',
+                    () => navigation.navigate('Classifieds'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {feed.classifieds.slice(0, RAIL_LIMIT).map((r) => trendCard('listing', r, 'cls'))}
+                    </ScrollView>
+                  )
+                : null}
+
+              {feed.directory.length
+                ? rail(
+                    'Business Directory',
+                    () => navigation.navigate('Directory'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {feed.directory.slice(0, RAIL_LIMIT).map((r) => directoryRailCard(r))}
+                    </ScrollView>
+                  )
+                : null}
+
+              {feed.products.length
+                ? rail(
+                    'Products',
+                    () => navigation.navigate('ProductsBrowse'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {feed.products.slice(0, RAIL_LIMIT).map((r) => trendCard('product', r, 'prd'))}
+                    </ScrollView>
+                  )
+                : null}
+
               {feed.stores.length
                 ? rail(
                     'Online Stores',
                     () => navigation.navigate('Stores'),
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                      {feed.stores.map((row) => {
-                        const id = Number(row.id);
-                        const name = String(row.name ?? '');
-                        const logo = row.logo_url ? String(row.logo_url) : '';
-                        return (
-                          <Pressable
-                            key={`st-${id}`}
-                            style={({ pressed }) => [styles.trendCard, pressed && styles.pressed]}
-                            onPress={() => navigation.push('StoreDetailPublic', { id })}
-                          >
-                            <View style={styles.trendImgWrap}>
-                              {logo ? (
-                                <RemoteImage url={logo} style={styles.trendImg} contentFit="cover" />
-                              ) : (
-                                <View style={[styles.trendImg, styles.hPh]}>
-                                  <Ionicons name="storefront-outline" size={26} color={colors.textMuted} />
-                                </View>
-                              )}
-                            </View>
-                            <Text style={styles.trendTitle} numberOfLines={2}>
-                              {name}
-                            </Text>
-                            <Text style={styles.svcPriceMuted}>Store</Text>
-                          </Pressable>
-                        );
-                      })}
+                      {feed.stores.slice(0, RAIL_LIMIT).map((r) => storeRailCard(r))}
                     </ScrollView>
                   )
                 : null}
@@ -988,11 +1094,32 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  trendImgWrap: { overflow: 'hidden' },
+  trendImgWrap: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    overflow: 'hidden',
+    backgroundColor: colors.primarySoft,
+  },
   trendImg: {
     width: '100%',
-    aspectRatio: 1.15,
-    backgroundColor: colors.primarySoft,
+    height: '100%',
+  },
+  trendStarPill: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  trendStarText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.text,
   },
   trendTitle: {
     fontSize: 13,
@@ -1007,6 +1134,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryDark,
     paddingHorizontal: 10,
+  },
+  trendMeta: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+    paddingHorizontal: 10,
+    marginBottom: 4,
   },
   hPh: { alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.9 },

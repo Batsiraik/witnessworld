@@ -57,6 +57,7 @@ $out = [
     'stores' => [],
     'directory' => [],
     'featured' => [],
+    'recommended' => [],
 ];
 
 /**
@@ -114,6 +115,10 @@ function ww_feed_row_product(array $r): array
         'seller_username' => (string) $r['username'],
         'seller_label' => trim((string) $r['first_name'] . ' ' . (string) $r['last_name']),
         'seller_avatar_url' => $r['avatar_url'] ? (string) $r['avatar_url'] : null,
+        'rating_average' => isset($r['rating_average']) && $r['rating_average'] !== null
+            ? round((float) $r['rating_average'], 1)
+            : null,
+        'rating_count' => isset($r['rating_count']) ? (int) $r['rating_count'] : 0,
     ];
 }
 
@@ -261,6 +266,156 @@ try {
     }
 
     if ($section === 'all') {
+        // Recommended: highest-rated services + products in the member's profile country.
+        $recCountry = '';
+        if ($user) {
+            $recCountry = strtoupper(trim((string) ($user['registration_country_code'] ?? '')));
+            if (strlen($recCountry) !== 2) {
+                $recCountry = '';
+            }
+        }
+        if ($recCountry === '' && $country !== '' && strlen($country) === 2) {
+            $recCountry = $country;
+        }
+        $recLimit = min(7, max(1, $limit));
+
+        $recParts = [];
+        $recParams = [];
+
+        $svcSql = 'SELECT \'service\' AS kind, l.id AS ref_id,
+                          rv.avg_rating AS rating_average,
+                          rv.review_count AS rating_count
+                   FROM listings l
+                   INNER JOIN (
+                      SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                      FROM content_reviews
+                      WHERE subject_type = \'listing\' AND status = \'published\'
+                      GROUP BY subject_id
+                   ) rv ON rv.subject_id = l.id
+                   WHERE l.moderation_status = ? AND l.listing_type = ?
+                     AND rv.review_count > 0';
+        $recParams[] = 'approved';
+        $recParams[] = 'service';
+        if ($recCountry !== '') {
+            $svcSql .= ' AND l.location_country_code = ?';
+            $recParams[] = $recCountry;
+        }
+        $recParts[] = $svcSql;
+
+        $prodSql = 'SELECT \'product\' AS kind, p.id AS ref_id,
+                           rv.avg_rating AS rating_average,
+                           rv.review_count AS rating_count
+                    FROM store_products p
+                    INNER JOIN stores s ON s.id = p.store_id
+                    INNER JOIN (
+                       SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                       FROM content_reviews
+                       WHERE subject_type = \'product\' AND status = \'published\'
+                       GROUP BY subject_id
+                    ) rv ON rv.subject_id = p.id
+                    WHERE s.moderation_status = ? AND p.moderation_status = ?
+                      AND rv.review_count > 0';
+        $recParams[] = 'approved';
+        $recParams[] = 'approved';
+        if ($recCountry !== '') {
+            $prodSql .= ' AND s.location_country_code = ?';
+            $recParams[] = $recCountry;
+        }
+        $recParts[] = $prodSql;
+
+        $indexSql = 'SELECT kind, ref_id, rating_average, rating_count FROM ('
+            . implode(' UNION ALL ', $recParts)
+            . ') AS rec
+            ORDER BY rating_count DESC, rating_average DESC, ref_id DESC
+            LIMIT ' . (int) $recLimit;
+        $st = $pdo->prepare($indexSql);
+        $st->execute($recParams);
+        $recIndex = $st->fetchAll(PDO::FETCH_ASSOC);
+
+        $svcIds = [];
+        $prodIds = [];
+        foreach ($recIndex as $row) {
+            $k = (string) ($row['kind'] ?? '');
+            $id = (int) ($row['ref_id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            if ($k === 'service') {
+                $svcIds[] = $id;
+            } elseif ($k === 'product') {
+                $prodIds[] = $id;
+            }
+        }
+
+        $listingsById = [];
+        if ($svcIds !== []) {
+            $ph = implode(',', array_fill(0, count($svcIds), '?'));
+            $st = $pdo->prepare(
+                "SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
+                        l.is_featured, l.is_urgent, l.is_verified,
+                        l.location_country_name, l.location_us_state, l.created_at,
+                        u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url,
+                        rv.avg_rating AS rating_average, rv.review_count AS rating_count
+                 FROM listings l
+                 INNER JOIN users u ON u.id = l.user_id
+                 LEFT JOIN (
+                    SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                    FROM content_reviews
+                    WHERE subject_type = 'listing' AND status = 'published'
+                    GROUP BY subject_id
+                 ) rv ON rv.subject_id = l.id
+                 WHERE l.id IN ($ph)"
+            );
+            $st->execute($svcIds);
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $listingsById[(int) $r['id']] = ww_feed_row_listing($r);
+            }
+        }
+
+        $productsById = [];
+        if ($prodIds !== []) {
+            $ph = implode(',', array_fill(0, count($prodIds), '?'));
+            $st = $pdo->prepare(
+                "SELECT p.id, p.store_id, p.name, p.price_amount, p.currency, p.image_url, p.created_at,
+                        s.name AS store_name, s.logo_url AS store_logo_url, s.user_id AS seller_user_id,
+                        s.location_country_name, s.location_us_state,
+                        u.username, u.first_name, u.last_name, u.avatar_url,
+                        rv.avg_rating AS rating_average, rv.review_count AS rating_count
+                 FROM store_products p
+                 INNER JOIN stores s ON s.id = p.store_id
+                 INNER JOIN users u ON u.id = s.user_id
+                 LEFT JOIN (
+                    SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                    FROM content_reviews
+                    WHERE subject_type = 'product' AND status = 'published'
+                    GROUP BY subject_id
+                 ) rv ON rv.subject_id = p.id
+                 WHERE p.id IN ($ph)"
+            );
+            $st->execute($prodIds);
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $productsById[(int) $r['id']] = ww_feed_row_product($r);
+            }
+        }
+
+        foreach ($recIndex as $row) {
+            $kind = (string) ($row['kind'] ?? '');
+            $id = (int) ($row['ref_id'] ?? 0);
+            if ($kind === 'service' && isset($listingsById[$id])) {
+                $out['recommended'][] = [
+                    'kind' => 'service',
+                    'listing' => $listingsById[$id],
+                    'created_at' => (string) $listingsById[$id]['created_at'],
+                ];
+            } elseif ($kind === 'product' && isset($productsById[$id])) {
+                $out['recommended'][] = [
+                    'kind' => 'product',
+                    'product' => $productsById[$id],
+                    'created_at' => (string) $productsById[$id]['created_at'],
+                ];
+            }
+        }
+
         $featLimit = 12;
         $sqlF = 'SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
                         l.listing_type, l.is_featured, l.is_urgent, l.is_verified,

@@ -21,6 +21,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
+import { trackModuleView } from '../lib/analytics';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Directory'>;
 
@@ -67,6 +68,10 @@ export function DirectoryScreen({ navigation }: Props) {
   const [listError, setListError] = useState<string | null>(null);
   const searchRef = useRef(search);
   searchRef.current = search;
+
+  useEffect(() => {
+    trackModuleView('directory', 'browse');
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

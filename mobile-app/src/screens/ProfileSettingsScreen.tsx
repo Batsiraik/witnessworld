@@ -50,6 +50,8 @@ type OwnListing = {
   price_amount: string | null;
   pricing_type: string;
   currency: string;
+  views_total?: number;
+  views_7d?: number;
 };
 
 type MenuRowProps = {
@@ -454,6 +456,7 @@ export function ProfileSettingsScreen({ navigation }: Props) {
                         ) : (
                           <Text style={styles.listingPriceMuted}>View listing</Text>
                         )}
+                        <Text style={styles.listingViews}>{row.views_total ?? 0} views</Text>
                         <View style={styles.listingCta}>
                           <Text style={styles.listingCtaText}>View</Text>
                         </View>
@@ -495,6 +498,7 @@ export function ProfileSettingsScreen({ navigation }: Props) {
                           {row.title}
                         </Text>
                         {price ? <Text style={styles.listingPrice}>{price}</Text> : null}
+                        <Text style={styles.listingViews}>{row.views_total ?? 0} views</Text>
                       </Pressable>
                     );
                   })}
@@ -866,6 +870,13 @@ const styles = StyleSheet.create({
   listingPriceMuted: {
     fontSize: 12,
     fontWeight: '600',
+    color: colors.textMuted,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  listingViews: {
+    fontSize: 11,
+    fontWeight: '700',
     color: colors.textMuted,
     paddingHorizontal: 10,
     marginBottom: 8,

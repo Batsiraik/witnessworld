@@ -26,16 +26,38 @@ $cats = ww_directory_categories();
 
 try {
     $st = $pdo->prepare(
-        'SELECT id, business_name, tagline, category, city, location_country_name, location_us_state,
-                logo_url, moderation_status, created_at, updated_at
-         FROM directory_entries
-         WHERE user_id = ?
-         ORDER BY id DESC'
+        'SELECT d.id, d.business_name, d.tagline, d.category, d.city, d.location_country_name, d.location_us_state,
+                d.logo_url, d.moderation_status, d.created_at, d.updated_at,
+                COALESCE(vc.views_total, 0) AS views_total,
+                COALESCE(vc.views_7d, 0) AS views_7d
+         FROM directory_entries d
+         LEFT JOIN (
+           SELECT subject_id,
+                  COUNT(*) AS views_total,
+                  SUM(CASE WHEN view_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END) AS views_7d
+           FROM content_views
+           WHERE subject_type = \'directory_entry\'
+           GROUP BY subject_id
+         ) vc ON vc.subject_id = d.id
+         WHERE d.user_id = ?
+         ORDER BY d.id DESC'
     );
     $st->execute([$userId]);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable) {
-    ww_json(['ok' => false, 'error' => 'Could not load directory entries'], 500);
+    try {
+        $st = $pdo->prepare(
+            'SELECT id, business_name, tagline, category, city, location_country_name, location_us_state,
+                    logo_url, moderation_status, created_at, updated_at
+             FROM directory_entries
+             WHERE user_id = ?
+             ORDER BY id DESC'
+        );
+        $st->execute([$userId]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        ww_json(['ok' => false, 'error' => 'Could not load directory entries'], 500);
+    }
 }
 
 $list = [];
@@ -54,6 +76,8 @@ foreach ($rows as $r) {
         'moderation_status' => (string) $r['moderation_status'],
         'created_at' => (string) $r['created_at'],
         'updated_at' => (string) $r['updated_at'],
+        'views_total' => (int) ($r['views_total'] ?? 0),
+        'views_7d' => (int) ($r['views_7d'] ?? 0),
     ];
 }
 

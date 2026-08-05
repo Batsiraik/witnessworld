@@ -415,3 +415,7 @@ ALTER TABLE store_products
 ALTER TABLE admins
   ADD COLUMN password_reset_otp VARCHAR(6) NULL AFTER login_otp_expires_at,
   ADD COLUMN password_reset_expires_at DATETIME NULL AFTER password_reset_otp;
+
+-- ---------------------------------------------------------------------------
+-- 2026-08-05: Content + module unique daily views — see revisions_analytics.sql
+-- ---------------------------------------------------------------------------

@@ -22,6 +22,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
+import { trackModuleView } from '../lib/analytics';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Services' | 'Classifieds' | 'Community'>;
 
@@ -71,6 +72,11 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
     route.params && typeof route.params === 'object' && 'initialQuery' in route.params
       ? String(route.params.initialQuery ?? '').trim()
       : '';
+
+  useEffect(() => {
+    const mod = listingType === 'service' ? 'services' : listingType === 'community' ? 'community' : 'classifieds';
+    trackModuleView(mod, 'browse');
+  }, [listingType]);
 
   useEffect(() => {
     if (initialQuery) {

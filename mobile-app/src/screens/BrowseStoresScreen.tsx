@@ -22,6 +22,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
+import { trackModuleView } from '../lib/analytics';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Stores'>;
 
@@ -50,6 +51,10 @@ export function BrowseStoresScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    trackModuleView('stores', 'browse');
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

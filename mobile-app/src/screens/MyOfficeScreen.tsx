@@ -33,6 +33,8 @@ type Row = {
   location_country_name: string | null;
   location_us_state: string | null;
   created_at: string;
+  views_total?: number;
+  views_7d?: number;
 };
 
 type StoreRow = {
@@ -41,6 +43,8 @@ type StoreRow = {
   logo_url: string;
   moderation_status: string;
   sells_summary: string;
+  views_total?: number;
+  views_7d?: number;
 };
 
 type DirRow = {
@@ -50,6 +54,8 @@ type DirRow = {
   category_label: string;
   moderation_status: string;
   logo_url?: string | null;
+  views_total?: number;
+  views_7d?: number;
 };
 
 function statusLabel(s: string): string {
@@ -85,6 +91,8 @@ export function MyOfficeScreen({ navigation }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [dirEntries, setDirEntries] = useState<DirRow[]>([]);
+  const [profileViews, setProfileViews] = useState(0);
+  const [profileViews7d, setProfileViews7d] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -111,6 +119,16 @@ export function MyOfficeScreen({ navigation }: Props) {
       setDirEntries(Array.isArray(dl) ? (dl as DirRow[]) : []);
     } catch {
       setDirEntries([]);
+    }
+    try {
+      const A = await apiGet('my-analytics.php', true);
+      setProfileViews(typeof A.profile_views === 'number' ? A.profile_views : Number(A.profile_views ?? 0) || 0);
+      setProfileViews7d(
+        typeof A.profile_views_7d === 'number' ? A.profile_views_7d : Number(A.profile_views_7d ?? 0) || 0
+      );
+    } catch {
+      setProfileViews(0);
+      setProfileViews7d(0);
     } finally {
       if (mode === 'refresh') setRefreshing(false);
       else setLoading(false);
@@ -219,6 +237,9 @@ export function MyOfficeScreen({ navigation }: Props) {
                       {statusLabel(d.moderation_status)}
                     </Text>
                   </View>
+                  <Text style={styles.viewsMeta}>
+                    {d.views_total ?? 0} views · {d.views_7d ?? 0} this week
+                  </Text>
                 </View>
               </View>
               {suspended ? (
@@ -280,6 +301,9 @@ export function MyOfficeScreen({ navigation }: Props) {
                       {statusLabel(s.moderation_status)}
                     </Text>
                   </View>
+                  <Text style={styles.viewsMeta}>
+                    {s.views_total ?? 0} views · {s.views_7d ?? 0} this week
+                  </Text>
                 </View>
               </View>
               {suspended ? (
@@ -319,6 +343,17 @@ export function MyOfficeScreen({ navigation }: Props) {
 
   const listHeader = (
     <>
+      <View style={styles.analyticsCard}>
+        <View style={styles.analyticsIcon}>
+          <Ionicons name="eye-outline" size={22} color={colors.primaryDark} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.analyticsTitle}>Your profile views</Text>
+          <Text style={styles.analyticsText}>
+            {profileViews} total · {profileViews7d} in the last 7 days
+          </Text>
+        </View>
+      </View>
       <Pressable
         onPress={() => navigation.navigate('SalesDashboard')}
         style={({ pressed }) => [styles.salesCard, pressed && styles.pressed]}
@@ -407,6 +442,9 @@ export function MyOfficeScreen({ navigation }: Props) {
                         {statusLabel(item.moderation_status)}
                       </Text>
                     </View>
+                    <Text style={styles.viewsMeta}>
+                      {item.views_total ?? 0} views · {item.views_7d ?? 0} this week
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.actions}>
@@ -467,6 +505,28 @@ const styles = StyleSheet.create({
   },
   salesTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
   salesText: { marginTop: 3, fontSize: 12, lineHeight: 17, fontWeight: '600', color: colors.textMuted },
+  analyticsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 18,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 14,
+    marginBottom: 14,
+  },
+  analyticsIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analyticsTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
+  analyticsText: { marginTop: 3, fontSize: 12, lineHeight: 17, fontWeight: '600', color: colors.textMuted },
+  viewsMeta: { marginTop: 6, fontSize: 11, fontWeight: '700', color: colors.textMuted },
   card: {
     borderRadius: 18,
     backgroundColor: colors.card,

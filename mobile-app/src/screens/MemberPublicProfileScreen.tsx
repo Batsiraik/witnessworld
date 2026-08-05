@@ -20,6 +20,7 @@ import { SubjectReviewCTA } from '../components/SubjectReviewCTA';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { trackContentView } from '../lib/analytics';
 
 type Props =
   | NativeStackScreenProps<HomeStackParamList, 'MemberPublicProfile'>
@@ -99,6 +100,7 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
         }
         setMember(m);
         setListings(Array.isArray(L) ? (L as ListingMini[]) : []);
+        trackContentView('member', userId, 'member_profile');
       } catch (e) {
         if (!cancelled) {
           setErr(e instanceof Error ? e.message : 'Error');

@@ -26,6 +26,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { openInboxChat } from '../navigation/openInboxChat';
 import { openOfficeEditListing } from '../navigation/openOfficeEditListing';
 import { colors } from '../theme/colors';
+import { trackContentView } from '../lib/analytics';
 import { resolvePublicMediaUrl } from '../utils/mediaUrl';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ListingDetail'>;
@@ -120,6 +121,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
               return;
             }
             setListing(L);
+            trackContentView('listing', id, 'listing_detail');
           } catch (e) {
             if (!cancelled) {
               setErr(e instanceof Error ? e.message : 'Error');
@@ -136,6 +138,7 @@ export function ListingDetailScreen({ navigation, route }: Props) {
             if (L) {
               setListing(L);
               setErr(null);
+              trackContentView('listing', id, 'listing_detail');
             }
           } catch {
             /* keep existing listing */

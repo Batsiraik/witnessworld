@@ -22,6 +22,7 @@ import type { DiscoverStackParamList, HomeStackParamList } from '../navigation/t
 import { colors } from '../theme/colors';
 import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
+import { trackModuleView } from '../lib/analytics';
 
 type Props = NativeStackScreenProps<DiscoverStackParamList, 'Discover'>;
 
@@ -177,6 +178,10 @@ export function DiscoverScreen({ navigation }: Props) {
   const [usState, setUsState] = useState<LocState | null>(null);
   const [categories, setCategories] = useState<DiscCategory[]>([]);
   const [categoryId, setCategoryId] = useState<number | null>(null);
+
+  useEffect(() => {
+    trackModuleView('discover', 'discover_tab');
+  }, []);
 
   const locParams = useMemo(() => {
     const p = new URLSearchParams();

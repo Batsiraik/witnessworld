@@ -50,18 +50,43 @@ $listingDisplayImage = static function (array $r): ?string {
 
 try {
     $st = $pdo->prepare(
-        'SELECT id, listing_type, title, moderation_status, media_url, video_url, portfolio_urls_json,
-                price_amount, pricing_type, currency,
-                location_country_code, location_country_name, location_us_state,
-                created_at, updated_at
-         FROM listings
-         WHERE user_id = ?
-         ORDER BY id DESC'
+        'SELECT l.id, l.listing_type, l.title, l.moderation_status, l.media_url, l.video_url, l.portfolio_urls_json,
+                l.price_amount, l.pricing_type, l.currency,
+                l.location_country_code, l.location_country_name, l.location_us_state,
+                l.created_at, l.updated_at,
+                COALESCE(vc.views_total, 0) AS views_total,
+                COALESCE(vc.views_7d, 0) AS views_7d
+         FROM listings l
+         LEFT JOIN (
+           SELECT subject_id,
+                  COUNT(*) AS views_total,
+                  SUM(CASE WHEN view_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END) AS views_7d
+           FROM content_views
+           WHERE subject_type = \'listing\'
+           GROUP BY subject_id
+         ) vc ON vc.subject_id = l.id
+         WHERE l.user_id = ?
+         ORDER BY l.id DESC'
     );
     $st->execute([$userId]);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable) {
-    ww_json(['ok' => false, 'error' => 'Listings unavailable'], 500);
+} catch (Throwable $e) {
+    // Fallback if analytics tables are not migrated yet.
+    try {
+        $st = $pdo->prepare(
+            'SELECT id, listing_type, title, moderation_status, media_url, video_url, portfolio_urls_json,
+                    price_amount, pricing_type, currency,
+                    location_country_code, location_country_name, location_us_state,
+                    created_at, updated_at
+             FROM listings
+             WHERE user_id = ?
+             ORDER BY id DESC'
+        );
+        $st->execute([$userId]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        ww_json(['ok' => false, 'error' => 'Listings unavailable'], 500);
+    }
 }
 
 $list = [];
@@ -85,6 +110,8 @@ foreach ($rows as $r) {
         'location_us_state' => $r['location_us_state'] ? (string) $r['location_us_state'] : null,
         'created_at' => (string) $r['created_at'],
         'updated_at' => (string) $r['updated_at'],
+        'views_total' => (int) ($r['views_total'] ?? 0),
+        'views_7d' => (int) ($r['views_7d'] ?? 0),
     ];
 }
 

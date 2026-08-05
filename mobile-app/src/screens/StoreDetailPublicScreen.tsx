@@ -25,6 +25,7 @@ import { openInboxChat } from '../navigation/openInboxChat';
 import { colors } from '../theme/colors';
 import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
+import { trackContentView } from '../lib/analytics';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'StoreDetailPublic'>;
 
@@ -82,6 +83,7 @@ export function StoreDetailPublicScreen({ navigation, route }: Props) {
           return;
         }
         setStore(S);
+        trackContentView('store', id, 'store_detail');
       } catch (e) {
         if (!cancelled) setErr(e instanceof Error ? e.message : 'Error');
       } finally {
