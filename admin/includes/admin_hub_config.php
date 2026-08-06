@@ -10,17 +10,17 @@ function ww_admin_content_tabs(): array
     return [
         'classified' => [
             'label' => 'Marketplace',
-            'desc' => 'Classified buy/sell listings',
+            'desc' => 'Buy/sell marketplace listings (pre-loved goods)',
             'listing_type' => 'classified',
         ],
         'service' => [
-            'label' => 'Services',
+            'label' => 'Professional services',
             'desc' => 'Professional service gigs',
             'listing_type' => 'service',
         ],
         'community' => [
-            'label' => 'Community',
-            'desc' => 'Community classifieds',
+            'label' => 'Classifieds',
+            'desc' => 'Housing, jobs, sitters, community announcements',
             'listing_type' => 'community',
         ],
         'stores' => [
@@ -72,14 +72,14 @@ function ww_admin_category_tabs(): array
     return [
         'classified' => [
             'label' => 'Marketplace',
-            'desc' => 'Categories for classified ads',
+            'desc' => 'Categories for Marketplace ads',
             'table' => 'marketplace_categories',
             'fk_table' => 'listings',
             'fk_column' => 'category_id',
             'listing_type' => 'classified',
         ],
         'service' => [
-            'label' => 'Services',
+            'label' => 'Professional services',
             'desc' => 'Service listing categories',
             'table' => 'service_categories',
             'fk_table' => 'listings',
@@ -87,8 +87,8 @@ function ww_admin_category_tabs(): array
             'listing_type' => 'service',
         ],
         'community' => [
-            'label' => 'Community',
-            'desc' => 'Community board categories',
+            'label' => 'Classifieds',
+            'desc' => 'Categories for Classifieds (housing, jobs, sitters)',
             'table' => 'community_categories',
             'fk_table' => 'listings',
             'fk_column' => 'category_id',

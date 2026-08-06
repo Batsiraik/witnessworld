@@ -201,6 +201,18 @@
     state.submitError = '';
   }
 
+  function updateSubmitButton() {
+    const btn = document.getElementById('wwc-verify-submit');
+    if (!btn || state.submitBusy) return;
+    const canSubmit =
+      state.accountType &&
+      state.primaryPurpose &&
+      state.wantsAccountManager &&
+      state.referralSource &&
+      (!referralSourceNeedsDetail(state.referralSource) || state.referralOther.trim().length >= 2);
+    btn.disabled = !canSubmit;
+  }
+
   function bindPollEvents() {
     const root = document.getElementById('wwc-verify-content');
     if (!root) return;
@@ -212,16 +224,34 @@
           if (field === 'accountType') state.accountType = input.value;
           if (field === 'primaryPurpose') state.primaryPurpose = input.value;
           if (field === 'wantsAccountManager') state.wantsAccountManager = input.value;
-          if (field === 'referralSource') state.referralSource = input.value;
-          render();
+          if (field === 'referralSource') {
+            state.referralSource = input.value;
+            if (!referralSourceNeedsDetail(state.referralSource)) {
+              state.referralOther = '';
+            }
+          }
+          render(true);
+          if (field === 'referralSource' && referralSourceNeedsDetail(state.referralSource)) {
+            requestAnimationFrame(() => {
+              const other = document.getElementById('wwc-verify-other');
+              if (other) {
+                other.focus();
+                other.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              }
+            });
+          }
         });
       });
     });
 
-    root.querySelector('#wwc-verify-other')?.addEventListener('input', (e) => {
-      state.referralOther = e.target.value;
-      render();
-    });
+    // Do NOT re-render the whole form on each keystroke — that remounts the input and kills typing.
+    const other = root.querySelector('#wwc-verify-other');
+    if (other) {
+      other.addEventListener('input', (e) => {
+        state.referralOther = e.target.value;
+        updateSubmitButton();
+      });
+    }
 
     root.querySelector('#wwc-verify-submit')?.addEventListener('click', () => void submitPoll());
   }
@@ -230,7 +260,7 @@
     if (state.submitBusy) return;
     state.submitBusy = true;
     state.submitError = '';
-    render();
+    render(true);
     try {
       const data = await apiPost('registration-account-type.php', {
         account_type: state.accountType,
@@ -252,11 +282,11 @@
       state.submitError = e.message || 'Could not save. Please try again.';
     } finally {
       state.submitBusy = false;
-      render();
+      render(true);
     }
   }
 
-  function render() {
+  function render(force) {
     ensureOverlay();
     const el = document.getElementById('wwc-verify-lock');
     const content = document.getElementById('wwc-verify-content');
@@ -276,6 +306,16 @@
     const showPoll = variant === 'pending' && !isPollComplete(user);
 
     if (showPoll) hydratePollFromUser(user);
+
+    // Avoid remounting the poll form on profile refresh / polling — that steals focus from the name field.
+    const pollFormMounted = !!content.querySelector('#wwc-verify-submit');
+    if (showPoll && pollFormMounted && !force) {
+      updateSubmitButton();
+      el.hidden = false;
+      document.body.classList.add('wwc-verification-locked');
+      startPolling(auth.getUserStatus());
+      return;
+    }
 
     content.innerHTML = showPoll
       ? renderPollForm()

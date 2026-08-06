@@ -2,6 +2,8 @@ import { BlurView } from 'expo-blur';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -168,10 +170,14 @@ export function VerificationLockOverlay({
   const [referralOther, setReferralOther] = useState('');
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [keyboardPad, setKeyboardPad] = useState(0);
   const lastHydratedPollKeyRef = useRef<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const referralOtherRef = useRef<TextInput>(null);
 
   const pollDone = isRegistrationPollComplete(user ?? null);
   const showPoll = variant === 'pending' && !pollDone && onSubmitPoll;
+  const needsReferralDetail = referralSourceNeedsDetail(referralSource);
 
   /** Stable key so background me.php refreshes do not wipe in-progress poll answers. */
   const serverPollKey = useMemo(() => JSON.stringify(pollFieldsFromUser(user)), [
@@ -187,6 +193,35 @@ export function VerificationLockOverlay({
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
   }, [visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      setKeyboardPad(0);
+      return undefined;
+    }
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      setKeyboardPad(e.endCoordinates.height);
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      });
+    });
+    const hideSub = Keyboard.addListener(hideEvt, () => setKeyboardPad(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || !needsReferralDetail) return;
+    const t = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+      referralOtherRef.current?.focus();
+    }, 280);
+    return () => clearTimeout(t);
+  }, [visible, needsReferralDetail, referralSource]);
 
   useEffect(() => {
     if (!visible) {
@@ -258,12 +293,19 @@ export function VerificationLockOverlay({
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.androidScrim]} />
         )}
-        <View style={styles.centerWrap} pointerEvents="box-none">
+        <KeyboardAvoidingView
+          style={styles.centerWrap}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          pointerEvents="box-none"
+        >
           <View style={styles.card}>
             <ScrollView
+              ref={scrollRef}
               bounces={false}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              contentContainerStyle={{ paddingBottom: 8 + (Platform.OS === 'android' ? keyboardPad : 0) }}
             >
               <Text style={styles.title}>{title}</Text>
 
@@ -335,7 +377,12 @@ export function VerificationLockOverlay({
                     return (
                       <Pressable
                         key={opt.value}
-                        onPress={() => setReferralSource(opt.value)}
+                        onPress={() => {
+                          setReferralSource(opt.value);
+                          if (!referralSourceNeedsDetail(opt.value)) {
+                            setReferralOther('');
+                          }
+                        }}
                         style={({ pressed }) => [
                           styles.optionRow,
                           on && styles.optionRowOn,
@@ -351,16 +398,32 @@ export function VerificationLockOverlay({
                       </Pressable>
                     );
                   })}
-                  {referralSourceNeedsDetail(referralSource) ? (
-                    <TextInput
-                      value={referralOther}
-                      onChangeText={setReferralOther}
-                      placeholder={referralDetailPlaceholder(referralSource)}
-                      placeholderTextColor={colors.textMuted}
-                      style={styles.otherInput}
-                      maxLength={200}
-                      accessibilityLabel={referralDetailPlaceholder(referralSource)}
-                    />
+                  {needsReferralDetail ? (
+                    <>
+                      <TextInput
+                        ref={referralOtherRef}
+                        value={referralOther}
+                        onChangeText={setReferralOther}
+                        placeholder={referralDetailPlaceholder(referralSource)}
+                        placeholderTextColor={colors.textMuted}
+                        style={styles.otherInput}
+                        maxLength={200}
+                        autoCapitalize="words"
+                        autoCorrect
+                        autoComplete="name"
+                        textContentType="name"
+                        returnKeyType="done"
+                        blurOnSubmit
+                        editable={!submitBusy}
+                        onFocus={() => {
+                          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+                        }}
+                        accessibilityLabel={referralDetailPlaceholder(referralSource)}
+                      />
+                      {referralOther.trim().length > 0 && referralOther.trim().length < 2 ? (
+                        <Text style={styles.referralHint}>Enter at least 2 characters</Text>
+                      ) : null}
+                    </>
                   ) : null}
 
                   {submitError ? <Text style={styles.pollError}>{submitError}</Text> : null}
@@ -394,7 +457,7 @@ export function VerificationLockOverlay({
               )}
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -540,6 +603,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text,
     backgroundColor: '#fff',
+  },
+  referralHint: {
+    marginTop: -4,
+    marginBottom: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.danger,
   },
   pollError: {
     marginTop: 6,

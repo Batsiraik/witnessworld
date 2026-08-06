@@ -23,6 +23,7 @@ import { colors } from '../theme/colors';
 import { radii, surfaces, typography } from '../theme/designSystem';
 import { GRID_GAP, GRID_IMAGE_ASPECT, GRID_PAD, useGridTileWidth } from '../utils/browseGrid';
 import { trackModuleView } from '../lib/analytics';
+import { LISTING_MODULE_INTRO, type ListingModuleKey } from '../constants/listingModules';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Services' | 'Classifieds' | 'Community'>;
 
@@ -49,7 +50,9 @@ type Row = {
 
 export function BrowseListingsScreen({ navigation, route }: Props) {
   const tileW = useGridTileWidth();
-  const listingType = route.name === 'Services' ? 'service' : route.name === 'Community' ? 'community' : 'classified';
+  const listingType: ListingModuleKey =
+    route.name === 'Services' ? 'service' : route.name === 'Community' ? 'community' : 'classified';
+  const moduleIntro = LISTING_MODULE_INTRO[listingType];
   const isClassified = listingType === 'classified';
   const isCommunity = listingType === 'community';
   const [categories, setCategories] = useState<MktCategory[]>([]);
@@ -77,6 +80,26 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
     const mod = listingType === 'service' ? 'services' : listingType === 'community' ? 'community' : 'classifieds';
     trackModuleView(mod, 'browse');
   }, [listingType]);
+
+  const listHeader = (
+    <View>
+      <View style={styles.moduleIntro}>
+        <View style={[styles.moduleIntroIcon, { backgroundColor: moduleIntro.accentBg }]}>
+          <Ionicons name={moduleIntro.icon} size={24} color={moduleIntro.accentColor} />
+        </View>
+        <View style={styles.moduleIntroBody}>
+          <Text style={[styles.moduleIntroTag, { color: moduleIntro.accentColor }]}>{moduleIntro.tag}</Text>
+          <Text style={styles.moduleIntroTitle}>{moduleIntro.title}</Text>
+          <Text style={styles.moduleIntroText}>{moduleIntro.body}</Text>
+        </View>
+      </View>
+      {rows.length > 0 ? (
+        <Text style={styles.resultCount}>
+          {rows.length} {rows.length === 1 ? 'result' : 'results'}
+        </Text>
+      ) : null}
+    </View>
+  );
 
   useEffect(() => {
     if (initialQuery) {
@@ -225,13 +248,7 @@ export function BrowseListingsScreen({ navigation, route }: Props) {
                 colors={[colors.primary]}
               />
             }
-            ListHeaderComponent={
-              rows.length > 0 ? (
-                <Text style={styles.resultCount}>
-                  {rows.length} {rows.length === 1 ? 'result' : 'results'}
-                </Text>
-              ) : null
-            }
+            ListHeaderComponent={listHeader}
             ListEmptyComponent={<Text style={styles.empty}>No listings match.</Text>}
             renderItem={({ item }) => {
               const loc = [item.location_us_state, item.location_country_name].filter(Boolean).join(', ');
@@ -325,6 +342,27 @@ const styles = StyleSheet.create({
   listPad: { paddingHorizontal: GRID_PAD, paddingBottom: 28 },
   gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
   resultCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 12 },
+  moduleIntro: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderRadius: radii.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  moduleIntroIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moduleIntroBody: { flex: 1 },
+  moduleIntroTag: { fontSize: 11, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 4 },
+  moduleIntroTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
+  moduleIntroText: { fontSize: 13, fontWeight: '500', color: colors.textMuted, lineHeight: 18 },
   errScroll: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 8 },
   err: { color: '#b91c1c', padding: 16, fontWeight: '600' },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 24, fontWeight: '600' },

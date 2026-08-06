@@ -253,8 +253,9 @@ function ww_admin_alert_pending_listing(
     }
     $member = ww_admin_user_display_name($pdo, $userId);
     $typeLabel = match ($listingType) {
-        'service' => 'Service listing',
-        'community' => 'Community post',
+        'service' => 'Professional service',
+        'community' => 'Classifieds post',
+        'classified' => 'Marketplace listing',
         default => 'Marketplace listing',
     };
     $verb = $resubmitted ? 'resubmitted' : 'submitted';

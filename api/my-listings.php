@@ -49,6 +49,7 @@ $listingDisplayImage = static function (array $r): ?string {
 };
 
 try {
+    // Aggregate views only for this user's listings (not the whole content_views table).
     $st = $pdo->prepare(
         'SELECT l.id, l.listing_type, l.title, l.moderation_status, l.media_url, l.video_url, l.portfolio_urls_json,
                 l.price_amount, l.pricing_type, l.currency,
@@ -58,17 +59,19 @@ try {
                 COALESCE(vc.views_7d, 0) AS views_7d
          FROM listings l
          LEFT JOIN (
-           SELECT subject_id,
+           SELECT cv.subject_id,
                   COUNT(*) AS views_total,
-                  SUM(CASE WHEN view_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END) AS views_7d
-           FROM content_views
-           WHERE subject_type = \'listing\'
-           GROUP BY subject_id
+                  SUM(CASE WHEN cv.view_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END) AS views_7d
+           FROM content_views cv
+           INNER JOIN listings lu ON lu.id = cv.subject_id AND lu.user_id = ?
+           WHERE cv.subject_type = \'listing\'
+           GROUP BY cv.subject_id
          ) vc ON vc.subject_id = l.id
          WHERE l.user_id = ?
-         ORDER BY l.id DESC'
+         ORDER BY l.id DESC
+         LIMIT 200'
     );
-    $st->execute([$userId]);
+    $st->execute([$userId, $userId]);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {
     // Fallback if analytics tables are not migrated yet.

@@ -63,9 +63,9 @@ require __DIR__ . '/partials/shell_open.php';
   <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
     <?php
     $types = [
-        'classified' => ['Marketplace listing', 'Buy/sell classified ad'],
-        'service' => ['Service listing', 'Professional services gig'],
-        'community' => ['Community classified', 'Community board post'],
+        'classified' => ['Marketplace listing', 'Buy/sell marketplace ad'],
+        'service' => ['Professional service', 'Offer a professional service'],
+        'community' => ['Classifieds post', 'Housing, jobs, sitters, announcements'],
         'store' => ['Online store', 'Storefront for products'],
         'directory' => ['Business directory', 'Business directory profile'],
     ];

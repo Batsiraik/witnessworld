@@ -77,8 +77,9 @@ function formatRelativeTime(iso: string | undefined): string {
 
 function humanizeListingType(t: string): string {
   const s = String(t || '').toLowerCase();
-  if (s === 'classified') return 'Classified';
-  if (s === 'service') return 'Service';
+  if (s === 'classified') return 'Marketplace';
+  if (s === 'service') return 'Professional services';
+  if (s === 'community') return 'Classifieds';
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
 }
 

@@ -2,6 +2,7 @@
   const PILLS = [
     { id: 'all', label: 'All', section: 'all' },
     { id: 'marketplace', label: 'Marketplace', section: 'marketplace' },
+    { id: 'classifieds', label: 'Classifieds', section: 'community' },
     { id: 'services', label: 'Professional services', section: 'services' },
     { id: 'stores', label: 'Stores', section: 'stores' },
     { id: 'businesses', label: 'Businesses', section: 'businesses' },
@@ -25,6 +26,7 @@
       (feed.classifieds || []).forEach((r) => push('classified', r, r.created_at));
       (feed.products || []).forEach((r) => push('product', r, r.created_at));
     }
+    if (pill === 'all' || pill === 'classifieds') (feed.community || []).forEach((r) => push('community', r, r.created_at));
     if (pill === 'all' || pill === 'stores') (feed.stores || []).forEach((r) => push('store', r, r.created_at));
     if (pill === 'all' || pill === 'businesses') (feed.directory || []).forEach((r) => push('directory', r, r.created_at));
 
@@ -45,6 +47,11 @@
         apiGet(`marketplace-home-feed.php?${new URLSearchParams({ ...base, section: 'products' })}`, true),
       ]);
       return { classifieds: c.feed?.classifieds || [], products: c.feed?.products || p.feed?.products || [] };
+    }
+
+    if (pill === 'classifieds') {
+      const data = await apiGet(`marketplace-home-feed.php?${new URLSearchParams({ ...base, section: 'community' })}`, true);
+      return data.feed || {};
     }
 
     const section = pill === 'businesses' ? 'directory' : pill === 'all' ? 'all' : pill;

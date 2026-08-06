@@ -208,7 +208,7 @@
       document.querySelector('.ac-classified-only').classList.toggle('hidden', type !== 'classified');
       document.querySelector('.ac-service-only').classList.toggle('hidden', type !== 'service');
       $('ac-form-title').textContent =
-        type === 'classified' ? 'Marketplace listing' : type === 'service' ? 'Service listing' : 'Community classified';
+        type === 'classified' ? 'Marketplace listing' : type === 'service' ? 'Professional service' : 'Classifieds post';
       loadCategories(type);
     } else if (type === 'store') {
       document.querySelector('.ac-fields-store').classList.remove('hidden');

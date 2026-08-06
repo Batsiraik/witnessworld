@@ -42,7 +42,8 @@
       <div class="wwc-detail-body" style="padding:0;overflow:hidden">
         <a href="my-office.html" class="wwc-modal-row" style="padding:16px 20px;font-weight:800">My office</a>
         <a href="post.html" class="wwc-modal-row" style="padding:16px 20px">Create a listing</a>
-        <a href="classifieds.html" class="wwc-modal-row" style="padding:16px 20px">Classified marketplace</a>
+        <a href="classifieds.html" class="wwc-modal-row" style="padding:16px 20px">Marketplace</a>
+        <a href="community.html" class="wwc-modal-row" style="padding:16px 20px">Classifieds</a>
         <a href="services.html" class="wwc-modal-row" style="padding:16px 20px">Professional services</a>
         <a href="products.html" class="wwc-modal-row" style="padding:16px 20px">Shop products</a>
         <a href="stores.html" class="wwc-modal-row" style="padding:16px 20px">Online stores</a>

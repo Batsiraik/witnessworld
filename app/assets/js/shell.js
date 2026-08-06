@@ -244,7 +244,7 @@
       return;
     }
     const s = document.createElement('script');
-    s.src = 'assets/js/verification-lock.js';
+    s.src = 'assets/js/verification-lock.js?v=2';
     s.dataset.wwcVerify = '1';
     s.onload = () => global.WWC_VERIFY?.init?.();
     document.body.appendChild(s);

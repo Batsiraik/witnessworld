@@ -60,10 +60,10 @@ export function HomeStackNavigator() {
       <Stack.Screen
         name="Classifieds"
         component={BrowseClassifiedsScreen}
-        options={{ title: 'Classified marketplace' }}
+        options={{ title: 'Marketplace' }}
       />
-      <Stack.Screen name="Services" component={BrowseServicesScreen} options={{ title: 'Service marketplace' }} />
-      <Stack.Screen name="Community" component={BrowseCommunityScreen} options={{ title: 'Community classifieds' }} />
+      <Stack.Screen name="Services" component={BrowseServicesScreen} options={{ title: 'Professional services' }} />
+      <Stack.Screen name="Community" component={BrowseCommunityScreen} options={{ title: 'Classifieds' }} />
       <Stack.Screen name="Stores" component={BrowseStoresScreen} options={{ title: 'Online stores' }} />
       <Stack.Screen name="ProductsBrowse" component={BrowseProductsScreen} options={{ title: 'Shop products' }} />
       <Stack.Screen name="Directory" component={DirectoryScreen} options={{ title: 'Business directory' }} />

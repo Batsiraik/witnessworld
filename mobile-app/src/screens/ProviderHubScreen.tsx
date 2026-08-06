@@ -71,7 +71,7 @@ export function ProviderHubScreen({ navigation }: Props) {
     {
       key: 'classified',
       title: 'Marketplace listing',
-      subtitle: 'Sell products or items',
+      subtitle: 'Sell pre-loved goods & items',
       icon: 'bag-handle-outline',
       iconBg: '#E8F4FD',
       iconColor: '#1D4ED8',
@@ -80,7 +80,7 @@ export function ProviderHubScreen({ navigation }: Props) {
     },
     {
       key: 'service',
-      title: 'Service listing',
+      title: 'Professional service',
       subtitle: 'Offer skills or packages',
       icon: 'construct-outline',
       iconBg: '#F3E8FF',
@@ -126,9 +126,9 @@ export function ProviderHubScreen({ navigation }: Props) {
     },
     {
       key: 'community',
-      title: 'Community classified',
-      subtitle: 'Post a notice or need',
-      icon: 'people-outline',
+      title: 'Classifieds post',
+      subtitle: 'Housing, jobs, sitters, announcements',
+      icon: 'newspaper-outline',
       iconBg: '#FEF3C7',
       iconColor: '#B45309',
       onPress: () =>

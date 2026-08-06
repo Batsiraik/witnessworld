@@ -19,20 +19,20 @@
         <p class="wwc-module-intro-tag">Business Directory</p>
         <h1 class="wwc-module-intro-title">Connect with Local &amp; Global Businesses</h1>
         <p class="wwc-module-intro-body">Explore local services, verified companies, and trusted brands—or list your business here to boost your visibility and attract new customers.</p>
-        <p class="wwc-page-sub" id="dir-hint" style="margin-top:10px">Select a country to browse businesses.</p>
+        <p class="wwc-page-sub" id="dir-hint" style="margin-top:10px">Showing businesses worldwide. Use location to narrow results.</p>
       </div>
     </section>
     <div class="wwc-filters">
       <div class="wwc-search-row"><ion-icon name="search-outline"></ion-icon><input type="search" id="browse-search" placeholder="Search businesses…" /></div>
-      <div class="wwc-filter-row"><button type="button" class="wwc-loc-btn" id="loc-btn"><ion-icon name="location-outline"></ion-icon><span id="loc-label">Select country</span></button>
+      <div class="wwc-filter-row"><button type="button" class="wwc-loc-btn" id="loc-btn"><ion-icon name="location-outline"></ion-icon><span id="loc-label">All locations</span></button>
         <select id="browse-category"><option value="">All categories</option></select>
         <button type="button" class="wwc-btn wwc-btn-sm wwc-btn-primary" id="browse-apply">Apply</button></div>
     </div>
-    <div class="wwc-grid" id="browse-grid"><p class="wwc-empty">Select a country to browse businesses.</p></div>
+    <div class="wwc-grid" id="browse-grid"><div class="wwc-loading"><div class="wwc-spinner" role="status" aria-label="Loading"></div></div></div>
   </main><div id="wwc-shell-bottom"></div></div>
-  <div class="wwc-modal-backdrop" id="loc-modal" hidden><div class="wwc-modal-sheet"><h2 class="wwc-modal-title">Locations</h2><p class="wwc-modal-hint">Country is required for directory.</p>
+  <div class="wwc-modal-backdrop" id="loc-modal" hidden><div class="wwc-modal-sheet"><h2 class="wwc-modal-title">Locations</h2><p class="wwc-modal-hint">Optional: filter by country and state (US).</p>
     <button type="button" class="wwc-modal-row" data-loc-all>All locations</button><input type="search" class="wwc-modal-search" id="loc-country-search" placeholder="Search countries" />
     <div class="wwc-modal-list" id="loc-country-list"></div><div id="loc-state-section" hidden><p class="wwc-modal-subhead">US state (optional)</p><div class="wwc-modal-list" id="loc-state-list"></div></div>
     <button type="button" class="wwc-modal-done" data-loc-done>Done</button></div></div>
-  <script src="assets/js/config.js"></script><script src="assets/js/api.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/utils.js"></script><script src="assets/js/cards.js"></script><script src="assets/js/location-filter.js"></script><script src="assets/js/page-init.js"></script><script src="assets/js/shell.js"></script><script src="assets/js/browse-directory.js"></script>
+  <script src="assets/js/config.js"></script><script src="assets/js/api.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/utils.js"></script><script src="assets/js/cards.js"></script><script src="assets/js/location-filter.js"></script><script src="assets/js/page-init.js"></script><script src="assets/js/shell.js"></script><script src="assets/js/browse-directory.js?v=2"></script>
 </body></html>

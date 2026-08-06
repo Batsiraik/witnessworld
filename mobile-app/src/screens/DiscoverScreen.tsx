@@ -87,7 +87,7 @@ const PILLS: { id: PillId; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'marketplace', label: 'Marketplace' },
   { id: 'services', label: 'Services' },
-  { id: 'community', label: 'Community' },
+  { id: 'community', label: 'Classifieds' },
   { id: 'stores', label: 'Stores' },
   { id: 'businesses', label: 'Businesses' },
 ];

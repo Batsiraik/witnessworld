@@ -50,8 +50,8 @@ try {
         : ($isLowUser ? ($convRow['user_high_last_read_at'] ?? null) : ($convRow['user_low_last_read_at'] ?? null));
 
     $pdo->prepare(
-        'UPDATE messages SET delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP)
-         WHERE conversation_id = ? AND sender_user_id <> ?'
+        'UPDATE messages SET delivered_at = CURRENT_TIMESTAMP
+         WHERE conversation_id = ? AND sender_user_id <> ? AND delivered_at IS NULL'
     )->execute([$conversationId, $userId]);
 
     $afterId = (int) ($_GET['after_id'] ?? 0);

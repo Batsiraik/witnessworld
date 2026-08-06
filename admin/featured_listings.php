@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/guard.php';
+require_once __DIR__ . '/includes/listing_type_labels.php';
 
 $pageTitle = 'Featured listings';
 $activeNav = 'featured_listings';
@@ -91,7 +92,7 @@ require __DIR__ . '/partials/shell_open.php';
               <?= htmlspecialchars(trim((string) $r['first_name'] . ' ' . (string) $r['last_name']), ENT_QUOTES, 'UTF-8') ?>
               <div class="text-xs text-slate-500">@<?= htmlspecialchars((string) $r['username'], ENT_QUOTES, 'UTF-8') ?></div>
             </td>
-            <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars((string) $r['listing_type'], ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars(ww_listing_type_label((string) $r['listing_type']), ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4"><?= ww_admin_status_badge((string) $r['moderation_status']) ?></td>
             <td class="px-6 py-4 text-slate-500"><?= htmlspecialchars((string) $r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
             <td class="px-6 py-4 text-right">

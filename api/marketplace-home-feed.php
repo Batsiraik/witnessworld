@@ -65,19 +65,19 @@ $out = [
  */
 function ww_feed_listing_sql(string $listingType, int $limit, string $country, string $usState): array
 {
+    // Scalar subqueries only run for the LIMIT rows — avoids full-table review aggregation.
     $sql = 'SELECT l.id, l.title, l.description, l.price_amount, l.pricing_type, l.currency, l.media_url,
                     l.is_featured, l.is_urgent, l.is_verified,
                     l.location_country_name, l.location_us_state, l.created_at,
                     u.id AS seller_user_id, u.username, u.first_name, u.last_name, u.avatar_url,
-                    rv.avg_rating AS rating_average, rv.review_count AS rating_count
+                    (SELECT AVG(r.rating) FROM content_reviews r
+                      WHERE r.subject_type = \'listing\' AND r.status = \'published\' AND r.subject_id = l.id
+                    ) AS rating_average,
+                    (SELECT COUNT(*) FROM content_reviews r
+                      WHERE r.subject_type = \'listing\' AND r.status = \'published\' AND r.subject_id = l.id
+                    ) AS rating_count
              FROM listings l
              INNER JOIN users u ON u.id = l.user_id
-             LEFT JOIN (
-                SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
-                FROM content_reviews
-                WHERE subject_type = \'listing\' AND status = \'published\'
-                GROUP BY subject_id
-             ) rv ON rv.subject_id = l.id
              WHERE l.moderation_status = ? AND l.listing_type = ?';
     $params = ['approved', $listingType];
     if ($country !== '' && strlen($country) === 2) {
@@ -283,17 +283,18 @@ try {
         $recParams = [];
 
         $svcSql = 'SELECT \'service\' AS kind, l.id AS ref_id,
-                          rv.avg_rating AS rating_average,
-                          rv.review_count AS rating_count
+                          (SELECT AVG(r.rating) FROM content_reviews r
+                            WHERE r.subject_type = \'listing\' AND r.status = \'published\' AND r.subject_id = l.id
+                          ) AS rating_average,
+                          (SELECT COUNT(*) FROM content_reviews r
+                            WHERE r.subject_type = \'listing\' AND r.status = \'published\' AND r.subject_id = l.id
+                          ) AS rating_count
                    FROM listings l
-                   INNER JOIN (
-                      SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
-                      FROM content_reviews
-                      WHERE subject_type = \'listing\' AND status = \'published\'
-                      GROUP BY subject_id
-                   ) rv ON rv.subject_id = l.id
                    WHERE l.moderation_status = ? AND l.listing_type = ?
-                     AND rv.review_count > 0';
+                     AND EXISTS (
+                       SELECT 1 FROM content_reviews r
+                       WHERE r.subject_type = \'listing\' AND r.status = \'published\' AND r.subject_id = l.id
+                     )';
         $recParams[] = 'approved';
         $recParams[] = 'service';
         if ($recCountry !== '') {
@@ -303,18 +304,19 @@ try {
         $recParts[] = $svcSql;
 
         $prodSql = 'SELECT \'product\' AS kind, p.id AS ref_id,
-                           rv.avg_rating AS rating_average,
-                           rv.review_count AS rating_count
+                           (SELECT AVG(r.rating) FROM content_reviews r
+                             WHERE r.subject_type = \'product\' AND r.status = \'published\' AND r.subject_id = p.id
+                           ) AS rating_average,
+                           (SELECT COUNT(*) FROM content_reviews r
+                             WHERE r.subject_type = \'product\' AND r.status = \'published\' AND r.subject_id = p.id
+                           ) AS rating_count
                     FROM store_products p
                     INNER JOIN stores s ON s.id = p.store_id
-                    INNER JOIN (
-                       SELECT subject_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
-                       FROM content_reviews
-                       WHERE subject_type = \'product\' AND status = \'published\'
-                       GROUP BY subject_id
-                    ) rv ON rv.subject_id = p.id
                     WHERE s.moderation_status = ? AND p.moderation_status = ?
-                      AND rv.review_count > 0';
+                      AND EXISTS (
+                        SELECT 1 FROM content_reviews r
+                        WHERE r.subject_type = \'product\' AND r.status = \'published\' AND r.subject_id = p.id
+                      )';
         $recParams[] = 'approved';
         $recParams[] = 'approved';
         if ($recCountry !== '') {

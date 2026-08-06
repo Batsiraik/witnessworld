@@ -688,10 +688,20 @@ export function HomeScreen({ navigation }: Props) {
 
               {feed.classifieds.length
                 ? rail(
-                    'Classifieds',
+                    'Marketplace',
                     () => navigation.navigate('Classifieds'),
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
                       {feed.classifieds.slice(0, RAIL_LIMIT).map((r) => trendCard('listing', r, 'cls'))}
+                    </ScrollView>
+                  )
+                : null}
+
+              {feed.community.length
+                ? rail(
+                    'Classifieds',
+                    () => navigation.navigate('Community'),
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                      {feed.community.slice(0, RAIL_LIMIT).map((r) => trendCard('listing', r, 'com'))}
                     </ScrollView>
                   )
                 : null}

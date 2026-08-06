@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/push_triggers.php';
+require_once __DIR__ . '/includes/listing_type_labels.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
@@ -161,7 +162,7 @@ require __DIR__ . '/partials/shell_open.php';
     <div>
       <p class="text-sm text-slate-500"><a href="<?= htmlspecialchars($listBack, ENT_QUOTES, 'UTF-8') ?>" class="font-semibold text-brand hover:underline">← Back to listings</a></p>
       <h2 class="text-lg font-semibold text-slate-900"><?= htmlspecialchars((string) $listing['title'], ENT_QUOTES, 'UTF-8') ?></h2>
-      <p class="text-sm text-slate-600">#<?= (int) $listing['id'] ?> · <?= htmlspecialchars((string) $listing['listing_type'], ENT_QUOTES, 'UTF-8') ?></p>
+      <p class="text-sm text-slate-600">#<?= (int) $listing['id'] ?> · <?= htmlspecialchars(ww_listing_type_label((string) $listing['listing_type']), ENT_QUOTES, 'UTF-8') ?></p>
     </div>
     <div class="text-sm font-semibold text-slate-700">Status: <span class="text-brand"><?= htmlspecialchars(str_replace('_', ' ', $status), ENT_QUOTES, 'UTF-8') ?></span></div>
   </div>

@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiGet, apiPost } from '../api/client';
 import { GradientBackground } from '../components/GradientBackground';
 import { RemoteImage } from '../components/RemoteImage';
+import { listingTypeLabel } from '../constants/listingModules';
 import type { OfficeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
@@ -60,12 +61,6 @@ type DirRow = {
 
 function statusLabel(s: string): string {
   return s.replace(/_/g, ' ');
-}
-
-function listingTypeLabel(t: string): string {
-  if (t === 'service') return 'Service';
-  if (t === 'classified') return 'Classified';
-  return t;
 }
 
 function statusColor(s: string): string {
@@ -337,7 +332,7 @@ export function MyOfficeScreen({ navigation }: Props) {
           );
         })
       )}
-      <Text style={[styles.sectionLabel, styles.sectionSpacer]}>Classifieds & services</Text>
+      <Text style={[styles.sectionLabel, styles.sectionSpacer]}>Marketplace, Classifieds & services</Text>
     </View>
   );
 

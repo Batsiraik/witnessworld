@@ -92,7 +92,7 @@
   }
 
   function listingCard(l) {
-    const type = l.listing_type === 'service' ? 'Service' : l.listing_type === 'community' ? 'Community' : 'Marketplace';
+    const type = l.listing_type === 'service' ? 'Service' : l.listing_type === 'community' ? 'Classifieds' : 'Marketplace';
     return `
       <div class="wwc-card" style="padding:14px;margin-bottom:10px">
         <p style="margin:0;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--wwc-text-muted)">${escapeHtml(type)}</p>

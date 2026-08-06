@@ -205,6 +205,14 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
     return d.innerHTML;
   }
 
+  function listingTypeLabel(t) {
+    t = String(t || '').toLowerCase();
+    if (t === 'service') return 'Professional services';
+    if (t === 'classified') return 'Marketplace';
+    if (t === 'community') return 'Classifieds';
+    return t || 'Listing';
+  }
+
   function openModal() {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -244,7 +252,7 @@ $chip = static function (string $key, string $label, string $cur) use ($contentP
 
           html += '<div class="mb-4 flex flex-wrap items-start justify-between gap-2">';
           html += '<div><p class="font-semibold text-slate-900">' + esc(l.title) + '</p>';
-          html += '<p class="text-xs text-slate-500">#' + esc(String(l.id)) + ' · ' + esc(l.listing_type) + '</p></div>';
+          html += '<p class="text-xs text-slate-500">#' + esc(String(l.id)) + ' · ' + esc(listingTypeLabel(l.listing_type)) + '</p></div>';
           html += '<span class="text-xs font-semibold uppercase text-brand">' + esc(st.replace(/_/g, ' ')) + '</span></div>';
 
           var seller = data.seller || {};

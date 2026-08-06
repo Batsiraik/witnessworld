@@ -69,7 +69,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
       const titles: Record<string, string> = {
         service: 'Offer a Professional Service',
         classified: 'Sell or Give Away an Item',
-        community: 'Post a Community Classified',
+        community: 'Post to Classifieds',
       };
       navigation.setOptions({ title: titles[listingType] ?? 'New listing' });
     }
@@ -117,7 +117,7 @@ export function CreateListingScreen({ navigation, route }: Props) {
     const comm = listingType === 'community';
     if (editId) {
       return {
-        kindLabel: svc ? 'Professional Service' : comm ? 'Community Classified' : 'Classified ad',
+        kindLabel: svc ? 'Professional Service' : comm ? 'Classifieds post' : 'Marketplace listing',
         kindService: svc,
         kindCommunity: comm,
         hint: 'Saving changes requeues your listing for review if it was already approved or rejected. Removed listings cannot be edited.',
@@ -141,14 +141,14 @@ export function CreateListingScreen({ navigation, route }: Props) {
       };
     }
     return {
-      kindLabel: svc ? 'Offer a Professional Service' : comm ? 'Post a Community Classified' : 'Sell or Give Away an Item',
+      kindLabel: svc ? 'Offer a Professional Service' : comm ? 'Post to Classifieds' : 'Sell or Give Away an Item',
       kindService: svc,
       kindCommunity: comm,
       hint: svc
         ? 'Showcase your expertise to a global network of entrepreneurs and businesses. This module is optimized for high-value digital and virtual services. Whether you are a creative, a technical expert, or a strategic consultant, this is your platform to find new clients and manage professional projects.'
         : comm
-          ? 'The go-to spot for community-based needs and personal notices. Whether you are looking for a reliable sitter, a new roommate, or sharing a neighborhood update, post your notice here to reach your neighbors instantly.'
-          : 'Give your quality items a second home. This local marketplace is for members to buy, sell, or share household goods directly within their local community. Whether you are decluttering or offering something for free, keep it local and keep it simple.',
+          ? 'Connect with your community to find or offer housing, roommates, job opportunities, babysitters, and community announcements.'
+          : 'Easily list pre-loved goods, browse deals nearby, and chat directly with buyers and sellers in your community to make quick, easy transactions.',
       titleLabel: svc ? 'Headline *' : 'Ad title *',
       titlePh: svc
         ? 'e.g. Mobile notary · evenings & weekends — same-day appointments'

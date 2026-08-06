@@ -194,7 +194,11 @@ export function MemberPublicProfileScreen({ navigation, route }: Props) {
                     {it.title}
                   </Text>
                   <Text style={styles.cardMeta}>
-                    {it.listing_type === 'service' ? 'Service' : 'Classified'}
+                    {it.listing_type === 'service'
+                      ? 'Service'
+                      : it.listing_type === 'community'
+                        ? 'Classifieds'
+                        : 'Marketplace'}
                     {it.price_amount
                       ? ` · ${it.currency} ${it.price_amount}${it.pricing_type === 'hourly' ? ' / hr' : ''}`
                       : ''}

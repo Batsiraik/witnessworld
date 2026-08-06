@@ -38,105 +38,135 @@ $st = $pdo->prepare(
 $st->execute([(int) $user['id']]);
 $favorites = $st->fetchAll(PDO::FETCH_ASSOC);
 
-$out = [];
+if ($favorites === []) {
+    ww_json(['ok' => true, 'favorites' => []]);
+}
 
+/** @var array<string, list<int>> $idsByType */
+$idsByType = [];
+/** @var array<string, string> $savedAtByKey */
+$savedAtByKey = [];
 foreach ($favorites as $fav) {
     $type = (string) $fav['subject_type'];
     $id = (int) $fav['subject_id'];
-    $savedAt = (string) $fav['created_at'];
+    if ($id <= 0) {
+        continue;
+    }
+    $idsByType[$type][] = $id;
+    $savedAtByKey[$type . ':' . $id] = (string) $fav['created_at'];
+}
 
-    if ($type === 'listing') {
-        $q = $pdo->prepare(
-            'SELECT id, title, listing_type, price_amount, is_free, currency, media_url,
-                    location_country_name, location_us_state
-             FROM listings
-             WHERE id = ? AND moderation_status = ?
-             LIMIT 1'
-        );
-        $q->execute([$id, 'approved']);
-        $r = $q->fetch(PDO::FETCH_ASSOC);
-        if (!$r) {
-            continue;
-        }
-        $price = (int) ($r['is_free'] ?? 0) === 1 ? 'FREE' : ($r['price_amount'] ? (string) $r['currency'] . ' ' . (string) $r['price_amount'] : null);
-        $out[] = [
+/** @var array<string, array<string, mixed>> $byKey */
+$byKey = [];
+
+if (!empty($idsByType['listing'])) {
+    $ids = array_values(array_unique($idsByType['listing']));
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $q = $pdo->prepare(
+        "SELECT id, title, listing_type, price_amount, is_free, currency, media_url,
+                location_country_name, location_us_state
+         FROM listings
+         WHERE moderation_status = ? AND id IN ($placeholders)"
+    );
+    $q->execute(array_merge(['approved'], $ids));
+    foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $id = (int) $r['id'];
+        $price = (int) ($r['is_free'] ?? 0) === 1
+            ? 'FREE'
+            : ($r['price_amount'] ? (string) $r['currency'] . ' ' . (string) $r['price_amount'] : null);
+        $byKey['listing:' . $id] = [
             'subject_type' => 'listing',
-            'subject_id' => (int) $r['id'],
+            'subject_id' => $id,
             'title' => (string) $r['title'],
             'subtitle' => ucfirst((string) $r['listing_type']),
             'meta' => trim(implode(', ', array_filter([(string) ($r['location_us_state'] ?? ''), (string) ($r['location_country_name'] ?? '')]))),
             'price' => $price,
             'image_url' => $r['media_url'] ? (string) $r['media_url'] : null,
-            'created_at' => $savedAt,
+            'created_at' => $savedAtByKey['listing:' . $id] ?? '',
         ];
-    } elseif ($type === 'product') {
-        $q = $pdo->prepare(
-            'SELECT p.id, p.name, p.price_amount, p.currency, p.image_url, s.name AS store_name,
-                    s.location_country_name, s.location_us_state
-             FROM store_products p
-             INNER JOIN stores s ON s.id = p.store_id
-             WHERE p.id = ? AND p.moderation_status = ? AND s.moderation_status = ?
-             LIMIT 1'
-        );
-        $q->execute([$id, 'approved', 'approved']);
-        $r = $q->fetch(PDO::FETCH_ASSOC);
-        if (!$r) {
-            continue;
-        }
-        $out[] = [
+    }
+}
+
+if (!empty($idsByType['product'])) {
+    $ids = array_values(array_unique($idsByType['product']));
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $q = $pdo->prepare(
+        "SELECT p.id, p.name, p.price_amount, p.currency, p.image_url, s.name AS store_name,
+                s.location_country_name, s.location_us_state
+         FROM store_products p
+         INNER JOIN stores s ON s.id = p.store_id
+         WHERE p.moderation_status = ? AND s.moderation_status = ? AND p.id IN ($placeholders)"
+    );
+    $q->execute(array_merge(['approved', 'approved'], $ids));
+    foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $id = (int) $r['id'];
+        $byKey['product:' . $id] = [
             'subject_type' => 'product',
-            'subject_id' => (int) $r['id'],
+            'subject_id' => $id,
             'title' => (string) $r['name'],
             'subtitle' => (string) $r['store_name'],
             'meta' => trim(implode(', ', array_filter([(string) ($r['location_us_state'] ?? ''), (string) ($r['location_country_name'] ?? '')]))),
             'price' => (string) $r['currency'] . ' ' . (string) $r['price_amount'],
             'image_url' => $r['image_url'] ? (string) $r['image_url'] : null,
-            'created_at' => $savedAt,
+            'created_at' => $savedAtByKey['product:' . $id] ?? '',
         ];
-    } elseif ($type === 'store') {
-        $q = $pdo->prepare(
-            'SELECT id, name, sells_summary, logo_url, location_country_name, location_us_state
-             FROM stores
-             WHERE id = ? AND moderation_status = ?
-             LIMIT 1'
-        );
-        $q->execute([$id, 'approved']);
-        $r = $q->fetch(PDO::FETCH_ASSOC);
-        if (!$r) {
-            continue;
-        }
-        $out[] = [
+    }
+}
+
+if (!empty($idsByType['store'])) {
+    $ids = array_values(array_unique($idsByType['store']));
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $q = $pdo->prepare(
+        "SELECT id, name, sells_summary, logo_url, location_country_name, location_us_state
+         FROM stores
+         WHERE moderation_status = ? AND id IN ($placeholders)"
+    );
+    $q->execute(array_merge(['approved'], $ids));
+    foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $id = (int) $r['id'];
+        $byKey['store:' . $id] = [
             'subject_type' => 'store',
-            'subject_id' => (int) $r['id'],
+            'subject_id' => $id,
             'title' => (string) $r['name'],
             'subtitle' => (string) $r['sells_summary'],
             'meta' => trim(implode(', ', array_filter([(string) ($r['location_us_state'] ?? ''), (string) ($r['location_country_name'] ?? '')]))),
             'price' => null,
             'image_url' => $r['logo_url'] ? (string) $r['logo_url'] : null,
-            'created_at' => $savedAt,
+            'created_at' => $savedAtByKey['store:' . $id] ?? '',
         ];
-    } elseif ($type === 'directory_entry') {
-        $q = $pdo->prepare(
-            'SELECT id, business_name, tagline, city, location_us_state, location_country_name, logo_url
-             FROM directory_entries
-             WHERE id = ? AND moderation_status = ?
-             LIMIT 1'
-        );
-        $q->execute([$id, 'approved']);
-        $r = $q->fetch(PDO::FETCH_ASSOC);
-        if (!$r) {
-            continue;
-        }
-        $out[] = [
+    }
+}
+
+if (!empty($idsByType['directory_entry'])) {
+    $ids = array_values(array_unique($idsByType['directory_entry']));
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $q = $pdo->prepare(
+        "SELECT id, business_name, tagline, city, location_us_state, location_country_name, logo_url
+         FROM directory_entries
+         WHERE moderation_status = ? AND id IN ($placeholders)"
+    );
+    $q->execute(array_merge(['approved'], $ids));
+    foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $id = (int) $r['id'];
+        $byKey['directory_entry:' . $id] = [
             'subject_type' => 'directory_entry',
-            'subject_id' => (int) $r['id'],
+            'subject_id' => $id,
             'title' => (string) $r['business_name'],
             'subtitle' => $r['tagline'] ? (string) $r['tagline'] : 'Business directory',
             'meta' => trim(implode(', ', array_filter([(string) ($r['city'] ?? ''), (string) ($r['location_us_state'] ?? ''), (string) ($r['location_country_name'] ?? '')]))),
             'price' => null,
             'image_url' => $r['logo_url'] ? (string) $r['logo_url'] : null,
-            'created_at' => $savedAt,
+            'created_at' => $savedAtByKey['directory_entry:' . $id] ?? '',
         ];
+    }
+}
+
+// Preserve favorite order from the original query.
+$out = [];
+foreach ($favorites as $fav) {
+    $key = (string) $fav['subject_type'] . ':' . (int) $fav['subject_id'];
+    if (isset($byKey[$key])) {
+        $out[] = $byKey[$key];
     }
 }
 

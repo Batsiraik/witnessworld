@@ -48,19 +48,16 @@ try {
                AND (' . $deletedCol . ' IS NULL OR mu.created_at > ' . $deletedCol . '))'
         : '';
 
+    // One join for latest message instead of 2–3 correlated subqueries per row.
     $sql = 'SELECT c.id, c.context_key, c.last_message_at, c.created_at,
             up.id AS peer_user_id, up.username AS peer_username,
             up.first_name AS peer_first, up.last_name AS peer_last, up.avatar_url AS peer_avatar,
-            (SELECT IF(TRIM(COALESCE(m.body, \'\')) <> \'\', TRIM(m.body), CONCAT(\'📎 \', COALESCE(ma.file_name, \'File\')))
-             FROM messages m
-             LEFT JOIN message_attachments ma ON ma.message_id = m.id
-             WHERE m.conversation_id = c.id
-               AND (' . $deletedCol . ' IS NULL OR m.created_at > ' . $deletedCol . ')
-             ORDER BY m.id DESC LIMIT 1) AS last_body,
-            (SELECT m.created_at FROM messages m
-             WHERE m.conversation_id = c.id
-               AND (' . $deletedCol . ' IS NULL OR m.created_at > ' . $deletedCol . ')
-             ORDER BY m.id DESC LIMIT 1) AS last_created,
+            CASE
+              WHEN TRIM(COALESCE(lm.body, \'\')) <> \'\' THEN TRIM(lm.body)
+              WHEN ma.file_name IS NOT NULL THEN CONCAT(\'📎 \', ma.file_name)
+              ELSE NULL
+            END AS last_body,
+            lm.created_at AS last_created,
             (SELECT COUNT(*) FROM messages m
              WHERE m.conversation_id = c.id
                AND m.sender_user_id <> ?
@@ -68,6 +65,14 @@ try {
                AND (' . $deletedCol . ' IS NULL OR m.created_at > ' . $deletedCol . ')) AS unread_count
             FROM conversations c
             INNER JOIN users up ON up.id = CASE WHEN c.user_low_id = ? THEN c.user_high_id ELSE c.user_low_id END
+            LEFT JOIN messages lm ON lm.id = (
+              SELECT m2.id FROM messages m2
+              WHERE m2.conversation_id = c.id
+                AND (' . $deletedCol . ' IS NULL OR m2.created_at > ' . $deletedCol . ')
+              ORDER BY m2.id DESC
+              LIMIT 1
+            )
+            LEFT JOIN message_attachments ma ON ma.message_id = lm.id
             WHERE (c.user_low_id = ? OR c.user_high_id = ?)
               ' . $visibilityWhere . $unreadWhere . '
             ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
@@ -81,14 +86,22 @@ try {
         $sql = 'SELECT c.id, c.context_key, c.last_message_at, c.created_at,
                 up.id AS peer_user_id, up.username AS peer_username,
                 up.first_name AS peer_first, up.last_name AS peer_last, up.avatar_url AS peer_avatar,
-                (SELECT IF(TRIM(COALESCE(m.body, \'\')) <> \'\', TRIM(m.body), CONCAT(\'📎 \', COALESCE(ma.file_name, \'File\')))
-                 FROM messages m
-                 LEFT JOIN message_attachments ma ON ma.message_id = m.id
-                 WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body,
-                (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_created,
+                CASE
+                  WHEN TRIM(COALESCE(lm.body, \'\')) <> \'\' THEN TRIM(lm.body)
+                  WHEN ma.file_name IS NOT NULL THEN CONCAT(\'📎 \', ma.file_name)
+                  ELSE NULL
+                END AS last_body,
+                lm.created_at AS last_created,
                 0 AS unread_count
                 FROM conversations c
                 INNER JOIN users up ON up.id = CASE WHEN c.user_low_id = ? THEN c.user_high_id ELSE c.user_low_id END
+                LEFT JOIN messages lm ON lm.id = (
+                  SELECT m2.id FROM messages m2
+                  WHERE m2.conversation_id = c.id
+                  ORDER BY m2.id DESC
+                  LIMIT 1
+                )
+                LEFT JOIN message_attachments ma ON ma.message_id = lm.id
                 WHERE (c.user_low_id = ? OR c.user_high_id = ?)
                 ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
                 LIMIT 120';
@@ -96,7 +109,7 @@ try {
         $st->execute([$userId, $userId, $userId]);
         $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable) {
-    ww_json(['ok' => false, 'error' => 'Inbox unavailable'], 500);
+        ww_json(['ok' => false, 'error' => 'Inbox unavailable'], 500);
     }
 }
 

@@ -7,12 +7,12 @@ import { colors } from '../theme/colors';
 
 const COPY = {
   Classifieds: {
-    headline: 'Classified marketplace',
-    body: 'Item listings, categories, images, and messaging will live here — manage your listings and connect with buyers.',
+    headline: 'Marketplace',
+    body: 'Buy and sell pre-loved goods, browse deals nearby, and chat with buyers and sellers in your community.',
   },
   Services: {
-    headline: 'Service marketplace',
-    body: 'Service gigs, packages, orders, delivery tracking, and reviews — fixed or hourly pricing, like Fiverr.',
+    headline: 'Professional services',
+    body: 'Service gigs, packages, orders, delivery tracking, and reviews — fixed or hourly pricing.',
   },
   Stores: {
     headline: 'Online stores',

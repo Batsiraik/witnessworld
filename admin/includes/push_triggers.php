@@ -188,8 +188,15 @@ function ww_admin_notify_listing_review(
     string $title,
     ?int $listingId = null
 ): void {
-    $kind = $listingType === 'classified' ? 'classified' : 'service';
-    $label = $kind === 'classified' ? 'Classified' : 'Service listing';
+    if ($userId <= 0) {
+        return;
+    }
+    $label = match ($listingType) {
+        'classified' => 'Marketplace listing',
+        'community' => 'Classifieds post',
+        'service' => 'Professional service',
+        default => 'Listing',
+    };
     $name = $title !== '' ? $title : 'Your listing';
     $data = ['type' => 'listing', 'listing_type' => $listingType, 'status' => $action === 'approve' ? 'approved' : 'rejected'];
     if ($listingId !== null && $listingId > 0) {

@@ -9,8 +9,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
 }
 
 $country = strtoupper(trim((string) ($_GET['country'] ?? $_GET['location_country_code'] ?? '')));
-if ($country === '' || strlen($country) !== 2) {
-    ww_json(['ok' => false, 'error' => 'country query is required (2-letter code, e.g. US)'], 422);
+if ($country !== '' && strlen($country) !== 2) {
+    ww_json(['ok' => false, 'error' => 'Invalid country (use a 2-letter code, e.g. US)'], 422);
 }
 
 $usStateFilter = trim((string) ($_GET['us_state'] ?? ''));
@@ -41,8 +41,13 @@ $sql = 'SELECT d.id, d.business_name, d.tagline, d.category, d.category_id,
         dc.name AS category_name
         FROM directory_entries d
         LEFT JOIN directory_categories dc ON dc.id = d.category_id
-        WHERE d.moderation_status = ? AND d.location_country_code = ?';
-$params = ['approved', $country];
+        WHERE d.moderation_status = ?';
+$params = ['approved'];
+
+if ($country !== '') {
+    $sql .= ' AND d.location_country_code = ?';
+    $params[] = $country;
+}
 
 if ($usStateFilter !== '') {
     $sql .= ' AND d.location_us_state = ?';

@@ -17,6 +17,14 @@
     return d.innerHTML;
   }
 
+  function listingTypeLabel(t) {
+    t = String(t || '').toLowerCase();
+    if (t === 'service') return 'Professional services';
+    if (t === 'classified') return 'Marketplace';
+    if (t === 'community') return 'Classifieds';
+    return t || 'Listing';
+  }
+
   function showEmptyState() {
     if (!tbody || tbody.querySelector('tr[data-featured-id]')) return;
     if (document.getElementById('fl-empty-row')) return;
@@ -128,7 +136,7 @@
             '<p class="text-xs text-slate-500 mt-0.5">#' +
             item.id +
             ' · ' +
-            esc(item.listing_type) +
+            esc(listingTypeLabel(item.listing_type)) +
             ' · ' +
             esc(item.seller_label) +
             ' <span class="text-slate-400">@' +

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/guard.php';
+require_once __DIR__ . '/includes/listing_type_labels.php';
 require_once __DIR__ . '/../api/lib/analytics.php';
 
 $pageTitle = 'Analytics & impressions';
@@ -28,9 +29,9 @@ if ($period === '7d') {
 }
 
 $moduleLabels = [
-    'services' => 'Services',
-    'classifieds' => 'Classifieds',
-    'community' => 'Community',
+    'services' => 'Professional services',
+    'classifieds' => 'Marketplace',
+    'community' => 'Classifieds',
     'products' => 'Products',
     'stores' => 'Stores',
     'directory' => 'Directory',
@@ -286,7 +287,7 @@ require __DIR__ . '/partials/shell_open.php';
                 <?php endif; ?>
                 <div class="text-xs font-normal text-slate-500">
                   #<?= (int) $r['id'] ?>
-                  <?php if (!empty($r['listing_type'])): ?> · <?= htmlspecialchars((string) $r['listing_type'], ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
+                  <?php if (!empty($r['listing_type'])): ?> · <?= htmlspecialchars(ww_listing_type_label((string) $r['listing_type']), ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
                   <?php if (!empty($r['store_name'])): ?> · <?= htmlspecialchars((string) $r['store_name'], ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
                   <?php if (!empty($r['city'])): ?> · <?= htmlspecialchars((string) $r['city'], ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
                 </div>

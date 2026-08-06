@@ -26,11 +26,12 @@ import { RemoteImage } from '../components/RemoteImage';
 import { useDashboardContext } from '../context/DashboardContext';
 import type { HomeStackParamList, ProfileStackParamList } from '../navigation/types';
 
-type ExploreKey = 'Classifieds' | 'Services' | 'ProductsBrowse' | 'Stores' | 'Directory';
+type ExploreKey = 'Classifieds' | 'Community' | 'Services' | 'ProductsBrowse' | 'Stores' | 'Directory';
 
 const BROWSE_LINKS: { route: ExploreKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { route: 'Classifieds', label: 'Classified marketplace', icon: 'grid-outline' },
-  { route: 'Services', label: 'Service marketplace', icon: 'briefcase-outline' },
+  { route: 'Classifieds', label: 'Marketplace', icon: 'bag-handle-outline' },
+  { route: 'Community', label: 'Classifieds', icon: 'newspaper-outline' },
+  { route: 'Services', label: 'Professional services', icon: 'briefcase-outline' },
   { route: 'ProductsBrowse', label: 'Shop products', icon: 'pricetag-outline' },
   { route: 'Stores', label: 'Online stores', icon: 'storefront-outline' },
   { route: 'Directory', label: 'Business directory', icon: 'business-outline' },
@@ -167,6 +168,10 @@ export function ProfileSettingsScreen({ navigation }: Props) {
   );
   const myClassifieds = useMemo(
     () => ownListings.filter((l) => l.listing_type === 'classified').slice(0, 6),
+    [ownListings]
+  );
+  const myCommunity = useMemo(
+    () => ownListings.filter((l) => l.listing_type === 'community').slice(0, 6),
     [ownListings]
   );
 
@@ -470,7 +475,7 @@ export function ProfileSettingsScreen({ navigation }: Props) {
             {myClassifieds.length > 0 ? (
               <View style={styles.listingSection}>
                 <View style={styles.listingSectionHead}>
-                  <Text style={styles.listingSectionTitle}>My Listings</Text>
+                  <Text style={styles.listingSectionTitle}>My Marketplace</Text>
                   <Pressable onPress={goOffice} hitSlop={8}>
                     <Text style={styles.seeAll}>See All {'>'}</Text>
                   </Pressable>
@@ -491,6 +496,45 @@ export function ProfileSettingsScreen({ navigation }: Props) {
                           ) : (
                             <View style={[styles.listingImgSquare, styles.listingImgPh]}>
                               <Ionicons name="pricetag-outline" size={28} color={colors.textMuted} />
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.listingTitle} numberOfLines={2}>
+                          {row.title}
+                        </Text>
+                        {price ? <Text style={styles.listingPrice}>{price}</Text> : null}
+                        <Text style={styles.listingViews}>{row.views_total ?? 0} views</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            {myCommunity.length > 0 ? (
+              <View style={styles.listingSection}>
+                <View style={styles.listingSectionHead}>
+                  <Text style={styles.listingSectionTitle}>My Classifieds</Text>
+                  <Pressable onPress={goOffice} hitSlop={8}>
+                    <Text style={styles.seeAll}>See All {'>'}</Text>
+                  </Pressable>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listingRail}>
+                  {myCommunity.map((row) => {
+                    const img = row.display_image_url || row.media_url;
+                    const price = formatOwnPrice(row);
+                    return (
+                      <Pressable
+                        key={`com-${row.id}`}
+                        style={({ pressed }) => [styles.listingCard, pressed && styles.pressed]}
+                        onPress={() => openListing(row.id)}
+                      >
+                        <View style={styles.listingImgWrap}>
+                          {img ? (
+                            <RemoteImage url={img} style={styles.listingImgSquare} contentFit="cover" />
+                          ) : (
+                            <View style={[styles.listingImgSquare, styles.listingImgPh]}>
+                              <Ionicons name="newspaper-outline" size={28} color={colors.textMuted} />
                             </View>
                           )}
                         </View>

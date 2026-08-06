@@ -9,7 +9,7 @@
     classified: {
       pill: 'Marketplace listing',
       title: 'Sell or Give Away an Item',
-      lead: 'Give quality items a second home. Buy, sell, or share household goods locally within your community.',
+      lead: 'Easily list pre-loved goods, browse deals nearby, and chat directly with buyers and sellers in your community to make quick, easy transactions.',
       titleLabel: 'Ad title *',
       titlePh: 'e.g. Couch + loveseat · must go by Friday · $400',
       descLabel: 'Ad details *',
@@ -31,9 +31,9 @@
       portfolioLabel: 'Portfolio / past work (optional)',
     },
     community: {
-      pill: 'Community classified',
-      title: 'Post a Community Classified',
-      lead: 'Personal needs and community notices — sitters, roommates, tutoring, neighborhood updates.',
+      pill: 'Classifieds post',
+      title: 'Post to Classifieds',
+      lead: 'Connect with your community to find or offer housing, roommates, job opportunities, babysitters, and community announcements.',
       titleLabel: 'Ad title *',
       titlePh: 'e.g. Babysitter needed Saturdays · downtown area',
       descLabel: 'Ad details *',
